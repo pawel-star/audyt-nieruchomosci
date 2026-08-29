@@ -341,7 +341,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.1', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.2', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -463,11 +463,59 @@ function modPromptCard(mid){
     <h3 style="margin-top:0">Zlecenie dla wtyczki Claude w Chrome</h3>
     <p class="lead" style="margin-bottom:9px">${n} ${n===1?'pytanie z tej sekcji da się sprawdzić':'pytania z tej sekcji dają się sprawdzić'}
       w rejestrach online: ${esc(ids.join(' · '))}${m.checks.filter(c=>c.task).length>4?' i inne':''}.</p>
-    <button class="btn wide sec" onclick="copyModulePrompt('${mid}')">Kopiuj prompty tej sekcji (${n})</button>
+    <button class="btn wide sec" onclick="copyModulePrompt('${mid}', this)">Kopiuj prompty tej sekcji (${n})</button>
     <label class="f" style="margin-top:12px"><span>Wklej tutaj odpowiedź wtyczki</span>
       <textarea id="modText_${mid}" style="min-height:88px" placeholder="Wklej blok, który zwróciła wtyczka. Rozpoznam odpowiedzi i notatki dla tej sekcji."></textarea></label>
     <button class="btn wide" onclick="importModuleAnswers('${mid}')">Wczytaj odpowiedzi</button>
   </div>`;
+}
+/* ============================================================
+   KOPIOWANIE PROMPTÓW I IMPORT ODPOWIEDZI W KARCIE MODUŁU
+   Trzy funkcje podpięte pod przyciski, które przy odbudowie pliku
+   zostały bez definicji. copyText ma zapasową metodę przez
+   execCommand, bo przy otwarciu z dysku (file://) navigator.clipboard
+   bywa niedostępne — bez tego kopiowanie milczy z pendrive'a.
+   ============================================================ */
+function copyText(text, btn){
+  const ok=()=>{ if(btn){const o=btn.textContent; btn.textContent='Skopiowano'; setTimeout(()=>{btn.textContent=o;},1400);} };
+  const fallback=()=>{
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text; ta.setAttribute('readonly','');
+      ta.style.position='fixed'; ta.style.top='-1000px'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      const done=document.execCommand('copy');
+      document.body.removeChild(ta);
+      if(done){ok();return;}
+    }catch(e){}
+    alert('Nie udało się skopiować automatycznie. Zaznacz tekst i skopiuj ręcznie:\n\n'+text);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(ok, fallback);
+  } else fallback();
+}
+function copyPrompt(id, btn){
+  const c=allChecks().find(x=>x.id===id); if(!c)return;
+  copyText(promptFor(c), btn);
+}
+function copyModulePrompt(mid, btn){
+  const t=promptModule(mid); if(!t)return;
+  copyText(t, btn);
+}
+function importModuleAnswers(mid){
+  const el=document.getElementById('modText_'+mid); if(!el)return;
+  const t=el.value.trim();
+  if(!t){alert('Wklej najpierw odpowiedź, którą zwróciła wtyczka.');return;}
+  const acc=parseNotion(t);
+  const A=(!acc.n&&!acc.notes)?parseTxt(t):acc;
+  if(!A.n&&!A.notes){
+    alert('Nie rozpoznałem żadnej odpowiedzi.\n\nTekst musi zawierać kody pytań (np. `s_powodz`) i wiersze z zaznaczeniem [x]. Wklej całą odpowiedź wtyczki, nie jej fragment.');
+    return;
+  }
+  save(); render();
+  alert('Wczytano '+A.n+' '+(A.n===1?'odpowiedź':'odpowiedzi')
+    +(A.notes?' i '+A.notes+' notatek':'')
+    +(A.skipped?'\n\nPominięto '+A.skipped+' nierozpoznanych wartości.':''));
 }
 /* ============================================================
    JEDNO POLE NA WYNIKI
@@ -2074,7 +2122,7 @@ function renderCheck(c,n){
     <div class="qbody">${body}${fl}
       ${c.task?`<details class="hlp"><summary>Prompt dla wtyczki Claude w Chrome</summary>
         <div class="pbox"><div class="ph"><b>Skopiuj i wklej do wtyczki</b>
-          <button class="btn sm" onclick="copyPrompt('${c.id}')">Kopiuj</button></div>
+          <button class="btn sm" onclick="copyPrompt('${c.id}', this)">Kopiuj</button></div>
           <pre>${esc(promptFor(c))}</pre>
           <div class="hint">Prompt zawiera dane tej działki i wymusza format odpowiedzi.
             Wynik wklejasz w oknie „Wklej wyniki” z nagłówka.</div>

@@ -1,5 +1,11 @@
 # Historia zmian
 
+## 2.2
+- **Naprawione kopiowanie promptów.** Przyciski „Kopiuj” przy pytaniu i „Kopiuj prompty tej sekcji” znów działają. Trzy funkcje (`copyPrompt`, `copyModulePrompt`, `importModuleAnswers`) zniknęły przy wcześniejszej odbudowie pliku i przyciski wołały puste miejsce.
+- **Kopiowanie działa też z dysku.** Doszła zapasowa metoda przez `execCommand`, bo przy otwarciu pliku z `file://` przeglądarka nie daje dostępu do `navigator.clipboard` i kopiowanie wcześniej milczało.
+- **Wczytywanie odpowiedzi w karcie sekcji.** Przycisk „Wczytaj odpowiedzi” pod kartą modułu znów rozpoznaje wklejony blok z wtyczki i dopisuje odpowiedzi do audytu.
+- Przyciski kopiujące przekazują `this` zamiast polegać na globalnej zmiennej `event`, której część przeglądarek nie udostępnia.
+
 ## 2.1
 - **Wycena notatek.** Aplikacja rozpoznaje w notatkach typowe problemy budowlane (ponad dwadzieścia kategorii: azbest, zawilgocenie, pęknięcia, dach, instalacje, docieplenie, odwodnienie i inne) i proponuje widełki wraz z uzasadnieniem, skąd wzięła kwotę.
 - **Odniesienie do rynku.** Nowe pole na średnią cenę transakcyjną w okolicy (zł/m²). Gdy oferta ją przewyższa, nadwyżka pojawia się jako osobna pozycja negocjacyjna z sugestią 60% różnicy.
