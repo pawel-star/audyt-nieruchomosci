@@ -181,6 +181,7 @@ details.hlp[open] summary::before{content:"▾ "}
 .negtit{font-size:14px;font-weight:650;line-height:1.35}
 .negsec{font-size:11.5px;color:var(--tx3);margin-top:2px}
 .negop{font-size:12.5px;color:var(--tx2);margin-top:4px;line-height:1.45}
+.negskad{font-size:11.5px;color:#7dabf8;margin-top:4px;line-height:1.4;font-style:italic}
 .negkw{flex:none;width:112px;text-align:right;font-weight:650;font-size:14px;
   background:var(--panel2);border:1px solid var(--line);color:var(--tx);padding:8px 10px;border-radius:8px}
 .negkw:disabled{opacity:.35}
@@ -340,7 +341,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.0', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.1', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -2174,6 +2175,9 @@ function viewStart(){
       <label class="f"><span>Rok budowy</span>
         <input type="number" value="${esc(S.meta.rok)}" oninput="meta('rok',this.value)"></label>
     </div>
+    <label class="f"><span>Średnia cena transakcyjna w okolicy (zł za m² pow. domu)</span>
+      <input type="number" value="${esc(S.meta.rynekM2||'')}" placeholder="sprawdź w Rejestrze Cen Nieruchomości"
+        oninput="meta('rynekM2',this.value)"></label>
     ${S.meta.cena&&S.meta.powDom?`<div class="msg info">Cena za m² powierzchni domu: <b>${zl(S.meta.cena/S.meta.powDom)}/m²</b>.</div>`:''}
     <label class="f"><span>Notatki własne</span>
       <textarea oninput="meta('opis',this.value)" placeholder="Pierwsze wrażenie, na co zwrócić uwagę przy drugich oględzinach…">${esc(S.meta.opis)}</textarea></label>
@@ -2814,6 +2818,79 @@ function sunCard(){
   </div>`;
 }
 
+
+/* ============================================================
+   WYCENA NOTATEK
+   Notatka to zdanie, nie kwota. Rozpoznaję w niej typowe problemy
+   i proponuję widełki oparte na tych samych stawkach, co przy wadach
+   z audytu. To propozycja do weryfikacji, nie wycena rzeczoznawcy.
+   ============================================================ */
+const WZORCE=[
+ {re:/samowol|bez pozwolen|niezg[łl]oszon|legalizac/i, k:'Legalizacja samowoli', min:20000, max:120000,
+  d:'Opłata legalizacyjna i dokumentacja, w skrajnym wypadku rozbiórka.'},
+ {re:/azbest|eternit|falist[ea] p[łl]yt/i, k:'Azbest do utylizacji', min:25000, max:90000,
+  d:'Demontaż przez uprawnioną firmę z kartą przekazania odpadu, zwykle 60–120 zł za m², plus nowe pokrycie.'},
+ {re:/grzyb|ple[śs][ńn]|zagrzybi/i, k:'Zagrzybienie', min:15000, max:60000,
+  d:'Usunięcie przyczyny, dezynfekcja, wymiana zainfekowanych elementów i odtworzenie wykończenia.'},
+ {re:/wilgo|zawilgo|plam[ay]|zaciek|mokr|osuszen/i, k:'Zawilgocenie', min:8000, max:40000,
+  d:'Diagnostyka, izolacja i osuszenie. Przy izolacji poziomej fundamentów górna granica rośnie.'},
+{re:/drena|odwodnien|woda po deszcz|woda pode|podtopien|zalew|zalani|stoi woda/i, k:'Odwodnienie terenu', min:8000, max:40000,
+  d:'Drenaż opaskowy, studnia chłonna albo niwelacja.'},
+ {re:/p[ęe]kni[ęe]|rys[ay] |sp[ęe]kan|konstrukcyjn/i, k:'Pęknięcia i naprawy konstrukcyjne', min:10000, max:80000,
+  d:'Ekspertyza konstruktora i naprawa. Kwota zależy od tego, czy przyczyna nadal działa.'},
+ {re:/dach|dach[óo]wk|papa|blachodach|wi[ęe][źz]b|rynn/i, k:'Dach i pokrycie', min:20000, max:80000,
+  d:'Wymiana pokrycia z obróbkami i rynnami, ewentualna naprawa więźby.'},
+ {re:/komin|kominiar/i, k:'Komin', min:5000, max:25000,
+  d:'Przemurowanie lub wkład kominowy wraz z przeglądem.'},
+ {re:/okn[ao]|stolark|szyb|parapet/i, k:'Stolarka okienna', min:15000, max:55000,
+  d:'Wymiana wraz z parapetami i obróbką, licząc 1500–2500 zł za okno.'},
+ {re:/drzwi|brama gara/i, k:'Drzwi lub brama', min:3000, max:15000, d:'Wymiana wraz z montażem.'},
+ {re:/instalacj|elektryk|przew[óo]d|aluminiow|rozdzieln|gniazdk/i, k:'Instalacja elektryczna', min:15000, max:60000,
+  d:'Wymiana wymaga skucia bruzd, więc pociąga za sobą remont wykończenia.'},
+ {re:/hydraulik|rur[ay]|ocynk|kanaliz|odp[łl]yw|ci[śs]nieni/i, k:'Instalacja wodno-kanalizacyjna', min:8000, max:35000,
+  d:'Wymiana pionów i poziomów, roboty odtworzeniowe.'},
+ {re:/piec|kocio[łl]|ogrzewan|grzejnik|pompa ciep/i, k:'Źródło ciepła', min:20000, max:70000,
+  d:'Wymiana kotła albo montaż pompy ciepła, częściowo objęte programem Czyste Powietrze.'},
+ {re:/szambo|zbiornik bezodp|asenizac/i, k:'Gospodarka ściekowa', min:15000, max:45000,
+  d:'Przyłączenie do sieci albo przydomowa oczyszczalnia. Do tego bieżące koszty wywozu.'},
+ {re:/studni|uzdatnian|azotan/i, k:'Zaopatrzenie w wodę', min:5000, max:25000,
+  d:'Badanie wody, stacja uzdatniania albo przyłącze wodociągowe.'},
+ {re:/ocieplen|elewacj|termo|styropian|we[łl]n/i, k:'Docieplenie', min:30000, max:90000,
+  d:'Ocieplenie ścian z wykończeniem elewacji.'},
+ {re:/[łl]azienk|kuchni|kafelk|glazur/i, k:'Remont pomieszczenia mokrego', min:15000, max:45000,
+  d:'Pełny remont łazienki lub kuchni wraz z instalacjami.'},
+ {re:/pod[łl]og|parkiet|panel|wylewk/i, k:'Podłogi', min:8000, max:35000, d:'Wymiana warstw wykończeniowych.'},
+ {re:/schod|taras|balkon/i, k:'Taras, balkon lub schody', min:5000, max:30000,
+  d:'Naprawa izolacji i nawierzchni.'},
+ {re:/ogrodzen|p[łl]ot|brama wjazd/i, k:'Ogrodzenie', min:8000, max:35000, d:'Wymiana lub uzupełnienie.'},
+ {re:/drzew|wycink|konar/i, k:'Wycinka drzew', min:2000, max:15000,
+  d:'Usunięcie wraz z karczowaniem, przy przekroczeniu limitu obwodu także zgłoszenie.'},
+ {re:/ha[łl]as|g[łl]o[śs]n|s[ąa]siad|zapach|smr[óo]d|fetor/i, k:'Uciążliwość otoczenia', min:0, max:30000,
+  d:'Trudna do wyceny wprost. Wpływa raczej na wartość odsprzedaży niż na koszt naprawy.'},
+ {re:/gara[żz]|wiat|budynek gospodar|szop/i, k:'Budynek gospodarczy', min:5000, max:40000,
+  d:'Remont albo rozbiórka obiektu towarzyszącego.'}
+];
+function wycenNotatke(tekst){
+  const t=String(tekst||'');
+  const trafienia=WZORCE.filter(w=>w.re.test(t));
+  if(!trafienia.length)return null;
+  /* przy kilku dopasowaniach wygrywa pierwsze w tablicy, a ta jest ułożona
+     od problemów najpoważniejszych do kosmetycznych */
+  const w=trafienia[0];
+  return {kategoria:w.k, min:w.min, max:w.max, uzasadnienie:w.d, wiele:trafienia.length>1,
+    inne:trafienia.slice(1).map(x=>x.k)};
+}
+
+/* ---------- ODNIESIENIE DO CEN RYNKOWYCH ---------- */
+function rynek(){
+  const cena=+S.meta.cena||0, pow=+S.meta.powDom||0, stawka=+S.meta.rynekM2||0;
+  if(!cena||!pow||!stawka)return null;
+  const nasza=cena/pow;
+  const roznica=nasza-stawka;
+  const proc=roznica/stawka*100;
+  return {nasza, stawka, roznica, proc, nadwyzka:Math.round(roznica*pow)};
+}
+
 /* ============================================================
    NEGOCJACJE
    Każda wada i każda notatka jako osobna pozycja, którą włączasz
@@ -2824,23 +2901,59 @@ function negInit(){
   if(!S.neg.items)S.neg.items={};
   return S.neg;
 }
-/* pozycje: wady z flag + notatki, które sam dopisałeś */
+/* pozycje negocjacyjne: wady z audytu, wycenione notatki, odniesienie
+   do cen rynkowych oraz pozycje dopisane ręcznie */
 function negRows(){
   const rows=[];
   flagsAll().forEach(f=>{
     if(f.lv==='green')return;
     rows.push({key:'f:'+f.cid, typ:'wada', lv:f.lv, mname:f.mname,
       tytul:f.t, opis:String(f.w).replace(/<[^>]+>/g,''),
-      arg:f.arg||f.t, sugestia:f.cmin||0, max:f.cmax||0});
+      arg:f.arg||f.t, sugestia:f.cmin||0, max:f.cmax||0,
+      skad:f.cmin?'dolna granica widełek z audytu':''});
   });
   Object.keys(S.n).filter(k=>S.n[k]&&S.n[k].trim()).forEach(k=>{
     const c=allChecks().find(x=>x.id===k); if(!c)return;
     const m=M.find(x=>x.checks.some(y=>y.id===k));
+    const w=wycenNotatke(S.n[k]);
     rows.push({key:'n:'+k, typ:'notatka', lv:'note', mname:m?m.name:'',
-      tytul:c.q, opis:S.n[k], arg:S.n[k], sugestia:0, max:0});
+      tytul:w?w.kategoria:c.q, opis:S.n[k], arg:S.n[k],
+      sugestia:w?w.min:0, max:w?w.max:0,
+      skad:w?w.uzasadnienie:'Nie rozpoznałem typowego problemu — wpisz kwotę sam, jeśli ta uwaga ma wpływ na cenę.',
+      pytanie:c.q});
+  });
+  const r=rynek();
+  if(r&&r.roznica>0)rows.push({key:'rynek', typ:'rynek', lv:'yellow', mname:'Cena',
+    tytul:'Cena powyżej stawek transakcyjnych w okolicy',
+    opis:'Oferta to '+fmt(r.nasza)+' zł/m², a porównywalne nieruchomości sprzedają się po '+fmt(r.stawka)
+      +' zł/m². Różnica na '+fmt(S.meta.powDom)+' m² daje '+fmt(r.nadwyzka)+' zł.',
+    arg:'Cena ofertowa przewyższa o '+r.proc.toFixed(0)+'% stawki transakcyjne dla porównywalnych nieruchomości w okolicy.',
+    sugestia:Math.round(r.nadwyzka*0.6/1000)*1000, max:r.nadwyzka,
+    skad:'Sugeruję 60% nadwyżki, bo część różnicy zwykle wynika ze standardu, którego statystyka nie uchwyci.'});
+  (S.neg&&S.neg.wlasne?S.neg.wlasne:[]).forEach((w,i)=>{
+    rows.push({key:'w:'+i, typ:'wlasna', lv:'yellow', mname:'Twoja uwaga',
+      tytul:w.tytul||'(bez nazwy)', opis:'', arg:w.tytul||'', sugestia:+w.kwota||0, max:0, skad:'', idx:i});
   });
   return rows;
 }
+function negDodaj(){
+  const n=negInit(); n.wlasne=n.wlasne||[];
+  n.wlasne.push({tytul:'',kwota:0}); save(); render();
+}
+function negWlasna(i,pole,val){
+  const n=negInit(); if(!n.wlasne||!n.wlasne[i])return;
+  n.wlasne[i][pole] = pole==='kwota' ? (parseInt(String(val).replace(/\D/g,''),10)||0) : val;
+  const k='w:'+i;
+  if(pole==='kwota'){n.items[k]=Object.assign({},n.items[k]||{on:true},{kwota:n.wlasne[i].kwota,on:true});}
+  save(); if(pole==='kwota')negPaint();
+}
+function negUsun(i){
+  const n=negInit(); if(!n.wlasne)return;
+  n.wlasne.splice(i,1);
+  const przeb={}; Object.keys(n.items).forEach(k=>{ if(!k.startsWith('w:'))przeb[k]=n.items[k]; });
+  n.items=przeb; save(); render();
+}
+
 function negState(row){
   const n=negInit();
   if(n.items[row.key])return n.items[row.key];
@@ -2876,45 +2989,83 @@ function viewNeg(){
   const cena=+S.meta.cena||0;
   const rows=negRows();
   const suma=negSuma();
-  const wady=rows.filter(r=>r.typ==='wada'), notatki=rows.filter(r=>r.typ==='notatka');
+  const r=rynek();
+  const wady=rows.filter(x=>x.typ==='wada'), notatki=rows.filter(x=>x.typ==='notatka'),
+        rynkowe=rows.filter(x=>x.typ==='rynek'), wlasne=rows.filter(x=>x.typ==='wlasna');
   const sugOferta = cena&&suma ? Math.max(0,Math.round((cena-suma*1.35)/1000)*1000) : 0;
   const sugCel = cena&&suma ? Math.round((cena-suma)/1000)*1000 : 0;
   const sugGranica = cena&&suma ? Math.round((cena-suma*0.5)/1000)*1000 : 0;
   const proc = cena? suma/cena*100 : 0;
+  /* ocena atrakcyjności: cena po odjęciu wad wobec stawek rynkowych */
+  let ocena=null;
+  if(r&&cena&&S.meta.powDom){
+    const poKorekcie=(cena-suma)/(+S.meta.powDom);
+    const dyst=(poKorekcie-r.stawka)/r.stawka*100;
+    if(r.proc<-5) ocena={typ:'ok',t:'Cena ofertowa jest już poniżej stawek rynkowych',
+      d:'Oferta wynosi '+fmt(r.nasza)+' zł/m² przy średniej '+fmt(r.stawka)+' zł/m², czyli o '+Math.abs(r.proc).toFixed(0)
+        +'% taniej. Zanim zaczniesz negocjować, ustal dlaczego. Albo sprzedający się spieszy, albo jest wada, której jeszcze nie znalazłeś.'};
+    else if(dyst<-10) ocena={typ:'ok',t:'Po uwzględnieniu wad cena schodzi wyraźnie poniżej rynku',
+      d:'Przy obniżce o '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m² wobec '+fmt(r.stawka)
+        +' zł/m² w okolicy. To ambitna, ale broniona propozycja — masz na nią argumenty z audytu.'};
+    else if(dyst>=-10&&dyst<=10) ocena={typ:'ok',t:'Po uwzględnieniu wad cena trafia w stawki rynkowe',
+      d:'Przy obniżce o '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m², a porównywalne nieruchomości w okolicy '
+        +'sprzedają się po '+fmt(r.stawka)+' zł/m². To propozycja, którą łatwo obronić liczbami.'};
+    else if(dyst>10) ocena={typ:'uwaga',t:'Nawet po obniżce cena pozostaje powyżej rynku',
+      d:'Po odjęciu '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m², a porównywalne nieruchomości sprzedają się po '
+        +fmt(r.stawka)+' zł/m². Albo nieruchomość ma coś, czego statystyka nie widzi, albo warto zejść niżej.'};
+  }
 
-  const wiersz=r=>{
-    const st=negState(r);
-    const kolor = r.lv==='red'?'#fca5a5':r.lv==='yellow'?'#fcd34d':'#c084fc';
+  const wiersz=x=>{
+    const st=negState(x);
+    const kolor = x.lv==='red'?'#fca5a5':x.lv==='yellow'?'#fcd34d':'#c084fc';
     return `<div class="negrow ${st.on?'on':''}">
-      <button class="negtog ${st.on?'on':''}" onclick="negSet('${r.key}','on',${!st.on})" title="${st.on?'Wyłącz z ceny':'Włącz do ceny'}">${st.on?'✓':''}</button>
+      <button class="negtog ${st.on?'on':''}" onclick="negSet('${x.key}','on',${!st.on})">${st.on?'✓':''}</button>
       <div class="negmid">
-        <div class="negtit" style="color:${kolor}">${esc(r.tytul)}</div>
-        <div class="negsec">${esc(r.mname)}${r.typ==='notatka'?' · twoja notatka':''}${r.max?' · widełki '+fmt(r.sugestia)+'–'+fmt(r.max)+' zł':''}</div>
-        ${r.opis?`<div class="negop">${esc(r.opis).slice(0,220)}</div>`:''}
+        <div class="negtit" style="color:${kolor}">${esc(x.tytul)}</div>
+        <div class="negsec">${esc(x.mname)}${x.pytanie?' · '+esc(x.pytanie.slice(0,52)):''}${x.max?' · widełki '+fmt(x.sugestia)+'–'+fmt(x.max)+' zł':''}</div>
+        ${x.opis?`<div class="negop">${esc(x.opis).slice(0,240)}</div>`:''}
+        ${x.skad?`<div class="negskad">${esc(x.skad)}</div>`:''}
       </div>
       <input class="negkw" type="text" inputmode="numeric" value="${st.kwota?fmt(st.kwota):''}"
-        placeholder="0" oninput="negSet('${r.key}','kwota',this.value)" ${st.on?'':'disabled'}>
+        placeholder="0" oninput="negSet('${x.key}','kwota',this.value)" ${st.on?'':'disabled'}>
+    </div>`;
+  };
+  const wlasnyWiersz=x=>{
+    const st=negState(x);
+    return `<div class="negrow on">
+      <button class="negtog on" onclick="negUsun(${x.idx})" title="Usuń pozycję" style="color:#fca5a5">×</button>
+      <div class="negmid">
+        <input type="text" value="${esc(S.neg.wlasne[x.idx].tytul)}" placeholder="Nazwij niedogodność, np. brak garażu"
+          oninput="negWlasna(${x.idx},'tytul',this.value)" style="font-size:13.5px">
+      </div>
+      <input class="negkw" type="text" inputmode="numeric" value="${st.kwota?fmt(st.kwota):''}"
+        placeholder="0" oninput="negWlasna(${x.idx},'kwota',this.value)">
     </div>`;
   };
 
   $('#view').innerHTML=`
   <div class="card">
     <h2>Negocjacje</h2>
-    <p class="lead">Każda wada i każda twoja notatka to osobna pozycja. Decydujesz, które wchodzą do ceny
-      i za ile. Kwoty przy wadach to dolne granice moich szacunków — nadpisz je, jeśli masz lepszą wycenę.</p>
-    ${!cena?`<div class="msg err">Nie podałeś ceny ofertowej. Wpisz ją w sekcji Start, inaczej nie policzę propozycji.</div>`:''}
+    <p class="lead">Przy każdej pozycji proponuję kwotę i mówię, skąd ją wziąłem. Zmieniasz każdą według
+      własnego uznania, wyłączasz te, których nie chcesz podnosić, i dopisujesz swoje.</p>
+    ${!cena?`<div class="msg err">Nie podałeś ceny ofertowej. Wpisz ją w sekcji Start.</div>`:''}
+    ${!r?`<div class="msg info">Podaj w sekcji <b>Cena</b> średnią stawkę transakcyjną w okolicy (zł/m²),
+      a policzę, o ile ta oferta odbiega od rynku, i uwzględnię to jako osobną pozycję negocjacyjną.</div>`:''}
   </div>
+
+  ${ocena?`<div class="card tight" style="border-color:${ocena.typ==='ok'?'#1d4429':'#4a3a15'}">
+    <h3 style="margin-top:0;color:${ocena.typ==='ok'?'#86efac':'#fcd34d'}">${esc(ocena.t)}</h3>
+    <p class="lead" style="margin:0">${esc(ocena.d)}</p></div>`:''}
 
   <div class="card tight" style="position:sticky;top:100px;z-index:300">
     <div class="negsum">
-      <div><span class="lbl">Uwzględnione wady</span><b id="negSuma">${fmt(suma)} zł</b>
+      <div><span class="lbl">Do odjęcia</span><b id="negSuma">${fmt(suma)} zł</b>
         <span class="sub" id="negProc">${cena?((suma/cena*100).toFixed(1)+'% ceny ofertowej'):''}</span></div>
-      <div><span class="lbl">Cena po odjęciu</span><b id="negCel">${cena?fmt(Math.max(0,cena-suma))+' zł':'—'}</b>
-        <span class="sub">z ${cena?fmt(cena)+' zł':'—'}</span></div>
+      <div><span class="lbl">Cena po korekcie</span><b id="negCel">${cena?fmt(Math.max(0,cena-suma))+' zł':'—'}</b>
+        <span class="sub">${r?fmt((cena-suma)/(+S.meta.powDom))+' zł/m² wobec '+fmt(r.stawka)+' w okolicy':'z '+(cena?fmt(cena)+' zł':'—')}</span></div>
     </div>
     ${proc>20?`<div class="msg err" style="margin:10px 0 0">Suma przekracza 20% ceny ofertowej.
-      Przy takiej skali wad sprzedający raczej nie zejdzie, a ty zostajesz z remontem i ryzykiem.
-      Rozważ, czy to jeszcze negocjacja, czy sygnał do rezygnacji.</div>`:''}
+      Przy takiej skali wad sprzedający raczej nie zejdzie, a ty zostajesz z remontem i ryzykiem.</div>`:''}
   </div>
 
   <div class="card">
@@ -2922,81 +3073,75 @@ function viewNeg(){
       <button class="btn sm sec" onclick="negAll(true)">Zaznacz wszystkie</button>
       <button class="btn sm sec" onclick="negAll(false)">Odznacz wszystkie</button>
     </div>
-    <h3 style="margin-top:4px">Wady wykryte w audycie (${wady.length})</h3>
-    ${wady.length?wady.map(wiersz).join(''):'<div class="msg info">Audyt nie wykazał jeszcze wad. Wypełnij sekcje, żeby pojawiły się tutaj.</div>'}
+    ${rynkowe.length?`<h3 style="margin-top:4px">Odniesienie do rynku</h3>${rynkowe.map(wiersz).join('')}`:''}
+    <h3 ${!rynkowe.length?'style="margin-top:4px"':''}>Wady wykryte w audycie (${wady.length})</h3>
+    ${wady.length?wady.map(wiersz).join(''):'<div class="msg info">Audyt nie wykazał jeszcze wad.</div>'}
 
-    <h3>Twoje notatki (${notatki.length})</h3>
-    <p class="lead" style="margin-bottom:8px">Notatki nie mają wyceny — jeśli któraś ma wpływ na cenę, włącz ją i wpisz kwotę.</p>
+    <h3>Z twoich notatek (${notatki.length})</h3>
+    <p class="lead" style="margin-bottom:8px">Rozpoznaję w notatkach typowe problemy i proponuję widełki.
+      Tam gdzie nie rozpoznałem, kwotę wpisujesz sam.</p>
     ${notatki.length?notatki.map(wiersz).join(''):'<div class="msg info">Nie dodałeś jeszcze notatek. Pole notatki jest pod każdym pytaniem.</div>'}
+
+    <h3>Twoje własne pozycje (${wlasne.length})</h3>
+    <p class="lead" style="margin-bottom:8px">Cokolwiek, co ci przeszkadza, a czego nie ma na liście:
+      brak garażu, zbyt mała kuchnia, odległość od szkoły.</p>
+    ${wlasne.map(wlasnyWiersz).join('')}
+    <button class="btn sm sec" style="margin-top:8px" onclick="negDodaj()">Dodaj własną pozycję</button>
   </div>
 
   ${cena?`
   <div class="card">
     <h2>Trzy ceny, które warto mieć w głowie</h2>
-    <p class="lead">Nie chodzi o jedną liczbę. Wchodząc w rozmowę, miej przygotowane trzy.</p>
     <div class="cena3">
       <label class="f"><span>Pierwsza oferta (kotwica)</span>
         <input type="text" inputmode="numeric" value="${esc(S.neg.oferta||(sugOferta?fmt(sugOferta):''))}"
           oninput="negField('oferta',this.value)">
-        <small>Sugestia: ${sugOferta?fmt(sugOferta)+' zł':'—'} — poniżej celu, żeby zostawić miejsce na ustępstwa</small></label>
+        <small>Sugestia ${sugOferta?fmt(sugOferta)+' zł':'—'}: cel minus zapas na ustępstwa</small></label>
       <label class="f"><span>Cena docelowa</span>
         <input type="text" inputmode="numeric" value="${esc(S.neg.cel||(sugCel?fmt(sugCel):''))}"
           oninput="negField('cel',this.value)">
-        <small>Sugestia: ${sugCel?fmt(sugCel)+' zł':'—'} — cena minus uwzględnione wady</small></label>
+        <small>Sugestia ${sugCel?fmt(sugCel)+' zł':'—'}: cena minus uwzględnione pozycje</small></label>
       <label class="f"><span>Granica, powyżej której rezygnujesz</span>
         <input type="text" inputmode="numeric" value="${esc(S.neg.granica||(sugGranica?fmt(sugGranica):''))}"
           oninput="negField('granica',this.value)">
-        <small>Sugestia: ${sugGranica?fmt(sugGranica)+' zł':'—'} — połowa wad po twojej stronie</small></label>
+        <small>Sugestia ${sugGranica?fmt(sugGranica)+' zł':'—'}: połowa wad po twojej stronie</small></label>
     </div>
     <div class="help" style="margin-top:12px">
-      <b>Dlaczego trzy, a nie jedna.</b> Pierwsza oferta ustawia punkt odniesienia dla całej rozmowy —
-      to jedyny moment, w którym masz wpływ na to, wokół jakiej liczby będziecie się kręcić. Cena docelowa
-      to realny cel. Granica to liczba, którą ustalasz <i>przed</i> rozmową i której nie przekraczasz,
-      bo w trakcie negocjacji zawsze wydaje się, że jeszcze trochę można dołożyć.
+      <b>Dlaczego trzy, a nie jedna.</b> Pierwsza oferta ustawia punkt odniesienia dla całej rozmowy.
+      Cena docelowa to realny cel. Granicę ustalasz przed rozmową i jej nie przekraczasz, bo w trakcie
+      zawsze wydaje się, że jeszcze trochę można dołożyć.
     </div>
   </div>
 
   <div class="card">
     <h2>Jak to rozegrać</h2>
     <div class="help" style="margin-top:0">
-      <b>Argumentuj liczbami, nie wrażeniami.</b> „Dach wymaga wymiany, oferta z firmy dekarskiej opiewa na 60 tysięcy”
-      działa. „Dom wymaga sporo pracy” nie działa. Każda pozycja z tej listy ma nazwę i kwotę — to jest twoja przewaga
-      nad kupującym, który przyszedł bez audytu.
-
+      <b>Argumentuj liczbami, nie wrażeniami.</b> „Dach do wymiany, oferta dekarza na 60 tysięcy” działa.
+      „Dom wymaga sporo pracy” nie działa. Każda pozycja z listy ma nazwę i kwotę.
       <br><br><b>Pokaż dowód, nie opinię.</b> Zdjęcia z oględzin, wydruk z Hydroportalu, wypis z rejestru gruntów,
-      raport inspektora. Sprzedający może podważyć twoją ocenę, trudniej mu podważyć dokument.
-
-      <br><br><b>Zacznij od pytania, nie od kwoty.</b> „Co według Pana wymaga tu największych nakładów?” zadane
-      przed złożeniem oferty często przynosi przyznanie się do wady, o której nie wiedziałeś. A jeśli usłyszysz,
-      że nic, masz to zapamiętane na moment, gdy pokażesz listę.
-
-      <br><br><b>Ustępuj coraz mniej.</b> Jeśli pierwszy ruch to 20 tysięcy, drugi niech będzie 8, trzeci 3.
-      Malejące ustępstwa sygnalizują, że dochodzisz do granicy. Równe kroki po 10 tysięcy mówią, że masz jeszcze zapas.
-
-      <br><br><b>Cena to nie jedyna waluta.</b> Gdy sprzedający nie chce zejść, negocjuj warunki: termin wydania,
-      wyposażenie, naprawa konkretnej wady na jego koszt przed aktem, podział kosztów notarialnych, dłuższy termin
-      na dopięcie kredytu. Czasem ustąpi tam, gdzie nie ustąpi na cenie.
-
-      <br><br><b>Po złożeniu oferty milcz.</b> To najtrudniejsza część. Cisza jest niewygodna i strona, która ją przerwie,
-      zwykle robi ustępstwo. Nie musisz nią być ty.
-
-      <br><br><b>Miej gotową alternatywę.</b> Druga nieruchomość, którą rozważasz, zmienia twoją pozycję bardziej
-      niż jakikolwiek argument. I nie musisz o niej mówić wprost, żeby było ją słychać w tonie rozmowy.
+      raport inspektora. Ocenę można podważyć, dokument trudniej.
+      <br><br><b>Zacznij od pytania, nie od kwoty.</b> „Co według Pana wymaga tu największych nakładów?”
+      często przynosi przyznanie się do wady, o której nie wiedziałeś.
+      <br><br><b>Ustępuj coraz mniej.</b> Pierwszy ruch 20 tysięcy, drugi 8, trzeci 3. Malejące ustępstwa
+      sygnalizują, że dochodzisz do granicy.
+      <br><br><b>Cena to nie jedyna waluta.</b> Termin wydania, wyposażenie, naprawa konkretnej wady przed aktem,
+      podział kosztów notarialnych. Czasem ustąpi tam, gdzie nie ustąpi na cenie.
+      <br><br><b>Po złożeniu oferty milcz.</b> Strona, która przerwie ciszę, zwykle robi ustępstwo.
+      <br><br><b>Miej gotową alternatywę.</b> Druga nieruchomość zmienia twoją pozycję bardziej niż jakikolwiek argument.
     </div>
   </div>
 
   <div class="card tight">
     <h3>Ile realnie schodzą sprzedający</h3>
     <div class="help" style="margin-top:0">
-      Dane rynkowe rozjeżdżają się mocno i warto o tym wiedzieć, zanim ustawisz oczekiwania.
-      Część źródeł podaje, że różnica między ceną ofertową a transakcyjną na rynku wtórnym mieści się
-      w przedziale <b>5–35%</b>, przy czym małe mieszkania negocjuje się w granicach 5–11%, a duże domy
-      nawet powyżej 20%. Inne źródła twierdzą, że realne obniżki to zaledwie 1–4%.
-      <br><br>Ta rozbieżność nie jest przypadkowa: wszystko zależy od tego, jak długo oferta wisi, czy sprzedający
-      ma presję czasu i czy przychodzisz z argumentami czy z prośbą. <b>Audyt przesuwa cię do tej grupy,
-      która negocjuje skutecznie</b>, ale nie gwarantuje żadnego procentu.
-      <br><br>Najpewniejszy punkt odniesienia to nie statystyka, tylko <b>ceny transakcyjne z Rejestru Cen
-      Nieruchomości</b> dla porównywalnych domów w tej samej okolicy. Sprawdzisz je w sekcji Cena.
+      Źródła rozjeżdżają się mocno. Część podaje, że różnica między ceną ofertową a transakcyjną na rynku wtórnym
+      mieści się w przedziale <b>5–35%</b>, przy czym małe mieszkania negocjuje się w granicach 5–11%,
+      a duże domy nawet powyżej 20%. Inne twierdzą, że realne obniżki to 1–4%.
+      <br><br>Rozbieżność nie jest przypadkowa: wszystko zależy od czasu ekspozycji oferty, presji po stronie
+      sprzedającego i tego, czy przychodzisz z argumentami czy z prośbą. Audyt przesuwa cię do grupy,
+      która negocjuje skutecznie, ale nie gwarantuje procentu.
+      <br><br>Najpewniejszy punkt odniesienia to ceny transakcyjne z Rejestru Cen Nieruchomości dla porównywalnych
+      domów w tej samej okolicy. Wpisz je w sekcji Cena, a uwzględnię je w wyliczeniach.
     </div>
   </div>`:''}`;
 }
@@ -3057,6 +3202,19 @@ function viewReport(){
   const args=ranked.slice(0,5);
   const pozostale=ranked.length-args.length;
 
+  /* jednozdaniowa ocena ceny na tle rynku do podsumowania */
+  const rr=rynek();
+  let rynkOcena='';
+  if(rr&&cena&&S.meta.powDom){
+    const po=(cena-(recznie?sumaNeg:cmin))/(+S.meta.powDom);
+    const d=(po-rr.stawka)/rr.stawka*100;
+    if(rr.proc<-5) rynkOcena='oferta jest o '+Math.abs(rr.proc).toFixed(0)+'% tańsza od stawek transakcyjnych w okolicy — sprawdź, dlaczego';
+    else if(d<-10) rynkOcena='po uwzględnieniu wad cena schodzi wyraźnie poniżej stawek w okolicy, propozycja jest ambitna, ale broniona';
+    else if(d>10) rynkOcena='nawet po uwzględnieniu wad cena pozostaje powyżej stawek w okolicy';
+    else rynkOcena='po uwzględnieniu wad cena zbliża się do stawek transakcyjnych w okolicy';
+  }
+
+
   const letter=`Szanowni Państwo,
 
 dziękuję za możliwość obejrzenia nieruchomości${S.meta.adres?' przy '+S.meta.adres:''}${p.id?' (działka nr '+p.id+')':''}.
@@ -3099,6 +3257,19 @@ Z poważaniem`;
 
     <h2>Werdykt</h2>
     <p style="font-size:16px"><span class="${vcls}">${verdict}</span></p>
+
+    ${(red.length||yel.length)?`<div style="background:#faf9f7;border-left:3px solid ${red.length?'#b91c1c':'#b45309'};padding:12px 14px;margin:12px 0">
+      <b style="font-size:13px">W skrócie, zanim przeczytasz resztę</b>
+      ${red.length?`<p style="margin:8px 0 0;font-size:13px"><span class="rr">Wady blokujące (${red.length}):</span>
+        ${red.map(x=>esc(x.t)).join(' &middot; ')}. ${red.length===1?'Ta kwestia wymaga':'Te kwestie wymagają'} wyjaśnienia
+        przed podpisaniem czegokolwiek, także umowy przedwstępnej.</p>`:''}
+      ${yel.length?`<p style="margin:8px 0 0;font-size:13px"><span class="ry">Wady do wyceny (${yel.length}):</span>
+        ${yel.slice(0,8).map(x=>esc(x.t)).join(' &middot; ')}${yel.length>8?' i '+(yel.length-8)+' innych':''}.
+        ${cmin?'Łącznie co najmniej '+fmt(cmin)+' zł kosztów po twojej stronie.':''}</p>`:''}
+      ${!red.length&&yel.length<=3?`<p style="margin:8px 0 0;font-size:13px">Nie znalazłem wad blokujących.
+        Pozostałe uwagi nadają się do negocjacji, nie do rezygnacji.</p>`:''}
+      ${rynkOcena?`<p style="margin:8px 0 0;font-size:13px"><b>Cena:</b> ${esc(rynkOcena)}</p>`:''}
+    </div>`:''}
     <table>
       <tr><th>Wady blokujące</th><th>Wady do negocjacji</th><th>Punkty bez zastrzeżeń</th><th>Kompletność</th></tr>
       <tr><td class="rr">${red.length}</td><td class="ry">${yel.length}</td><td class="rg">${grn.length}</td>

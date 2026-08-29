@@ -1,5 +1,13 @@
 # Historia zmian
 
+## 2.1
+- **Wycena notatek.** Aplikacja rozpoznaje w notatkach typowe problemy budowlane (ponad dwadzieścia kategorii: azbest, zawilgocenie, pęknięcia, dach, instalacje, docieplenie, odwodnienie i inne) i proponuje widełki wraz z uzasadnieniem, skąd wzięła kwotę.
+- **Odniesienie do rynku.** Nowe pole na średnią cenę transakcyjną w okolicy (zł/m²). Gdy oferta ją przewyższa, nadwyżka pojawia się jako osobna pozycja negocjacyjna z sugestią 60% różnicy.
+- **Ocena atrakcyjności ceny** — aplikacja mówi wprost, czy po uwzględnieniu wad propozycja trafia w rynek, schodzi poniżej, czy nadal jest za wysoka. Jeśli oferta jest już tańsza od stawek w okolicy, sugeruje sprawdzenie, dlaczego.
+- **Własne pozycje negocjacyjne** — dopisujesz cokolwiek, co ci przeszkadza, wraz z kwotą.
+- **Podsumowanie flag na początku raportu**: wady blokujące i wady do wyceny wymienione z nazwy w pierwszym akapicie, razem z sumą kosztów i jednozdaniową oceną ceny.
+- Przy każdej kwocie widać teraz, skąd pochodzi: dolna granica widełek z audytu, wycena rozpoznanego problemu albo wyliczenie z różnicy rynkowej.
+
 ## 2.0
 - **Przepisany parser wklejanych odpowiedzi.** Poprzedni wymagał backticków wokół kodu pytania, a Notion traktuje kod jako formatowanie i przy kopiowaniu je gubi — przez co wklejanie po prostu nie działało.
 - Kod pytania rozpoznawany po dopasowaniu do listy znanych identyfikatorów, niezależnie od znaczników: backticki, apostrofy typograficzne, nawiasy albo gołe słowo.
