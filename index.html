@@ -151,6 +151,48 @@ details.hlp[open] summary::before{content:"▾ "}
 .drawer textarea{min-height:190px;margin-bottom:10px}
 .iconbtn.hi{background:var(--bluebg);color:#93c5fd}
 
+.hasnote{color:#86efac}
+.hasnote::after{content:" ●";font-size:9px;vertical-align:middle}
+
+/* ---------- naslonecznienie ---------- */
+.sungrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0}
+.sunkafel{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.sunhd{font-size:11px;color:#7dabf8;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.sunsvg{width:100%;height:auto;display:block;border-radius:6px}
+.sunnoc{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#0d1520;
+  border-radius:6px;color:var(--tx3);font-size:11px;padding:8px;text-align:center}
+.sunmeta{font-size:11px;color:var(--tx2);margin-top:6px;line-height:1.45}
+.sunmeta b{color:var(--tx)}
+.suntab{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+.suntab th,.suntab td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.suntab th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--tx3);font-weight:700}
+@media (max-width:640px){.sungrid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:420px){.sungrid{grid-template-columns:1fr 1fr}.sunmeta{font-size:10px}}
+
+/* ---------- negocjacje ---------- */
+.negrow{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line)}
+.negrow:first-of-type{border-top:none}
+.negrow.on{opacity:1}
+.negrow:not(.on){opacity:.5}
+.negtog{flex:none;width:26px;height:26px;border-radius:7px;border:1.5px solid var(--line);
+  background:var(--panel2);color:#86efac;font-size:14px;font-weight:700;line-height:1;margin-top:2px}
+.negtog.on{border-color:var(--green);background:var(--greenbg)}
+.negmid{flex:1;min-width:0}
+.negtit{font-size:14px;font-weight:650;line-height:1.35}
+.negsec{font-size:11.5px;color:var(--tx3);margin-top:2px}
+.negop{font-size:12.5px;color:var(--tx2);margin-top:4px;line-height:1.45}
+.negkw{flex:none;width:112px;text-align:right;font-weight:650;font-size:14px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--tx);padding:8px 10px;border-radius:8px}
+.negkw:disabled{opacity:.35}
+.negsum{display:flex;gap:16px;flex-wrap:wrap}
+.negsum>div{flex:1;min-width:150px}
+.negsum .lbl{display:block;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.negsum b{display:block;font-size:21px;font-weight:700;margin-top:2px;letter-spacing:-.4px}
+.negsum .sub{display:block;font-size:11.5px;color:var(--tx3);margin-top:1px}
+.cena3{display:flex;gap:11px;flex-wrap:wrap}
+.cena3 .f{flex:1;min-width:180px}
+.cena3 small{display:block;font-size:11px;color:var(--tx3);margin-top:4px;line-height:1.4}
+
 /* ---------- prompt dla wtyczki ---------- */
 .pcard{border-color:#1e3a5f;background:linear-gradient(180deg,#111a26,var(--panel))}
 .pcard h3{color:#7dabf8}
@@ -298,7 +340,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'1.10', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'1.9', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -426,29 +468,6 @@ function modPromptCard(mid){
     <button class="btn wide" onclick="importModuleAnswers('${mid}')">Wczytaj odpowiedzi</button>
   </div>`;
 }
-/* copyModulePrompt/importModuleAnswers zaginęły przy odbudowie pliku po awarii
-   edycji (patrz CHANGELOG 1.7) — przyciski w modPromptCard() je wywoływały,
-   ale definicji nigdzie nie było, więc „Kopiuj” nic nie robił. */
-function copyModulePrompt(mid){
-  const t=promptModule(mid); if(!t)return;
-  const btn=event&&event.target;
-  navigator.clipboard.writeText(t).then(()=>{
-    if(btn){const o=btn.textContent;btn.textContent='Skopiowano';setTimeout(()=>btn.textContent=o,1500);}
-  },()=>alert(t));
-}
-function importModuleAnswers(mid){
-  const el=document.getElementById('modText_'+mid); if(!el)return;
-  const t=el.value.trim();
-  if(!t){alert('Wklej najpierw odpowiedź wtyczki w tym polu.');return;}
-  const acc=parseNotion(t);
-  const accTxt=(!acc.n&&!acc.notes)?parseTxt(t):null;
-  const A=accTxt||acc;
-  if(!A.n&&!A.notes){alert('Nie rozpoznałem żadnej odpowiedzi w tym tekście.\n\nWklej całą odpowiedź wtyczki, nie jej fragment.');return;}
-  el.value='';save();render();
-  alert('Wczytano '+A.n+' '+(A.n===1?'odpowiedź':'odpowiedzi')
-    +(A.notes?' i '+A.notes+' notatek':'')
-    +(A.skipped?'\n\nPominięto '+A.skipped+' nierozpoznanych wartości.':''));
-}
 /* ============================================================
    JEDNO POLE NA WYNIKI
    Przyjmuje odpowiedzi z dowolnej sekcji i dowolnego źródła
@@ -498,18 +517,11 @@ function setPasteMsg(html){
 
 function parseNotion(t){
   const acc={n:0,notes:0,skipped:0};
-  const ids=new Set(allChecks().map(c=>c.id));
   let cur=null;
   t.split(/\r?\n/).forEach(l=>{
-    /* nagłówek pytania: kod w apostrofach na końcu. Czat, w którym wtyczka
-       zwraca odpowiedź, renderuje markdown — kopiowanie WYRENDEROWANEGO
-       tekstu (zamiast źródła) potrafi zgubić apostrofy wokół kodu, zostaje
-       samo słowo na końcu linii. Przyjmujemy je też, ale tylko gdy to
-       naprawdę istniejący kod pytania, żeby nie łapać przypadkowych słów. */
+    /* nagłówek pytania: kod w apostrofach na końcu */
     const mId=l.match(/`([a-z_0-9]+)`\s*$/i);
-    const mBare=!mId&&l.match(/(?:^|\s)([a-z_0-9]+)\s*$/);
-    const cand=mId?mId[1]:(mBare&&ids.has(mBare[1])?mBare[1]:null);
-    if(cand&&/^#{1,6}\s|^\*\*|^[A-ZĄĆĘŁŃÓŚŹŻ]/.test(l.replace(/^#+\s*/,''))){cur=cand;return;}
+    if(mId&&/^#{1,6}\s|^\*\*|^[A-ZĄĆĘŁŃÓŚŹŻ]/.test(l.replace(/^#+\s*/,''))){cur=mId[1];return;}
     if(!cur)return;
     /* zaznaczona opcja: - [x] kod — opis  (Notion używa też ✓ przy kopiowaniu) */
     const mOpt=l.match(/^\s*[-*]?\s*\[\s*[xX✓]\s*\]\s*([^\s—–-]+)\s*[—–-]/);
@@ -550,14 +562,6 @@ function applyAnswer(id,val,acc){
 }
 function parseTxt(t){
   const acc={n:0,notes:0,skipped:0};
-  /* Notatki bywają edytowane w narzędziach, które zjadają puste linie
-     (np. wklejenie do czatu AI i skopiowanie odpowiedzi z powrotem).
-     Wtedy kod pytania „[xxx]” zostaje doklejony na końcu poprzedniej
-     linii i parser go nie widzi. Odtwarzamy złamanie linii przed
-     każdym kodem, który faktycznie istnieje w audycie — inny tekst
-     w nawiasach kwadratowych zostaje nietknięty. */
-  const ids=new Set(allChecks().map(c=>c.id));
-  t=t.replace(/(\[[a-z_0-9]+\])/gi,(m,tag)=>ids.has(tag.slice(1,-1))?'\n'+tag:tag);
   const lines=t.split(/\r?\n/); let cur=null;
   lines.forEach(l=>{
     const mId=l.match(/^\s*\[([a-z_0-9]+)\]/i);
@@ -1941,15 +1945,6 @@ function copyDomains(){
   navigator.clipboard.writeText(d).then(()=>{
     if(btn){const o=btn.textContent;btn.textContent='Skopiowano';setTimeout(()=>btn.textContent=o,1500);}},()=>alert(d));
 }
-/* Tak jak copyModulePrompt/importModuleAnswers wyżej — zaginęła przy odbudowie
-   pliku, przycisk „Kopiuj” przy pojedynczym pytaniu nic nie robił. */
-function copyPrompt(id){
-  const c=allChecks().find(x=>x.id===id); if(!c)return;
-  const t=promptFor(c);
-  const btn=event&&event.target;
-  navigator.clipboard.writeText(t).then(()=>{
-    if(btn){const o=btn.textContent;btn.textContent='Skopiowano';setTimeout(()=>btn.textContent=o,1500);}},()=>alert(t));
-}
 
 /* ============================================================
    RENDER
@@ -1958,10 +1953,11 @@ function go(t){TAB=t;window.scrollTo(0,0);render();}
 function tabs(){
   const items=[{id:'start',name:'Start'}]
     .concat(M.map(m=>({id:m.id,name:m.name})))
-    .concat([{id:'raport',name:'Raport'}]);
+    .concat([{id:'neg',name:'Negocjacje'},{id:'raport',name:'Raport'}]);
   $('#tabs').innerHTML=items.map(i=>{
-    const lv=(i.id!=='start'&&i.id!=='raport')?modFlagLevel(i.id):'none';
-    const d=(i.id!=='start'&&i.id!=='raport')?`<span class="dot ${lv}"></span>`:'';
+    const skip=(i.id==='start'||i.id==='raport'||i.id==='neg');
+    const lv=skip?'none':modFlagLevel(i.id);
+    const d=skip?'':`<span class="dot ${lv}"></span>`;
     return `<button class="tab ${TAB===i.id?'on':''}" onclick="go('${i.id}')">${d}${esc(i.name)}</button>`;
   }).join('');
   const on=$('.tab.on'); if(on)on.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
@@ -1969,6 +1965,7 @@ function tabs(){
 function render(){
   tabs();
   if(TAB==='start')viewStart();
+  else if(TAB==='neg')viewNeg();
   else if(TAB==='raport')viewReport();
   else viewModule(M.find(m=>m.id===TAB));
   paintBar();
@@ -1987,6 +1984,7 @@ function viewModule(m){
   let h=`<div class="card"><h2>${esc(m.title)}</h2><p class="lead">${esc(m.lead)}</p></div>`;
   h+=toolbar(m.id);
   h+=modPromptCard(m.id);
+  if(m.id==='m1')h+=sunCard();
   if(m.auto==='poi')h+=poiCard();
   h+='<div class="card">';
   m.checks.forEach((c,i)=>{h+=renderCheck(c,i+1);});
@@ -1995,7 +1993,7 @@ function viewModule(m){
   h+=`<div class="row noprint" style="margin:14px 0">
     ${idx>0?`<button class="btn sec" onclick="go('${M[idx-1].id}')">← ${esc(M[idx-1].name)}</button>`:'<div></div>'}
     ${idx<M.length-1?`<button class="btn" onclick="go('${M[idx+1].id}')">${esc(M[idx+1].name)} →</button>`
-      :`<button class="btn" onclick="go('raport')">Zobacz raport →</button>`}</div>
+      :`<button class="btn" onclick="go('neg')">Negocjacje →</button>`}</div>
     <div class="noprint" style="text-align:center;margin:0 0 8px">
       <button class="btn sm sec" style="color:var(--tx3)" onclick="clearModule('${m.id}')">Wyczyść tę sekcję</button></div>`;
   $('#view').innerHTML=h;
@@ -2022,7 +2020,7 @@ function renderCheck(c,n){
     fl=`<div class="fl ${f.lv}"><span class="ico">${ico}</span><div><b>${esc(f.t)}</b>${f.w?esc(f.w).replace(/&lt;b&gt;/g,'<b>').replace(/&lt;\/b&gt;/g,'</b>').replace(/&lt;i&gt;/g,'<i>').replace(/&lt;\/i&gt;/g,'</i>'):''}${cost}</div></div>`;
   }
   const nt=S.n[c.id]||'';
-  const noteBox=c.type!=='info'?`<details class="hlp"><summary>Notatka</summary>
+  const noteBox=c.type!=='info'?`<details class="hlp" ${nt?'open':''}><summary>${nt?'<span class="hasnote">Notatka</span>':'Notatka'}</summary>
     <textarea placeholder="Co zaobserwowałeś, z kim rozmawiałeś, co ustalić dalej…" oninput="note('${c.id}',this.value)">${esc(nt)}</textarea></details>`:'';
 
   return `<div class="q">
@@ -2514,6 +2512,452 @@ function exportNotion(){
     ()=>{dl(baseName()+'-notion.md',t);alert('Schowek niedostępny — pobrałem plik .md.');});
 }
 
+
+
+/* ============================================================
+   SŁOŃCE I CIENIE
+   Pozycja słońca liczona lokalnie z algorytmu astronomicznego,
+   bez żadnego API. Dokładność rzędu setnych części stopnia,
+   czyli wielokrotnie więcej, niż potrzeba do oceny zacienienia.
+   ============================================================ */
+const D2R=Math.PI/180, R2D=180/Math.PI;
+
+function sunPos(dateUTC, lat, lon){
+  const d=(dateUTC-Date.UTC(2000,0,1,12,0,0))/86400000;
+  const g=(357.529+0.98560028*d)*D2R;
+  const q=(280.459+0.98564736*d)*D2R;
+  const L=q+1.915*D2R*Math.sin(g)+0.020*D2R*Math.sin(2*g);
+  const e=(23.439-0.00000036*d)*D2R;
+  const RA=Math.atan2(Math.cos(e)*Math.sin(L),Math.cos(L));
+  const dec=Math.asin(Math.sin(e)*Math.sin(L));
+  let GMST=18.697374558+24.06570982441908*d;
+  GMST=((GMST%24)+24)%24;
+  const LST=(GMST*15+lon)*D2R;
+  const H=LST-RA;
+  const la=lat*D2R;
+  const alt=Math.asin(Math.sin(la)*Math.sin(dec)+Math.cos(la)*Math.cos(dec)*Math.cos(H));
+  let az=Math.atan2(-Math.sin(H), Math.tan(dec)*Math.cos(la)-Math.sin(la)*Math.cos(H));
+  az=((az*R2D)+360)%360;
+  return {alt:alt*R2D, az, dec:dec*R2D};
+}
+/* czas lokalny w Polsce: CET zimą, CEST latem (ostatnia niedziela marca i października) */
+function offsetPL(y,m,dd){
+  const lastSun=(yy,mm)=>{const d=new Date(Date.UTC(yy,mm+1,0));return d.getUTCDate()-d.getUTCDay();};
+  const mar=lastSun(y,2), paz=lastSun(y,9);
+  const po = (m>2&&m<9) || (m===2&&dd>=mar) || (m===9&&dd<paz);
+  return po?2:1;
+}
+/* godzina bywa ułamkowa, a Date.UTC obcina części po przecinku —
+   dlatego bazę liczę o północy i dodaję milisekundy */
+function utcOf(y,m,dd,hLokalna,off){
+  return Date.UTC(y,m,dd,0,0,0)+Math.round((hLokalna-off)*3600000);
+}
+function sunAt(y,m,dd,godzLokalna,lat,lon){
+  const off=offsetPL(y,m,dd);
+  return sunPos(utcOf(y,m,dd,godzLokalna,off),lat,lon);
+}
+/* wschód, zachód i górowanie — szukane przez skanowanie co minutę */
+function sunDay(y,m,dd,lat,lon){
+  const off=offsetPL(y,m,dd);
+  let wsch=null,zach=null,max={alt:-90,h:12};
+  let prev=null;
+  for(let i=0;i<=1440;i+=2){
+    const h=i/60;
+    const p=sunPos(utcOf(y,m,dd,h,off),lat,lon);
+    if(p.alt>max.alt)max={alt:p.alt,h,az:p.az};
+    if(prev!==null){
+      const krok=2/60;
+      if(prev<=-0.833&&p.alt>-0.833&&wsch===null)wsch=h-krok*(p.alt+0.833)/(p.alt-prev);
+      if(prev>-0.833&&p.alt<=-0.833&&wsch!==null&&zach===null)zach=h-krok*(p.alt+0.833)/(p.alt-prev);
+    }
+    prev=p.alt;
+  }
+  return {wsch,zach,max,dlugosc:(wsch!==null&&zach!==null)?zach-wsch:null};
+}
+const hhmm=h=>h==null?'—':String(Math.floor(h)).padStart(2,'0')+':'+String(Math.round((h%1)*60)).padStart(2,'0');
+
+/* długość cienia obiektu o wysokości h przy danej wysokości słońca */
+function dlugoscCienia(hObiektu, altSlonca){
+  if(altSlonca<=0.5)return null;
+  return hObiektu/Math.tan(altSlonca*D2R);
+}
+/* kierunek cienia: przeciwny do azymutu słońca */
+const kierunekCienia = az => (az+180)%360;
+const strona = az => ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(az/22.5)%16];
+const stronaPL = az => ({N:'północ',NNE:'pn-pn-wsch',NE:'pn-wsch',ENE:'wsch-pn-wsch',E:'wschód',ESE:'wsch-pd-wsch',
+  SE:'pd-wsch',SSE:'pd-pd-wsch',S:'południe',SSW:'pd-pd-zach',SW:'pd-zach',WSW:'zach-pd-zach',W:'zachód',
+  WNW:'zach-pn-zach',NW:'pn-zach',NNW:'pn-pn-zach'})[strona(az)];
+
+/* cztery daty graniczne i trzy pory dnia */
+const DATY=[
+  {k:'zima', n:'Przesilenie zimowe', m:11, d:21, opis:'najkrótszy dzień, słońce najniżej'},
+  {k:'wiosna', n:'Równonoc wiosenna', m:2, d:21, opis:'dzień równy nocy'},
+  {k:'lato', n:'Przesilenie letnie', m:5, d:21, opis:'najdłuższy dzień, słońce najwyżej'},
+  {k:'jesien', n:'Równonoc jesienna', m:8, d:23, opis:'dzień równy nocy'}
+];
+const PORY=[{k:'rano',n:'Rano',h:9},{k:'poludnie',n:'Południe',h:13},{k:'popoludnie',n:'Popołudnie',h:17}];
+
+function sunGrid(lat,lon,wysBud){
+  const y=new Date().getFullYear();
+  return DATY.map(dt=>{
+    const dzien=sunDay(y,dt.m,dt.d,lat,lon);
+    return {...dt, dzien, pory: PORY.map(po=>{
+      const p=sunAt(y,dt.m,dt.d,po.h,lat,lon);
+      const dl=dlugoscCienia(wysBud,p.alt);
+      return {...po, alt:p.alt, az:p.az, cien:dl, kier:kierunekCienia(p.az)};
+    })};
+  });
+}
+
+/* ---------- GEOMETRIA CIENIA ---------- */
+/* obrys budynku z ULDK; jeśli nie ma, rysuję prostokąt zastępczy */
+async function pobierzBudynek(){
+  const p=S.parcel; if(!p||p.lat==null)return false;
+  S.sun=S.sun||{};
+  S.sun.laduje=true; render();
+  try{
+    const r=await fetchT('https://uldk.gugik.gov.pl/?request=GetBuildingByXY&xy='
+      +p.lon+','+p.lat+',4326&result=geom_wkt,id&srid=4326',null,12000);
+    if(r.ok){
+      const t=await r.text();
+      const w=t.split('\n').map(s=>s.trim()).find(s=>/POLYGON/i.test(s));
+      if(w){S.sun.wkt=w;S.sun.zrodlo='ULDK';S.sun.laduje=false;save();render();return true;}
+    }
+  }catch(e){}
+  S.sun.laduje=false; S.sun.blad=true; save(); render(); return false;
+}
+/* WKT -> punkty w metrach względem środka */
+function obrysMetry(wkt, lat0, lon0){
+  const pts=String(wkt).replace(/^[A-Z]+\s*\(+/,'').replace(/\)+$/,'').split(',')
+    .map(s=>s.trim().split(/\s+/).map(Number)).filter(a=>a.length>=2&&!isNaN(a[0]));
+  const k=Math.cos(lat0*D2R);
+  return pts.map(([lo,la])=>({x:(lo-lon0)*111320*k, y:(la-lat0)*111320}));
+}
+/* prostokąt zastępczy, gdy nie znamy obrysu: 10 x 12 m, dłuższy bok wschód-zachód */
+function obrysZastepczy(){return [{x:-6,y:-5},{x:6,y:-5},{x:6,y:5},{x:-6,y:5}];}
+
+function otoczkaWypukla(pts){
+  if(pts.length<3)return pts;
+  const p=pts.slice().sort((a,b)=>a.x-b.x||a.y-b.y);
+  const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+  const dol=[],gora=[];
+  for(const q of p){while(dol.length>=2&&cross(dol[dol.length-2],dol[dol.length-1],q)<=0)dol.pop();dol.push(q);}
+  for(let i=p.length-1;i>=0;i--){const q=p[i];
+    while(gora.length>=2&&cross(gora[gora.length-2],gora[gora.length-1],q)<=0)gora.pop();gora.push(q);}
+  dol.pop();gora.pop();
+  return dol.concat(gora);
+}
+/* cień = otoczka obrysu i jego kopii przesuniętej w kierunku padania cienia */
+function cienBudynku(obrys, dlugosc, kierunek){
+  if(!dlugosc||dlugosc<=0)return null;
+  const a=kierunek*D2R;
+  const dx=Math.sin(a)*dlugosc, dy=Math.cos(a)*dlugosc;
+  const przes=obrys.map(p=>({x:p.x+dx,y:p.y+dy}));
+  return otoczkaWypukla(obrys.concat(przes));
+}
+/* rysunek: rzut z góry, północ do góry */
+function rysunekCienia(obrys, cien, dzialka, opis, rozmiar){
+  const R=rozmiar||210, pad=14;
+  const all=[].concat(obrys, cien||[], dzialka||[]);
+  const xs=all.map(p=>p.x), ys=all.map(p=>p.y);
+  const minx=Math.min(...xs), maxx=Math.max(...xs), miny=Math.min(...ys), maxy=Math.max(...ys);
+  const w=Math.max(maxx-minx,1), h=Math.max(maxy-miny,1);
+  const s=Math.min((R-2*pad)/w,(R-2*pad)/h);
+  const cx=(minx+maxx)/2, cy=(miny+maxy)/2;
+  const T=p=>[(R/2+(p.x-cx)*s).toFixed(1),(R/2-(p.y-cy)*s).toFixed(1)].join(',');
+  const poly=(pts,fill,stroke,extra)=>pts&&pts.length?`<polygon points="${pts.map(T).join(' ')}" fill="${fill}" stroke="${stroke}" ${extra||''}/>`:'';
+  /* podziałka: ładna okrągła długość mieszcząca się w rysunku */
+  const kandydaci=[5,10,20,25,50,100];
+  const skalaM=kandydaci.find(k=>k*s<R*0.42)||5;
+  return `<svg viewBox="0 0 ${R} ${R}" class="sunsvg">
+    <rect width="${R}" height="${R}" rx="8" fill="#0d1520"/>
+    ${poly(dzialka,'rgba(148,163,184,.10)','rgba(148,163,184,.45)','stroke-width="1" stroke-dasharray="3 2"')}
+    ${poly(cien,'rgba(15,23,42,.72)','rgba(71,85,105,.7)','stroke-width="1"')}
+    ${poly(obrys,'#3b82f6','#93c5fd','stroke-width="1.2"')}
+    <g font-size="9" fill="#64748b" font-family="system-ui">
+      <text x="${R/2}" y="12" text-anchor="middle" fill="#94a3b8">N</text>
+      <line x1="${pad}" y1="${R-10}" x2="${pad+skalaM*s}" y2="${R-10}" stroke="#64748b" stroke-width="1.5"/>
+      <text x="${pad+skalaM*s/2}" y="${R-14}" text-anchor="middle">${skalaM} m</text>
+      ${opis?`<text x="${R-pad}" y="${R-10}" text-anchor="end" fill="#94a3b8">${esc(opis)}</text>`:''}
+    </g>
+  </svg>`;
+}
+
+/* ---------- KARTA NASŁONECZNIENIA ---------- */
+function sunInit(){
+  S.sun=S.sun||{};
+  if(S.sun.wys==null){
+    /* domyślna wysokość z liczby kondygnacji: parter 3 m, piętro 3 m, dach spadzisty ok. 3 m */
+    S.sun.wys = 8;
+  }
+  return S.sun;
+}
+function sunSet(k,v){
+  const s=sunInit();
+  s[k] = k==='wys' ? Math.max(2,Math.min(30, parseFloat(String(v).replace(',','.'))||8)) : v;
+  save();render();
+}
+function sunCard(){
+  const p=S.parcel;
+  if(!p||p.lat==null)return `<div class="card tight"><div class="msg info">
+    Wskaż nieruchomość w sekcji Start, a policzę nasłonecznienie i cienie dla tej lokalizacji.</div></div>`;
+  const s=sunInit();
+  const obrys = s.wkt ? obrysMetry(s.wkt,p.lat,p.lon) : obrysZastepczy();
+  const dzialka = p.wkt ? obrysMetry(p.wkt,p.lat,p.lon) : null;
+  const siatka = sunGrid(p.lat,p.lon,s.wys);
+
+  /* wniosek: jak daleko sięga cień w południe zimą i latem */
+  const zima=siatka.find(x=>x.k==='zima').pory.find(x=>x.k==='poludnie');
+  const lato=siatka.find(x=>x.k==='lato').pory.find(x=>x.k==='poludnie');
+  const zasiegDzialki = dzialka ? Math.max(...dzialka.map(q=>Math.hypot(q.x,q.y))) : null;
+  const pokrywa = zasiegDzialki && zima.cien ? zima.cien > zasiegDzialki : null;
+
+  const kafel=(dt,po)=>{
+    const cien = po.alt>0.5 ? cienBudynku(obrys, po.cien, po.kier) : null;
+    return `<div class="sunkafel">
+      <div class="sunhd">${esc(dt.n.split(' ')[0])} · ${esc(po.n.toLowerCase())}</div>
+      ${po.alt>0.5?rysunekCienia(obrys,cien,dzialka,''):`<div class="sunnoc">słońce pod horyzontem</div>`}
+      <div class="sunmeta">
+        ${po.alt>0.5?`wysokość <b>${po.alt.toFixed(0)}°</b> · cień <b>${po.cien<100?po.cien.toFixed(0):'ponad 100'} m</b><br>
+        pada na ${esc(stronaPL(po.kier))}`:`o ${po.h}:00 jest już ciemno`}
+      </div>
+    </div>`;
+  };
+
+  return `<div class="card">
+    <h2>Nasłonecznienie i cienie <span class="pill">obliczenia lokalne</span></h2>
+    <p class="lead">Rzut z góry na dwanaście sytuacji: cztery pory roku i trzy pory dnia.
+      Ciemny obszar to cień rzucany przez budynek, przerywana linia to granica działki.
+      Pozycja słońca liczona z algorytmu astronomicznego dla twoich współrzędnych.</p>
+
+    <div class="row" style="align-items:flex-end">
+      <label class="f" style="max-width:190px"><span>Wysokość budynku (m)</span>
+        <input type="text" inputmode="decimal" value="${s.wys}" oninput="sunSet('wys',this.value)"></label>
+      <button class="btn sec" onclick="pobierzBudynek()">${s.wkt?'Odśwież obrys':'Pobierz obrys z ewidencji'}</button>
+    </div>
+    <p class="lead" style="margin-top:8px">
+      ${s.wkt?`Obrys budynku pobrany z ewidencji (${esc(s.zrodlo||'ULDK')}).`
+        :s.laduje?'<span class="spin"></span> Pobieram obrys budynku…'
+        :s.blad?'Nie udało się pobrać obrysu — rysuję prostokąt zastępczy 12 na 10 m. Kierunki i długości cieni pozostają prawidłowe.'
+        :'Rysuję prostokąt zastępczy 12 na 10 m. Kliknij wyżej, żeby pobrać rzeczywisty obrys z ewidencji budynków.'}
+      Wysokość podaj do kalenicy — dla domu parterowego z poddaszem to zwykle 8 m, dla piętrowego 9–10 m.
+    </p>
+
+    <div class="sungrid">${siatka.map(dt=>dt.pory.map(po=>kafel(dt,po)).join('')).join('')}</div>
+
+    <h3>Długość dnia i wysokość słońca</h3>
+    <table class="suntab">
+      <tr><th>Data</th><th>Wschód</th><th>Zachód</th><th>Długość dnia</th><th>Słońce w południe</th><th>Cień w południe</th></tr>
+      ${siatka.map(dt=>{const pd=dt.pory.find(x=>x.k==='poludnie');return `<tr>
+        <td>${esc(dt.n)}</td><td>${hhmm(dt.dzien.wsch)}</td><td>${hhmm(dt.dzien.zach)}</td>
+        <td>${dt.dzien.dlugosc?dt.dzien.dlugosc.toFixed(1)+' h':'—'}</td>
+        <td>${dt.dzien.max.alt.toFixed(0)}°</td>
+        <td>${pd.cien?pd.cien.toFixed(0)+' m':'—'}</td></tr>`}).join('')}
+    </table>
+
+    <div class="help" style="margin-top:12px">
+      <b>Jak to czytać.</b> Zimą słońce w tej szerokości geograficznej wznosi się w południe zaledwie
+      na ${siatka.find(x=>x.k==='zima').dzien.max.alt.toFixed(0)} stopni, więc budynek o wysokości ${s.wys} m rzuca cień
+      długi na ${zima.cien?zima.cien.toFixed(0):'—'} metrów. Latem to samo słońce stoi
+      ${siatka.find(x=>x.k==='lato').dzien.max.alt.toFixed(0)} stopni nad horyzontem, a cień skraca się
+      do ${lato.cien?lato.cien.toFixed(0):'—'} metrów. Ta różnica decyduje o tym, czy ogród jest użyteczny przez cały rok.
+      ${pokrywa===true?`<br><br><b>Zwróć uwagę:</b> zimowy cień w południe sięga dalej niż granica działki,
+        więc od listopada do lutego znaczna część terenu pozostaje w cieniu przez cały dzień.`:''}
+      ${pokrywa===false?`<br><br>Zimowy cień mieści się w granicach działki, co przy tej wysokości zabudowy jest dobrym wynikiem.`:''}
+      <br><br><b>Czego ten rysunek nie pokazuje:</b> cienia rzucanego przez drzewa i sąsiednie budynki.
+      Wysokie drzewo od południa potrafi zacienić ogród skuteczniej niż sam dom, a tego nie odczytam z żadnego rejestru —
+      obejrzyj to na miejscu. Godziny wschodu i zachodu są przybliżone o kilka minut, bo nie uwzględniam ukształtowania horyzontu.
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   NEGOCJACJE
+   Każda wada i każda notatka jako osobna pozycja, którą włączasz
+   do ceny albo pomijasz. Kwoty są propozycją, nie wyrokiem.
+   ============================================================ */
+function negInit(){
+  if(!S.neg)S.neg={items:{},oferta:'',cel:'',granica:''};
+  if(!S.neg.items)S.neg.items={};
+  return S.neg;
+}
+/* pozycje: wady z flag + notatki, które sam dopisałeś */
+function negRows(){
+  const rows=[];
+  flagsAll().forEach(f=>{
+    if(f.lv==='green')return;
+    rows.push({key:'f:'+f.cid, typ:'wada', lv:f.lv, mname:f.mname,
+      tytul:f.t, opis:String(f.w).replace(/<[^>]+>/g,''),
+      arg:f.arg||f.t, sugestia:f.cmin||0, max:f.cmax||0});
+  });
+  Object.keys(S.n).filter(k=>S.n[k]&&S.n[k].trim()).forEach(k=>{
+    const c=allChecks().find(x=>x.id===k); if(!c)return;
+    const m=M.find(x=>x.checks.some(y=>y.id===k));
+    rows.push({key:'n:'+k, typ:'notatka', lv:'note', mname:m?m.name:'',
+      tytul:c.q, opis:S.n[k], arg:S.n[k], sugestia:0, max:0});
+  });
+  return rows;
+}
+function negState(row){
+  const n=negInit();
+  if(n.items[row.key])return n.items[row.key];
+  /* wady z wyceną wchodzą domyślnie, notatki czekają na twoją decyzję */
+  return {on: row.typ==='wada'&&row.sugestia>0, kwota: row.sugestia};
+}
+function negSet(key,pole,val){
+  const n=negInit();
+  const row=negRows().find(r=>r.key===key); if(!row)return;
+  const cur=Object.assign({},negState(row));
+  cur[pole] = pole==='kwota' ? (parseInt(String(val).replace(/\D/g,''),10)||0) : val;
+  n.items[key]=cur; save();
+  if(pole==='on')render(); else negPaint();
+}
+function negAll(on){
+  const n=negInit();
+  negRows().forEach(r=>{const s=Object.assign({},negState(r));s.on=on;n.items[r.key]=s;});
+  save();render();
+}
+function negSuma(){
+  return negRows().reduce((s,r)=>{const st=negState(r);return s+(st.on?(+st.kwota||0):0);},0);
+}
+function negField(k,v){negInit()[k]=v;save();negPaint();}
+function negPaint(){
+  const suma=negSuma(), cena=+S.meta.cena||0;
+  const e=$('#negSuma'); if(e)e.textContent=fmt(suma)+' zł';
+  const p=$('#negProc'); if(p)p.textContent=cena?((suma/cena*100).toFixed(1)+'% ceny ofertowej'):'';
+  const c=$('#negCel'); if(c)c.textContent=cena?fmt(Math.max(0,cena-suma))+' zł':'—';
+}
+
+function viewNeg(){
+  negInit();
+  const cena=+S.meta.cena||0;
+  const rows=negRows();
+  const suma=negSuma();
+  const wady=rows.filter(r=>r.typ==='wada'), notatki=rows.filter(r=>r.typ==='notatka');
+  const sugOferta = cena&&suma ? Math.max(0,Math.round((cena-suma*1.35)/1000)*1000) : 0;
+  const sugCel = cena&&suma ? Math.round((cena-suma)/1000)*1000 : 0;
+  const sugGranica = cena&&suma ? Math.round((cena-suma*0.5)/1000)*1000 : 0;
+  const proc = cena? suma/cena*100 : 0;
+
+  const wiersz=r=>{
+    const st=negState(r);
+    const kolor = r.lv==='red'?'#fca5a5':r.lv==='yellow'?'#fcd34d':'#c084fc';
+    return `<div class="negrow ${st.on?'on':''}">
+      <button class="negtog ${st.on?'on':''}" onclick="negSet('${r.key}','on',${!st.on})" title="${st.on?'Wyłącz z ceny':'Włącz do ceny'}">${st.on?'✓':''}</button>
+      <div class="negmid">
+        <div class="negtit" style="color:${kolor}">${esc(r.tytul)}</div>
+        <div class="negsec">${esc(r.mname)}${r.typ==='notatka'?' · twoja notatka':''}${r.max?' · widełki '+fmt(r.sugestia)+'–'+fmt(r.max)+' zł':''}</div>
+        ${r.opis?`<div class="negop">${esc(r.opis).slice(0,220)}</div>`:''}
+      </div>
+      <input class="negkw" type="text" inputmode="numeric" value="${st.kwota?fmt(st.kwota):''}"
+        placeholder="0" oninput="negSet('${r.key}','kwota',this.value)" ${st.on?'':'disabled'}>
+    </div>`;
+  };
+
+  $('#view').innerHTML=`
+  <div class="card">
+    <h2>Negocjacje</h2>
+    <p class="lead">Każda wada i każda twoja notatka to osobna pozycja. Decydujesz, które wchodzą do ceny
+      i za ile. Kwoty przy wadach to dolne granice moich szacunków — nadpisz je, jeśli masz lepszą wycenę.</p>
+    ${!cena?`<div class="msg err">Nie podałeś ceny ofertowej. Wpisz ją w sekcji Start, inaczej nie policzę propozycji.</div>`:''}
+  </div>
+
+  <div class="card tight" style="position:sticky;top:100px;z-index:300">
+    <div class="negsum">
+      <div><span class="lbl">Uwzględnione wady</span><b id="negSuma">${fmt(suma)} zł</b>
+        <span class="sub" id="negProc">${cena?((suma/cena*100).toFixed(1)+'% ceny ofertowej'):''}</span></div>
+      <div><span class="lbl">Cena po odjęciu</span><b id="negCel">${cena?fmt(Math.max(0,cena-suma))+' zł':'—'}</b>
+        <span class="sub">z ${cena?fmt(cena)+' zł':'—'}</span></div>
+    </div>
+    ${proc>20?`<div class="msg err" style="margin:10px 0 0">Suma przekracza 20% ceny ofertowej.
+      Przy takiej skali wad sprzedający raczej nie zejdzie, a ty zostajesz z remontem i ryzykiem.
+      Rozważ, czy to jeszcze negocjacja, czy sygnał do rezygnacji.</div>`:''}
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn sm sec" onclick="negAll(true)">Zaznacz wszystkie</button>
+      <button class="btn sm sec" onclick="negAll(false)">Odznacz wszystkie</button>
+    </div>
+    <h3 style="margin-top:4px">Wady wykryte w audycie (${wady.length})</h3>
+    ${wady.length?wady.map(wiersz).join(''):'<div class="msg info">Audyt nie wykazał jeszcze wad. Wypełnij sekcje, żeby pojawiły się tutaj.</div>'}
+
+    <h3>Twoje notatki (${notatki.length})</h3>
+    <p class="lead" style="margin-bottom:8px">Notatki nie mają wyceny — jeśli któraś ma wpływ na cenę, włącz ją i wpisz kwotę.</p>
+    ${notatki.length?notatki.map(wiersz).join(''):'<div class="msg info">Nie dodałeś jeszcze notatek. Pole notatki jest pod każdym pytaniem.</div>'}
+  </div>
+
+  ${cena?`
+  <div class="card">
+    <h2>Trzy ceny, które warto mieć w głowie</h2>
+    <p class="lead">Nie chodzi o jedną liczbę. Wchodząc w rozmowę, miej przygotowane trzy.</p>
+    <div class="cena3">
+      <label class="f"><span>Pierwsza oferta (kotwica)</span>
+        <input type="text" inputmode="numeric" value="${esc(S.neg.oferta||(sugOferta?fmt(sugOferta):''))}"
+          oninput="negField('oferta',this.value)">
+        <small>Sugestia: ${sugOferta?fmt(sugOferta)+' zł':'—'} — poniżej celu, żeby zostawić miejsce na ustępstwa</small></label>
+      <label class="f"><span>Cena docelowa</span>
+        <input type="text" inputmode="numeric" value="${esc(S.neg.cel||(sugCel?fmt(sugCel):''))}"
+          oninput="negField('cel',this.value)">
+        <small>Sugestia: ${sugCel?fmt(sugCel)+' zł':'—'} — cena minus uwzględnione wady</small></label>
+      <label class="f"><span>Granica, powyżej której rezygnujesz</span>
+        <input type="text" inputmode="numeric" value="${esc(S.neg.granica||(sugGranica?fmt(sugGranica):''))}"
+          oninput="negField('granica',this.value)">
+        <small>Sugestia: ${sugGranica?fmt(sugGranica)+' zł':'—'} — połowa wad po twojej stronie</small></label>
+    </div>
+    <div class="help" style="margin-top:12px">
+      <b>Dlaczego trzy, a nie jedna.</b> Pierwsza oferta ustawia punkt odniesienia dla całej rozmowy —
+      to jedyny moment, w którym masz wpływ na to, wokół jakiej liczby będziecie się kręcić. Cena docelowa
+      to realny cel. Granica to liczba, którą ustalasz <i>przed</i> rozmową i której nie przekraczasz,
+      bo w trakcie negocjacji zawsze wydaje się, że jeszcze trochę można dołożyć.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Jak to rozegrać</h2>
+    <div class="help" style="margin-top:0">
+      <b>Argumentuj liczbami, nie wrażeniami.</b> „Dach wymaga wymiany, oferta z firmy dekarskiej opiewa na 60 tysięcy”
+      działa. „Dom wymaga sporo pracy” nie działa. Każda pozycja z tej listy ma nazwę i kwotę — to jest twoja przewaga
+      nad kupującym, który przyszedł bez audytu.
+
+      <br><br><b>Pokaż dowód, nie opinię.</b> Zdjęcia z oględzin, wydruk z Hydroportalu, wypis z rejestru gruntów,
+      raport inspektora. Sprzedający może podważyć twoją ocenę, trudniej mu podważyć dokument.
+
+      <br><br><b>Zacznij od pytania, nie od kwoty.</b> „Co według Pana wymaga tu największych nakładów?” zadane
+      przed złożeniem oferty często przynosi przyznanie się do wady, o której nie wiedziałeś. A jeśli usłyszysz,
+      że nic, masz to zapamiętane na moment, gdy pokażesz listę.
+
+      <br><br><b>Ustępuj coraz mniej.</b> Jeśli pierwszy ruch to 20 tysięcy, drugi niech będzie 8, trzeci 3.
+      Malejące ustępstwa sygnalizują, że dochodzisz do granicy. Równe kroki po 10 tysięcy mówią, że masz jeszcze zapas.
+
+      <br><br><b>Cena to nie jedyna waluta.</b> Gdy sprzedający nie chce zejść, negocjuj warunki: termin wydania,
+      wyposażenie, naprawa konkretnej wady na jego koszt przed aktem, podział kosztów notarialnych, dłuższy termin
+      na dopięcie kredytu. Czasem ustąpi tam, gdzie nie ustąpi na cenie.
+
+      <br><br><b>Po złożeniu oferty milcz.</b> To najtrudniejsza część. Cisza jest niewygodna i strona, która ją przerwie,
+      zwykle robi ustępstwo. Nie musisz nią być ty.
+
+      <br><br><b>Miej gotową alternatywę.</b> Druga nieruchomość, którą rozważasz, zmienia twoją pozycję bardziej
+      niż jakikolwiek argument. I nie musisz o niej mówić wprost, żeby było ją słychać w tonie rozmowy.
+    </div>
+  </div>
+
+  <div class="card tight">
+    <h3>Ile realnie schodzą sprzedający</h3>
+    <div class="help" style="margin-top:0">
+      Dane rynkowe rozjeżdżają się mocno i warto o tym wiedzieć, zanim ustawisz oczekiwania.
+      Część źródeł podaje, że różnica między ceną ofertową a transakcyjną na rynku wtórnym mieści się
+      w przedziale <b>5–35%</b>, przy czym małe mieszkania negocjuje się w granicach 5–11%, a duże domy
+      nawet powyżej 20%. Inne źródła twierdzą, że realne obniżki to zaledwie 1–4%.
+      <br><br>Ta rozbieżność nie jest przypadkowa: wszystko zależy od tego, jak długo oferta wisi, czy sprzedający
+      ma presję czasu i czy przychodzisz z argumentami czy z prośbą. <b>Audyt przesuwa cię do tej grupy,
+      która negocjuje skutecznie</b>, ale nie gwarantuje żadnego procentu.
+      <br><br>Najpewniejszy punkt odniesienia to nie statystyka, tylko <b>ceny transakcyjne z Rejestru Cen
+      Nieruchomości</b> dla porównywalnych domów w tej samej okolicy. Sprawdzisz je w sekcji Cena.
+    </div>
+  </div>`:''}`;
+}
+
 /* ============================================================
    RAPORT
    ============================================================ */
@@ -2544,16 +2988,30 @@ function viewReport(){
   const rows=arr=>arr.map(x=>`<tr><td>${esc(x.mname)}</td><td><b>${esc(x.t)}</b><br><span style="color:#555;font-size:12px">${esc(String(x.w).replace(/<[^>]+>/g,'')).slice(0,300)}</span></td>
     <td style="white-space:nowrap">${x.cmax?(x.cmin?fmt(x.cmin)+'–'+fmt(x.cmax):'do '+fmt(x.cmax))+' zł':'—'}</td></tr>`).join('');
 
+  /* jeśli przeszedłeś przez sekcję Negocjacje, raport bierze twoje wybory,
+     a nie automatyczną kalkulację — to ty decydujesz, co wchodzi do ceny */
+  negInit();
+  const wybrane = negRows().filter(r=>negState(r).on);
+  const recznie = Object.keys(S.neg.items||{}).length>0;
+  const sumaNeg = negSuma();
+  const bazaObnizki = recznie ? sumaNeg : (cmin || Math.round(cmax*0.4));
   const CAP=0.15;
-  const bazaObnizki = cmin || Math.round(cmax*0.4);
   const limit = cena? Math.round(cena*CAP) : 0;
-  const obnizka = cena? Math.min(bazaObnizki,limit) : bazaObnizki;
-  const przekroczony = cena && bazaObnizki>limit;
-  const propon = cena? Math.max(0,Math.round((cena-obnizka)/1000)*1000) : 0;
+  /* przy ręcznym wyborze nie narzucam limitu — świadomie zdecydowałeś */
+  const obnizka = recznie ? bazaObnizki : (cena? Math.min(bazaObnizki,limit) : bazaObnizki);
+  const przekroczony = !recznie && cena && bazaObnizki>limit;
+  const parse=v=>parseInt(String(v||'').replace(/\D/g,''),10)||0;
+  const propon = parse(S.neg.cel) || (cena? Math.max(0,Math.round((cena-obnizka)/1000)*1000) : 0);
+  const oferta1 = parse(S.neg.oferta);
+  const granica = parse(S.neg.granica);
 
-  const ranked=f.filter(x=>x.arg).sort((a,b)=>
-    (b.lv==='red'?1e9:0)+(b.cmax||0) - ((a.lv==='red'?1e9:0)+(a.cmax||0)));
-  const args=ranked.slice(0,5).map(x=>x.arg);
+  const ranked = recznie
+    ? wybrane.sort((a,b)=>(negState(b).kwota||0)-(negState(a).kwota||0))
+        .map(r=>({arg:r.arg, kwota:negState(r).kwota||0}))
+    : f.filter(x=>x.arg).sort((a,b)=>
+        (b.lv==='red'?1e9:0)+(b.cmax||0) - ((a.lv==='red'?1e9:0)+(a.cmax||0)))
+        .map(x=>({arg:x.arg, kwota:x.cmin||0}));
+  const args=ranked.slice(0,5);
   const pozostale=ranked.length-args.length;
 
   const letter=`Szanowni Państwo,
@@ -2562,7 +3020,7 @@ dziękuję za możliwość obejrzenia nieruchomości${S.meta.adres?' przy '+S.me
 
 Jestem zainteresowany zakupem, natomiast przed złożeniem wiążącej oferty przeprowadziłem szczegółową analizę stanu prawnego i technicznego. Wykazała ona okoliczności, które wpływają na wartość nieruchomości i wiążą się z nakładami po mojej stronie:
 
-${args.length?args.map((a,i)=>(i+1)+'. '+a).join('\n'):'(uzupełnij po wypełnieniu audytu)'}${pozostale>0?'\n\nPoza powyższymi zidentyfikowałem jeszcze '+pozostale+' drobniejszych kwestii, które chętnie omówię przy spotkaniu.':''}
+${args.length?args.map((a,i)=>(i+1)+'. '+a.arg+(a.kwota?'  (szacunek: '+fmt(a.kwota)+' zł)':'')).join('\n'):'(uzupełnij po wypełnieniu audytu)'}${pozostale>0?'\n\nPoza powyższymi zidentyfikowałem jeszcze '+pozostale+' drobniejszych kwestii, które chętnie omówię przy spotkaniu.':''}
 
 Szacowany koszt usunięcia samych wad wskazanych powyżej to co najmniej ${fmt(obnizka)} zł.
 
@@ -2578,6 +3036,7 @@ Z poważaniem`;
   <div class="row noprint" style="margin:13px 0">
     <button class="btn" onclick="window.print()">Drukuj / zapisz PDF</button>
     <button class="btn sec" onclick="copyLetter()">Kopiuj pismo</button>
+    <button class="btn sec" onclick="go('neg')">Wróć do negocjacji</button>
     <button class="btn sec" onclick="saveFile()">Zapisz audyt</button>
   </div>
   <div class="card tight noprint">
@@ -2634,7 +3093,13 @@ Z poważaniem`;
     </table>
     ${przekroczony?`<blockquote><b>Uwaga.</b> Wyliczone koszty usunięcia wad (${fmt(bazaObnizki)} zł) przekraczają 15% ceny ofertowej.
       W takiej sytuacji negocjacja ceny zwykle nie ma sensu. Realne pytanie brzmi nie „ile utargować", tylko „czy w ogóle kupować".</blockquote>`:''}
-    <p style="font-size:12px;color:#666">Metoda: podstawą obniżki jest dolna granica szacunków, nie suma najgorszych scenariuszy.</p>`:''}
+    <p style="font-size:12px;color:#666">${recznie?'Kwoty pochodzą z twoich wyborów w sekcji Negocjacje ('+wybrane.length+' '+(wybrane.length===1?'pozycja':'pozycji')+').':'Metoda: podstawą obniżki jest dolna granica szacunków, nie suma najgorszych scenariuszy. Przejdź do sekcji Negocjacje, żeby zdecydować samodzielnie.'}</p>
+    ${(oferta1||granica)?`<h2>Twoje trzy ceny</h2>
+    <table>
+      <tr><th>Pierwsza oferta</th><th>Cena docelowa</th><th>Granica</th></tr>
+      <tr><td>${oferta1?fmt(oferta1)+' zł':'—'}</td><td>${propon?fmt(propon)+' zł':'—'}</td><td>${granica?fmt(granica)+' zł':'—'}</td></tr>
+    </table>
+    <p style="font-size:12px;color:#666">Granicy nie przekraczaj — ustaliłeś ją na spokojnie, przed rozmową.</p>`:''}`:''}
 
     ${red.length?`<h2>Wady blokujące — wyjaśnij przed umową przedwstępną</h2>
       <table><tr><th>Sekcja</th><th>Ustalenie</th><th>Koszt</th></tr>${rows(red)}</table>`:''}

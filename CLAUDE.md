@@ -38,6 +38,8 @@ Kolejność w `index.html`:
    - `viewStart()`, `drawMap()` — sekcja startowa i mapa
    - wyszukiwanie działki: `findAddr()`, `geocode()`, `uldk()`, `findId()`, `setLoc()`, `loadPOI()`
    - eksporty: `fieldChecks()`, `exportTxt()`, `exportCsv()`, `notionMd()`
+   - moduł słoneczny: `sunPos()`, `sunDay()`, `sunGrid()` (astronomia), `pobierzBudynek()`, `cienBudynku()`, `rysunekCienia()` (geometria i SVG), `sunCard()` (widok w sekcji Grunt)
+   - negocjacje: `negRows()`, `negState()`, `negSuma()`, `viewNeg()`
    - `viewReport()` — raport końcowy
    - `load(); render();` — start
 
@@ -88,6 +90,19 @@ flagsAll()  →  paintBar() i viewReport()  →  wycena + pismo negocjacyjne
 **Pismo negocjacyjne bierze 5 najmocniejszych argumentów,** nie wszystkie. Długa lista pretensji zamyka rozmowę.
 
 **Ponowne kliknięcie zaznaczonej opcji ją odznacza.** Bez tego przypadkowy klik zostawał w audycie jako potwierdzona odpowiedź i zawyżał kompletność.
+
+## Moduł słoneczny
+
+Pozycja słońca liczona lokalnie, bez API — algorytm w `sunPos()` daje dokładność setnych części stopnia.
+Sprawdzian poprawności: górowanie w przesilenie zimowe musi wynosić `90 − szerokość − 23,44`, w letnie
+`90 − szerokość + 23,44`, w równonoc `90 − szerokość`. Jeśli te trzy liczby się zgadzają, algorytm działa.
+
+Uwaga na pułapkę, która już raz wystąpiła: `Date.UTC` obcina ułamkowe godziny, więc czasy liczy się
+przez dodanie milisekund do północy (`utcOf()`), nigdy przez podanie ułamka w argumencie godziny.
+
+Wysokość budynku jest wpisywana ręcznie, bo GUGiK udostępnia punktowe API tylko dla NMT (teren),
+nie dla NMPT (pokrycie terenu). Google Photorealistic 3D Tiles odpada: płatne, ograniczone do dużych miast,
+a klucz API w publicznym repozytorium to wyciek.
 
 ## Ograniczenia techniczne — nie próbuj ich obchodzić
 
