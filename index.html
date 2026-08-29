@@ -298,7 +298,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'1.7', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'1.9', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -426,6 +426,29 @@ function modPromptCard(mid){
     <button class="btn wide" onclick="importModuleAnswers('${mid}')">Wczytaj odpowiedzi</button>
   </div>`;
 }
+/* copyModulePrompt/importModuleAnswers zaginęły przy odbudowie pliku po awarii
+   edycji (patrz CHANGELOG 1.7) — przyciski w modPromptCard() je wywoływały,
+   ale definicji nigdzie nie było, więc „Kopiuj” nic nie robił. */
+function copyModulePrompt(mid){
+  const t=promptModule(mid); if(!t)return;
+  const btn=event&&event.target;
+  navigator.clipboard.writeText(t).then(()=>{
+    if(btn){const o=btn.textContent;btn.textContent='Skopiowano';setTimeout(()=>btn.textContent=o,1500);}
+  },()=>alert(t));
+}
+function importModuleAnswers(mid){
+  const el=document.getElementById('modText_'+mid); if(!el)return;
+  const t=el.value.trim();
+  if(!t){alert('Wklej najpierw odpowiedź wtyczki w tym polu.');return;}
+  const acc=parseNotion(t);
+  const accTxt=(!acc.n&&!acc.notes)?parseTxt(t):null;
+  const A=accTxt||acc;
+  if(!A.n&&!A.notes){alert('Nie rozpoznałem żadnej odpowiedzi w tym tekście.\n\nWklej całą odpowiedź wtyczki, nie jej fragment.');return;}
+  el.value='';save();render();
+  alert('Wczytano '+A.n+' '+(A.n===1?'odpowiedź':'odpowiedzi')
+    +(A.notes?' i '+A.notes+' notatek':'')
+    +(A.skipped?'\n\nPominięto '+A.skipped+' nierozpoznanych wartości.':''));
+}
 /* ============================================================
    JEDNO POLE NA WYNIKI
    Przyjmuje odpowiedzi z dowolnej sekcji i dowolnego źródła
@@ -520,6 +543,14 @@ function applyAnswer(id,val,acc){
 }
 function parseTxt(t){
   const acc={n:0,notes:0,skipped:0};
+  /* Notatki bywają edytowane w narzędziach, które zjadają puste linie
+     (np. wklejenie do czatu AI i skopiowanie odpowiedzi z powrotem).
+     Wtedy kod pytania „[xxx]” zostaje doklejony na końcu poprzedniej
+     linii i parser go nie widzi. Odtwarzamy złamanie linii przed
+     każdym kodem, który faktycznie istnieje w audycie — inny tekst
+     w nawiasach kwadratowych zostaje nietknięty. */
+  const ids=new Set(allChecks().map(c=>c.id));
+  t=t.replace(/(\[[a-z_0-9]+\])/gi,(m,tag)=>ids.has(tag.slice(1,-1))?'\n'+tag:tag);
   const lines=t.split(/\r?\n/); let cur=null;
   lines.forEach(l=>{
     const mId=l.match(/^\s*\[([a-z_0-9]+)\]/i);
@@ -1902,6 +1933,15 @@ function copyDomains(){
   const btn=event&&event.target;
   navigator.clipboard.writeText(d).then(()=>{
     if(btn){const o=btn.textContent;btn.textContent='Skopiowano';setTimeout(()=>btn.textContent=o,1500);}},()=>alert(d));
+}
+/* Tak jak copyModulePrompt/importModuleAnswers wyżej — zaginęła przy odbudowie
+   pliku, przycisk „Kopiuj” przy pojedynczym pytaniu nic nie robił. */
+function copyPrompt(id){
+  const c=allChecks().find(x=>x.id===id); if(!c)return;
+  const t=promptFor(c);
+  const btn=event&&event.target;
+  navigator.clipboard.writeText(t).then(()=>{
+    if(btn){const o=btn.textContent;btn.textContent='Skopiowano';setTimeout(()=>btn.textContent=o,1500);}},()=>alert(t));
 }
 
 /* ============================================================
