@@ -340,7 +340,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'1.9', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.0', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -515,22 +515,65 @@ function setPasteMsg(html){
   const e=document.getElementById('pasteMsg'); if(e)e.innerHTML=html;
 }
 
+/* Parser odporny na to, co Notion i edytory robią z tekstem przy kopiowaniu:
+   gubią backticki, zamieniają je na apostrofy typograficzne, wstawiają
+   znaki ☑ zamiast [x], łamią notatki na kilka linii. Kod pytania rozpoznaję
+   po dopasowaniu do listy znanych identyfikatorów, a nie po znacznikach. */
+function znajdzKod(linia){
+  const ids=allChecks().map(c=>c.id);
+  /* najpierw jawne oznaczenia: `kod`, 'kod', „kod", (kod), [kod] */
+  const jawne=linia.match(/[`'‘’"„”\[(]\s*([a-z][a-z_0-9]{2,})\s*[`'‘’"„”\])]/i);
+  if(jawne&&ids.indexOf(jawne[1])>=0)return jawne[1];
+  /* potem gołe słowo na końcu linii — Notion gubi formatowanie kodu */
+  const tokeny=linia.trim().split(/\s+/);
+  for(let i=tokeny.length-1;i>=Math.max(0,tokeny.length-3);i--){
+    const t=tokeny[i].replace(/[`'‘’"„”\[\](),.:;]/g,'');
+    if(ids.indexOf(t)>=0)return t;
+  }
+  return null;
+}
 function parseNotion(t){
   const acc={n:0,notes:0,skipped:0};
-  let cur=null;
-  t.split(/\r?\n/).forEach(l=>{
-    /* nagłówek pytania: kod w apostrofach na końcu */
-    const mId=l.match(/`([a-z_0-9]+)`\s*$/i);
-    if(mId&&/^#{1,6}\s|^\*\*|^[A-ZĄĆĘŁŃÓŚŹŻ]/.test(l.replace(/^#+\s*/,''))){cur=mId[1];return;}
+  const linie=t.split(/\r?\n/);
+  let cur=null, notatka=null;
+  const zapiszNotatke=()=>{
+    if(cur&&notatka!==null){
+      const v=notatka.join(' ').trim();
+      if(v){S.n[cur]=v;acc.notes++;}
+    }
+    notatka=null;
+  };
+  linie.forEach(l=>{
+    const kod=znajdzKod(l);
+    if(kod){zapiszNotatke();cur=kod;return;}
     if(!cur)return;
-    /* zaznaczona opcja: - [x] kod — opis  (Notion używa też ✓ przy kopiowaniu) */
-    const mOpt=l.match(/^\s*[-*]?\s*\[\s*[xX✓]\s*\]\s*([^\s—–-]+)\s*[—–-]/);
-    if(mOpt){ if(applyAnswer(cur,mOpt[1],acc))acc.n++; return; }
-    const mFree=l.match(/^\s*[-*]?\s*\[[^\]]*\]\s*odpowiedz:\s*(.+)$/i);
-    if(mFree){ if(applyAnswer(cur,mFree[1],acc))acc.n++; return; }
-    const mN=l.match(/^\s*>?\s*notatka:\s*(.*)$/i);
-    if(mN&&mN[1].trim()){S.n[cur]=mN[1].trim();acc.notes++;}
+    /* zaznaczona opcja: [x] [X] [✓] ☑ ☒ ✔ — z myślnikiem po kodzie albo bez */
+    const zazn=l.match(/^\s*(?:[-*•]\s*)?(?:\[\s*[xX✓✔]\s*\]|[☑☒✅✔])\s*(.+)$/);
+    if(zazn){
+      zapiszNotatke();
+      const reszta=zazn[1].trim();
+      const kandydat=reszta.split(/\s*[—–-]\s*|\s{2,}/)[0].trim();
+      if(applyAnswer(cur,kandydat,acc))acc.n++;
+      else if(applyAnswer(cur,reszta,acc))acc.n++;
+      return;
+    }
+    /* odpowiedź tekstowa */
+    const wolna=l.match(/^\s*(?:[-*•]\s*)?(?:\[[^\]]*\]\s*)?odpowied[zź]:\s*(.+)$/i);
+    if(wolna){zapiszNotatke();if(applyAnswer(cur,wolna[1],acc))acc.n++;return;}
+    /* początek notatki */
+    const nota=l.match(/^\s*>?\s*notatka:\s*(.*)$/i);
+    if(nota){zapiszNotatke();notatka=[nota[1]];return;}
+    /* kontynuacja notatki: kolejny wiersz cytatu albo zwykły tekst pod notatką */
+    if(notatka!==null){
+      const dalej=l.match(/^\s*>\s?(.*)$/);
+      if(dalej){notatka.push(dalej[1]);return;}
+      if(l.trim()&&!/^\s*(?:[-*•]|\[|#|=)/.test(l)){notatka.push(l.trim());return;}
+      zapiszNotatke();
+    }
+    /* niezaznaczona opcja kończy zbieranie notatki */
+    if(/^\s*(?:[-*•]\s*)?\[\s*\]/.test(l))zapiszNotatke();
   });
+  zapiszNotatke();
   return acc;
 }
 

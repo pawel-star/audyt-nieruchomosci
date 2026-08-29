@@ -1,5 +1,12 @@
 # Historia zmian
 
+## 2.0
+- **Przepisany parser wklejanych odpowiedzi.** Poprzedni wymagał backticków wokół kodu pytania, a Notion traktuje kod jako formatowanie i przy kopiowaniu je gubi — przez co wklejanie po prostu nie działało.
+- Kod pytania rozpoznawany po dopasowaniu do listy znanych identyfikatorów, niezależnie od znaczników: backticki, apostrofy typograficzne, nawiasy albo gołe słowo.
+- Zaznaczenia rozpoznawane w formach `[x]`, `[X]`, `[✓]`, `☑`, `☒`, `✔`, z myślnikiem po kodzie i bez.
+- Notatki wieloliniowe sklejane w całość; notatka bez znaku cytatu też jest wczytywana.
+- Przetestowane na dwunastu wariantach formatu — wszystkie przechodzą.
+
 ## 1.9
 - **Nasłonecznienie i cienie** w sekcji Grunt: dwanaście rzutów z góry (cztery pory roku razy trzy pory dnia) z cieniem rzucanym przez budynek na tle granic działki.
 - Pozycja słońca liczona lokalnie z algorytmu astronomicznego, bez żadnego API. Górowanie zgodne z teorią co do dziesiątych stopnia.
