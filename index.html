@@ -341,7 +341,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.7', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.8', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -3173,11 +3173,63 @@ function importWyceny(zakres){
   save(); render();
   alert('Wczytałem '+A.n+' '+(A.n===1?'wycenę':'wycen')+' w cenach regionu.\n\nKwoty podstawiłem przy pozycjach. Zaznacz te, które chcesz liczyć do obniżki.');
 }
+/* Sugerowane trzy ceny i ocena atrakcyjności zależą od sumy wad. Wydzielone tu,
+   żeby liczyć je jednym kodem i przy pełnym renderze widoku, i przy dopisaniu
+   kwoty do pojedynczej wady (negPaint) — bez dwóch kopii tej samej logiki. */
+function sugCeny(cena,suma){
+  return {
+    sugOferta: cena&&suma ? Math.max(0,Math.round((cena-suma*1.35)/1000)*1000) : 0,
+    sugCel: cena&&suma ? Math.round((cena-suma)/1000)*1000 : 0,
+    sugGranica: cena&&suma ? Math.round((cena-suma*0.5)/1000)*1000 : 0
+  };
+}
+function ocenaCeny(cena,suma,r){
+  if(!(r&&cena&&S.meta.powDom))return null;
+  const poKorekcie=(cena-suma)/(+S.meta.powDom);
+  const dyst=(poKorekcie-r.stawka)/r.stawka*100;
+  if(r.proc<-5) return {typ:'ok',t:'Cena ofertowa jest już poniżej stawek rynkowych',
+    d:'Oferta wynosi '+fmt(r.nasza)+' zł/m² przy średniej '+fmt(r.stawka)+' zł/m², czyli o '+Math.abs(r.proc).toFixed(0)
+      +'% taniej. Zanim zaczniesz negocjować, ustal dlaczego. Albo sprzedający się spieszy, albo jest wada, której jeszcze nie znalazłeś.'};
+  if(dyst<-10) return {typ:'ok',t:'Po uwzględnieniu wad cena schodzi wyraźnie poniżej rynku',
+    d:'Przy obniżce o '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m² wobec '+fmt(r.stawka)
+      +' zł/m² w okolicy. To ambitna, ale broniona propozycja — masz na nią argumenty z audytu.'};
+  if(dyst>=-10&&dyst<=10) return {typ:'ok',t:'Po uwzględnieniu wad cena trafia w stawki rynkowe',
+    d:'Przy obniżce o '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m², a porównywalne nieruchomości w okolicy '
+      +'sprzedają się po '+fmt(r.stawka)+' zł/m². To propozycja, którą łatwo obronić liczbami.'};
+  return {typ:'uwaga',t:'Nawet po obniżce cena pozostaje powyżej rynku',
+    d:'Po odjęciu '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m², a porównywalne nieruchomości sprzedają się po '
+      +fmt(r.stawka)+' zł/m². Albo nieruchomość ma coś, czego statystyka nie widzi, albo warto zejść niżej.'};
+}
 function negPaint(){
   const suma=negSuma(), cena=+S.meta.cena||0;
   const e=$('#negSuma'); if(e)e.textContent=fmt(suma)+' zł';
   const p=$('#negProc'); if(p)p.textContent=cena?((suma/cena*100).toFixed(1)+'% ceny ofertowej'):'';
   const c=$('#negCel'); if(c)c.textContent=cena?fmt(Math.max(0,cena-suma))+' zł':'—';
+
+  const warn=$('#negWarnLimit');
+  if(warn)warn.style.display=(cena&&suma/cena*100>20)?'':'none';
+
+  /* trzy ceny: dopóki nie wpisałeś tam własnej kwoty, pole pokazuje sugestię —
+     ta sugestia i jej podpis muszą się przeliczać razem z sumą wad, inaczej po
+     zmianie kwoty przy pojedynczej wadzie widać stare, nieaktualne propozycje */
+  const {sugOferta,sugCel,sugGranica}=sugCeny(cena,suma);
+  const so=$('#negSugOferta'); if(so)so.textContent='Sugestia '+(sugOferta?fmt(sugOferta)+' zł':'—')+': cel minus zapas na ustępstwa';
+  const sc=$('#negSugCel'); if(sc)sc.textContent='Sugestia '+(sugCel?fmt(sugCel)+' zł':'—')+': cena minus uwzględnione pozycje';
+  const sg=$('#negSugGranica'); if(sg)sg.textContent='Sugestia '+(sugGranica?fmt(sugGranica)+' zł':'—')+': połowa wad po twojej stronie';
+  const io=$('#negInpOferta'); if(io&&!S.neg.oferta)io.value=sugOferta?fmt(sugOferta):'';
+  const ic=$('#negInpCel'); if(ic&&!S.neg.cel)ic.value=sugCel?fmt(sugCel):'';
+  const ig=$('#negInpGranica'); if(ig&&!S.neg.granica)ig.value=sugGranica?fmt(sugGranica):'';
+
+  /* ocena atrakcyjności ceny wobec rynku — ta sama zależność od sumy co wyżej */
+  const box=$('#negOcena');
+  if(box){
+    const ocena=ocenaCeny(cena,suma,rynek());
+    if(ocena){
+      box.style.borderColor=ocena.typ==='ok'?'#1d4429':'#4a3a15';
+      box.innerHTML='<h3 style="margin-top:0;color:'+(ocena.typ==='ok'?'#86efac':'#fcd34d')+'">'+esc(ocena.t)+'</h3>'
+        +'<p class="lead" style="margin:0">'+esc(ocena.d)+'</p>';
+    }
+  }
 }
 
 function viewNeg(){
@@ -3195,28 +3247,9 @@ function viewNeg(){
     .sort((a,b)=>(+negState(b).kwota||0)-(+negState(a).kwota||0));
   const wadyBezWyceny=wady.filter(x=>!(negState(x).on&&(+negState(x).kwota||0)>0))
     .sort((a,b)=>(a.lv==='red'?0:1)-(b.lv==='red'?0:1));
-  const sugOferta = cena&&suma ? Math.max(0,Math.round((cena-suma*1.35)/1000)*1000) : 0;
-  const sugCel = cena&&suma ? Math.round((cena-suma)/1000)*1000 : 0;
-  const sugGranica = cena&&suma ? Math.round((cena-suma*0.5)/1000)*1000 : 0;
+  const {sugOferta,sugCel,sugGranica}=sugCeny(cena,suma);
   const proc = cena? suma/cena*100 : 0;
-  /* ocena atrakcyjności: cena po odjęciu wad wobec stawek rynkowych */
-  let ocena=null;
-  if(r&&cena&&S.meta.powDom){
-    const poKorekcie=(cena-suma)/(+S.meta.powDom);
-    const dyst=(poKorekcie-r.stawka)/r.stawka*100;
-    if(r.proc<-5) ocena={typ:'ok',t:'Cena ofertowa jest już poniżej stawek rynkowych',
-      d:'Oferta wynosi '+fmt(r.nasza)+' zł/m² przy średniej '+fmt(r.stawka)+' zł/m², czyli o '+Math.abs(r.proc).toFixed(0)
-        +'% taniej. Zanim zaczniesz negocjować, ustal dlaczego. Albo sprzedający się spieszy, albo jest wada, której jeszcze nie znalazłeś.'};
-    else if(dyst<-10) ocena={typ:'ok',t:'Po uwzględnieniu wad cena schodzi wyraźnie poniżej rynku',
-      d:'Przy obniżce o '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m² wobec '+fmt(r.stawka)
-        +' zł/m² w okolicy. To ambitna, ale broniona propozycja — masz na nią argumenty z audytu.'};
-    else if(dyst>=-10&&dyst<=10) ocena={typ:'ok',t:'Po uwzględnieniu wad cena trafia w stawki rynkowe',
-      d:'Przy obniżce o '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m², a porównywalne nieruchomości w okolicy '
-        +'sprzedają się po '+fmt(r.stawka)+' zł/m². To propozycja, którą łatwo obronić liczbami.'};
-    else if(dyst>10) ocena={typ:'uwaga',t:'Nawet po obniżce cena pozostaje powyżej rynku',
-      d:'Po odjęciu '+fmt(suma)+' zł wychodzi '+fmt(poKorekcie)+' zł/m², a porównywalne nieruchomości sprzedają się po '
-        +fmt(r.stawka)+' zł/m². Albo nieruchomość ma coś, czego statystyka nie widzi, albo warto zejść niżej.'};
-  }
+  const ocena=ocenaCeny(cena,suma,r);
 
   const wiersz=x=>{
     const st=negState(x);
@@ -3256,7 +3289,7 @@ function viewNeg(){
       a policzę, o ile ta oferta odbiega od rynku, i uwzględnię to jako osobną pozycję negocjacyjną.</div>`:''}
   </div>
 
-  ${ocena?`<div class="card tight" style="border-color:${ocena.typ==='ok'?'#1d4429':'#4a3a15'}">
+  ${ocena?`<div class="card tight" id="negOcena" style="border-color:${ocena.typ==='ok'?'#1d4429':'#4a3a15'}">
     <h3 style="margin-top:0;color:${ocena.typ==='ok'?'#86efac':'#fcd34d'}">${esc(ocena.t)}</h3>
     <p class="lead" style="margin:0">${esc(ocena.d)}</p></div>`:''}
 
@@ -3267,8 +3300,8 @@ function viewNeg(){
       <div><span class="lbl">Cena po korekcie</span><b id="negCel">${cena?fmt(Math.max(0,cena-suma))+' zł':'—'}</b>
         <span class="sub">${r?fmt((cena-suma)/(+S.meta.powDom))+' zł/m² wobec '+fmt(r.stawka)+' w okolicy':'z '+(cena?fmt(cena)+' zł':'—')}</span></div>
     </div>
-    ${proc>20?`<div class="msg err" style="margin:10px 0 0">Suma przekracza 20% ceny ofertowej.
-      Przy takiej skali wad sprzedający raczej nie zejdzie, a ty zostajesz z remontem i ryzykiem.</div>`:''}
+    <div class="msg err" id="negWarnLimit" style="margin:10px 0 0${proc>20?'':';display:none'}">Suma przekracza 20% ceny ofertowej.
+      Przy takiej skali wad sprzedający raczej nie zejdzie, a ty zostajesz z remontem i ryzykiem.</div>
   </div>
 
   <div class="card">
@@ -3323,17 +3356,17 @@ function viewNeg(){
     <h2>Trzy ceny, które warto mieć w głowie</h2>
     <div class="cena3">
       <label class="f"><span>Pierwsza oferta (kotwica)</span>
-        <input type="text" inputmode="numeric" value="${esc(S.neg.oferta||(sugOferta?fmt(sugOferta):''))}"
+        <input type="text" inputmode="numeric" id="negInpOferta" value="${esc(S.neg.oferta||(sugOferta?fmt(sugOferta):''))}"
           oninput="negField('oferta',this.value)">
-        <small>Sugestia ${sugOferta?fmt(sugOferta)+' zł':'—'}: cel minus zapas na ustępstwa</small></label>
+        <small id="negSugOferta">Sugestia ${sugOferta?fmt(sugOferta)+' zł':'—'}: cel minus zapas na ustępstwa</small></label>
       <label class="f"><span>Cena docelowa</span>
-        <input type="text" inputmode="numeric" value="${esc(S.neg.cel||(sugCel?fmt(sugCel):''))}"
+        <input type="text" inputmode="numeric" id="negInpCel" value="${esc(S.neg.cel||(sugCel?fmt(sugCel):''))}"
           oninput="negField('cel',this.value)">
-        <small>Sugestia ${sugCel?fmt(sugCel)+' zł':'—'}: cena minus uwzględnione pozycje</small></label>
+        <small id="negSugCel">Sugestia ${sugCel?fmt(sugCel)+' zł':'—'}: cena minus uwzględnione pozycje</small></label>
       <label class="f"><span>Granica, powyżej której rezygnujesz</span>
-        <input type="text" inputmode="numeric" value="${esc(S.neg.granica||(sugGranica?fmt(sugGranica):''))}"
+        <input type="text" inputmode="numeric" id="negInpGranica" value="${esc(S.neg.granica||(sugGranica?fmt(sugGranica):''))}"
           oninput="negField('granica',this.value)">
-        <small>Sugestia ${sugGranica?fmt(sugGranica)+' zł':'—'}: połowa wad po twojej stronie</small></label>
+        <small id="negSugGranica">Sugestia ${sugGranica?fmt(sugGranica)+' zł':'—'}: połowa wad po twojej stronie</small></label>
     </div>
     <div class="help" style="margin-top:12px">
       <b>Dlaczego trzy, a nie jedna.</b> Pierwsza oferta ustawia punkt odniesienia dla całej rozmowy.
