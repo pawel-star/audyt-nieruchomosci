@@ -1,5 +1,9 @@
 # Historia zmian
 
+## 2.5
+- **Tańsze prompty dla wtyczki Claude w Chrome.** Sekcja „TRYB PRACY” w `promptFor()` i `promptModule()` (czyli w każdym prompcie, który kopiujesz do wtyczki) ma teraz dwie dodatkowe zasady: żadnego drugiego ponawiania tego samego kroku (otwarcia strony, wyszukania działki) i czytanie wyników z paneli informacyjnych jako tekstu strony zamiast zrzutu ekranu, ze zrzutem tylko wtedy, gdy informacja jest wyłącznie wizualna na mapie, i najwyżej jeden na warstwę. Cel: jedna sesja audytu (czyli kilka promptów na jeden adres) nie powinna już zjadać całego pięciogodzinnego limitu Cowork.
+- Bez zmian w logice pytań, flagach ani formacie odpowiedzi — to wyłącznie instrukcja dla wtyczki, nie zmienia się nic w samej checkliście.
+
 ## 2.4
 - **Wybór przy zapisie: nadpisz albo nowy plik.** Zapis audytu pyta teraz, czy nadpisać poprzedni plik, czy zapisać jako nowy. Na wersji z hostingu (https) otwiera się natywne okno zapisu, w którym wskazujesz plik do nadpisania albo wpisujesz nową nazwę. Przy pliku otwartym z dysku, gdzie przeglądarka nie ma dostępu do zapisu w konkretne miejsce, wybór jest prostszy: nadpisz (ta sama nazwa) albo nowy plik z datą w nazwie.
 - Aplikacja zapamiętuje nazwę wczytanego lub ostatnio zapisanego pliku, żeby wiedzieć, co nadpisać.

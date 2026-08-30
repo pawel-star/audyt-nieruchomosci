@@ -341,7 +341,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.4', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.5', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -398,6 +398,8 @@ TRYB PRACY
 - Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
 - Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Niczego nie zapisujesz, nie wysyłasz formularzy, nie logujesz się i nie akceptujesz regulaminów.
 - Jeśli któraś strona nie działa albo brakuje warstwy, nie przerywaj całości: zanotuj to i przejdź do kolejnego zadania.
+- Nie ponawiaj tego samego kroku (ponowne otwarcie strony, ponowne wyszukanie działki) więcej niż raz. Jeśli się nie uda za drugim razem, zanotuj i przejdź dalej — to droższe niż warte.
+- Wyniki z paneli informacyjnych (np. po kliknięciu narzędziem "informacja" w działkę) czytaj jako tekst strony, nie jako zrzut ekranu — to szybsze i tańsze. Zrzut ekranu rób tylko wtedy, gdy informacja jest widoczna wyłącznie wizualnie na samej mapie (np. zasięg strefy, kolor warstwy), i wystarczy jeden na warstwę.
 - Ewentualne pytania zbierz na koniec, po zwróceniu wyników.
 
 ZADANIE
@@ -435,6 +437,8 @@ TRYB PRACY
 - Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
 - Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Niczego nie zapisujesz, nie wysyłasz formularzy, nie logujesz się i nie akceptujesz regulaminów.
 - Jeśli któraś strona nie działa albo brakuje warstwy, nie przerywaj całości: zanotuj to i przejdź do kolejnego zadania.
+- Nie ponawiaj tego samego kroku (ponowne otwarcie strony, ponowne wyszukanie działki) więcej niż raz. Jeśli się nie uda za drugim razem, zanotuj i przejdź dalej — to droższe niż warte.
+- Wyniki z paneli informacyjnych (np. po kliknięciu narzędziem "informacja" w działkę) czytaj jako tekst strony, nie jako zrzut ekranu — to szybsze i tańsze. Zrzut ekranu rób tylko wtedy, gdy informacja jest widoczna wyłącznie wizualnie na samej mapie (np. zasięg strefy, kolor warstwy), i wystarczy jeden na warstwę.
 - Ewentualne pytania zbierz na koniec, po zwróceniu wyników.
 
 Wykonaj ${cs.length===1?'poniższe zadanie':'poniższe zadania ('+cs.length+') po kolei'}.
