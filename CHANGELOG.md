@@ -1,5 +1,14 @@
 # Historia zmian
 
+## 2.4
+- **Wybór przy zapisie: nadpisz albo nowy plik.** Zapis audytu pyta teraz, czy nadpisać poprzedni plik, czy zapisać jako nowy. Na wersji z hostingu (https) otwiera się natywne okno zapisu, w którym wskazujesz plik do nadpisania albo wpisujesz nową nazwę. Przy pliku otwartym z dysku, gdzie przeglądarka nie ma dostępu do zapisu w konkretne miejsce, wybór jest prostszy: nadpisz (ta sama nazwa) albo nowy plik z datą w nazwie.
+- Aplikacja zapamiętuje nazwę wczytanego lub ostatnio zapisanego pliku, żeby wiedzieć, co nadpisać.
+
+## 2.3
+- **Wycena wad w cenach regionu.** W sekcji Negocjacje doszły dwa bloki: jeden wycenia wady z audytu i notatek, drugi (na dole) pozycje dodane ręcznie. Każdy generuje prompt do wtyczki w przeglądarce, która ustala województwo z lokalizacji i szuka aktualnych cen usunięcia wad u wykonawców z regionu. Odpowiedź wkleja się w pole, a kwoty podstawiają się przy pozycjach.
+- Wycena regionalna nadpisuje sztywne widełki wpisane w kod. Przy pozycji pojawia się adnotacja, z jakiego regionu pochodzi kwota. Zaznaczasz, które pozycje wliczyć do obniżki, tak jak dotąd.
+- Wczytane kwoty wchodzą do sumy negocjacji i do raportu tą samą drogą co pozostałe pozycje.
+
 ## 2.2
 - **Naprawione kopiowanie promptów.** Przyciski „Kopiuj” przy pytaniu i „Kopiuj prompty tej sekcji” znów działają. Trzy funkcje (`copyPrompt`, `copyModulePrompt`, `importModuleAnswers`) zniknęły przy wcześniejszej odbudowie pliku i przyciski wołały puste miejsce.
 - **Kopiowanie działa też z dysku.** Doszła zapasowa metoda przez `execCommand`, bo przy otwarciu pliku z `file://` przeglądarka nie daje dostępu do `navigator.clipboard` i kopiowanie wcześniej milczało.

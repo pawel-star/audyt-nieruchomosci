@@ -341,7 +341,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.2', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.4', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -700,12 +700,32 @@ function parseCsv(t){
 /* ============================================================
    ZAPIS / ODCZYT
    ============================================================ */
-function saveFile(){
+async function saveFile(){
   S.ts=new Date().toISOString();
-  const name='audyt-'+(S.meta.adres||'nieruchomosc').replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+/g,'-').slice(0,40).toLowerCase()+'.json';
-  const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const baza='audyt-'+(S.meta.adres||'nieruchomosc').replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+/g,'-').slice(0,40).toLowerCase();
+  const stamp=new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+  const json=JSON.stringify(S,null,2);
+  /* 1) Natywne okno zapisu — pozwala nadpisać istniejący plik albo wpisać nowy.
+     Działa w bezpiecznym kontekście (https); przy otwarciu z dysku go nie ma. */
+  if(window.showSaveFilePicker){
+    try{
+      const h=await window.showSaveFilePicker({suggestedName:(S.plik||baza+'.json'),
+        types:[{description:'Audyt (JSON)',accept:{'application/json':['.json']}}]});
+      const w=await h.createWritable(); await w.write(json); await w.close();
+      S.plik=h.name; save(); alert('Zapisano do pliku '+h.name+'.');
+      return;
+    }catch(e){ if(e&&e.name==='AbortError')return; /* inny błąd — spadamy do pobrania */ }
+  }
+  /* 2) Zapas dla pliku otwartego z dysku: pobranie z wyborem nazwy */
+  let name;
+  if(S.plik){
+    const nadpisz=confirm('Nadpisać poprzedni plik?\n\n'+S.plik+'\n\nOK — nadpisz (ta sama nazwa).\nAnuluj — zapisz jako nowy plik z datą.');
+    name = nadpisz ? S.plik : baza+'-'+stamp+'.json';
+  } else name = baza+'.json';
+  const b=new Blob([json],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  S.plik=name; save();
 }
 function resetAll(){
   const n=allChecks().filter(c=>S.a[c.id]!=null&&S.a[c.id]!=='').length;
@@ -735,7 +755,7 @@ function loadFile(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);
-    Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,d);save();TAB='start';render();
+    Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,d);S.plik=f.name;save();TAB='start';render();
   }catch(x){alert('Nie udało się wczytać pliku.');}};
   r.readAsText(f);
 }
@@ -2947,6 +2967,7 @@ function rynek(){
 function negInit(){
   if(!S.neg)S.neg={items:{},oferta:'',cel:'',granica:''};
   if(!S.neg.items)S.neg.items={};
+  if(!S.neg.wyceny)S.neg.wyceny={};
   return S.neg;
 }
 /* pozycje negocjacyjne: wady z audytu, wycenione notatki, odniesienie
@@ -2981,6 +3002,17 @@ function negRows(){
   (S.neg&&S.neg.wlasne?S.neg.wlasne:[]).forEach((w,i)=>{
     rows.push({key:'w:'+i, typ:'wlasna', lv:'yellow', mname:'Twoja uwaga',
       tytul:w.tytul||'(bez nazwy)', opis:'', arg:w.tytul||'', sugestia:+w.kwota||0, max:0, skad:'', idx:i});
+  });
+  /* nałóż wyceny z researchu regionalnego — nadpisują sugestię i widełki dla swojej pozycji */
+  const wyc=(S.neg&&S.neg.wyceny)?S.neg.wyceny:{};
+  rows.forEach(r=>{
+    const q=wyc[r.key];
+    if(q&&(q.min||q.max)){
+      r.sugestia=q.min||q.max;
+      r.max=q.max||q.min;
+      r.research=true; r.region=q.region||'';
+      r.skad='wycena wg cen regionu'+(q.region?' ('+q.region+')':'');
+    }
   });
   return rows;
 }
@@ -3025,6 +3057,92 @@ function negSuma(){
   return negRows().reduce((s,r)=>{const st=negState(r);return s+(st.on?(+st.kwota||0):0);},0);
 }
 function negField(k,v){negInit()[k]=v;save();negPaint();}
+/* ---------- WYCENA WAD W CENACH REGIONU (przez wtyczkę) ----------
+   Zbiorczy prompt dla wszystkich wad danego zakresu, jedno pole na
+   wklejenie odpowiedzi. Wycena nadpisuje sztywne widełki dla pozycji. */
+function wycPozycje(zakres){
+  return negRows().filter(r=> zakres==='wlasne'
+    ? (r.typ==='wlasna' && (r.tytul&&r.tytul!=='(bez nazwy)'))
+    : (r.typ==='wada'||r.typ==='notatka'));
+}
+function promptWyceny(zakres){
+  const p=S.parcel||{}, m=S.meta||{};
+  const rows=wycPozycje(zakres);
+  const lok=[];
+  if(m.adres)lok.push('Adres: '+m.adres);
+  if(p.commune)lok.push('Gmina: '+p.commune+(p.county?', '+p.county:''));
+  else if(p.county)lok.push('Powiat: '+p.county);
+  if(p.lat&&p.lon)lok.push('Współrzędne: '+p.lat.toFixed(5)+', '+p.lon.toFixed(5));
+  const naglowek = zakres==='wlasne'
+    ? 'Wycena kosztów w cenach regionu — pozycje dodane ręcznie'
+    : 'Wycena kosztów usunięcia wad w cenach regionu';
+  let out='[Audyt Nieruchomości v'+APP.ver+'] '+naglowek+'\n\n';
+  out += (lok.length?lok.join('\n'):'(brak danych lokalizacji — ustal region z opisu poniżej)')+'\n\n';
+  out += 'ZADANIE\n'
+    + 'Ustal najpierw województwo właściwe dla tej lokalizacji (z gminy, powiatu albo współrzędnych). '
+    + 'Następnie dla każdej pozycji poniżej znajdź aktualny rynkowy koszt jej usunięcia albo naprawy w cenach tego województwa — '
+    + 'stawki robocizny i materiałów u wykonawców z regionu, nie średnią krajową. Podaj widełki od–do w złotych.\n\n'
+    + 'ZASADY\n'
+    + '- Liczą się ceny regionalne. Jeśli musisz podać stawkę krajową, zaznacz to.\n'
+    + '- Zawsze widełki (od–do), nie jedna liczba.\n'
+    + '- Krótko wskaż, na czym opierasz kwotę (rodzaj źródła, data jeśli jest).\n'
+    + '- Nie zgaduj bez oparcia. Gdy brak danych regionalnych dla pozycji, napisz to wprost i podaj widełki krajowe z adnotacją.\n\n'
+    + 'POZYCJE DO WYCENY\n';
+  if(!rows.length){
+    out += (zakres==='wlasne'?'(nie dodałeś jeszcze własnych pozycji)':'(audyt nie wykazał wad do wyceny)')+'\n';
+  } else {
+    rows.forEach(r=>{
+      out += '──────────\n'+ (r.tytul||'(bez nazwy)') +'  `'+r.key+'`\n';
+      const kontekst=(r.opis||r.arg||'').replace(/<[^>]+>/g,'').trim();
+      if(kontekst) out += kontekst.slice(0,220)+'\n';
+    });
+  }
+  out += '\nFORMAT ODPOWIEDZI (dla każdej pozycji dokładnie taki blok, nic poza nim):\n'
+    + '### <tytuł>  `<kod z listy powyżej>`\n'
+    + 'WYCENA: <od> – <do> zł\n'
+    + 'REGION: <województwo>\n'
+    + 'ŹRÓDŁO: <na czym oparte>\n';
+  return out;
+}
+function copyPromptWyceny(zakres,btn){ copyText(promptWyceny(zakres),btn); }
+function parseWyceny(txt,zakres){
+  const n=negInit();
+  const keys=wycPozycje(zakres).map(r=>r.key);
+  const lines=String(txt||'').split(/\r?\n/);
+  const zmienione={};
+  let cur=null;
+  const liczby=s=>{const mm=String(s).match(/\d[\d \u00a0\u202f.]*/g)||[];
+    return mm.map(x=>parseInt(x.replace(/[^\d]/g,''),10)).filter(x=>x>=100);};
+  lines.forEach(ln=>{
+    const bt=ln.match(/`([^`]+)`/);
+    const cand=bt?bt[1].trim():null;
+    if(cand&&keys.indexOf(cand)>=0){ cur=cand; }
+    else { const hit=keys.find(k=>ln.indexOf(k)>=0); if(hit)cur=hit; }
+    if(!cur)return;
+    if(/wycena/i.test(ln)){
+      const ll=liczby(ln);
+      if(ll.length){ const a=ll[0], b=ll[1]||ll[0];
+        n.wyceny[cur]=Object.assign({},n.wyceny[cur],{min:Math.min(a,b),max:Math.max(a,b)});
+        zmienione[cur]=1;
+      }
+    }
+    if(/region/i.test(ln)&&n.wyceny[cur]){
+      const r=ln.replace(/.*region\s*[:\-]?\s*/i,'').trim();
+      if(r)n.wyceny[cur].region=r.slice(0,40);
+    }
+  });
+  Object.keys(zmienione).forEach(k=>{ if(n.items[k])n.items[k].kwota=n.wyceny[k].min; });
+  return {n:Object.keys(zmienione).length};
+}
+function importWyceny(zakres){
+  const el=document.getElementById('wycText_'+zakres); if(!el)return;
+  const t=el.value.trim();
+  if(!t){alert('Wklej najpierw wycenę, którą zwróciła wtyczka.');return;}
+  const A=parseWyceny(t,zakres);
+  if(!A.n){alert('Nie rozpoznałem żadnej wyceny.\n\nOdpowiedź musi zawierać bloki z kodem pozycji w `...` i linią WYCENA z kwotami od–do. Wklej całą odpowiedź wtyczki, nie jej fragment.');return;}
+  save(); render();
+  alert('Wczytałem '+A.n+' '+(A.n===1?'wycenę':'wycen')+' w cenach regionu.\n\nKwoty podstawiłem przy pozycjach. Zaznacz te, które chcesz liczyć do obniżki.');
+}
 function negPaint(){
   const suma=negSuma(), cena=+S.meta.cena||0;
   const e=$('#negSuma'); if(e)e.textContent=fmt(suma)+' zł';
@@ -3130,11 +3248,31 @@ function viewNeg(){
       Tam gdzie nie rozpoznałem, kwotę wpisujesz sam.</p>
     ${notatki.length?notatki.map(wiersz).join(''):'<div class="msg info">Nie dodałeś jeszcze notatek. Pole notatki jest pod każdym pytaniem.</div>'}
 
+    <details class="wycbox" style="margin-top:12px;border-top:1px solid #2a2a2a;padding-top:10px">
+      <summary style="cursor:pointer;font-weight:600">Wyceń wady w cenach regionu (${wady.length+notatki.length})</summary>
+      <p class="lead" style="margin:8px 0">Skopiuj prompt i wklej go do wtyczki w przeglądarce. Ona ustali województwo z lokalizacji i zrobi research aktualnych cen usunięcia tych wad u wykonawców z regionu. Wynik wklej poniżej, a podstawię kwoty przy pozycjach. Wycena regionalna nadpisuje sztywne widełki.</p>
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn sm sec" onclick="copyPromptWyceny('audyt', this)">Kopiuj prompt wyceny</button>
+      </div>
+      <textarea id="wycText_audyt" placeholder="Wklej tu wycenę zwróconą przez wtyczkę" style="width:100%;min-height:90px"></textarea>
+      <button class="btn sm" style="margin-top:8px" onclick="importWyceny('audyt')">Wczytaj wyceny</button>
+    </details>
+
     <h3>Twoje własne pozycje (${wlasne.length})</h3>
     <p class="lead" style="margin-bottom:8px">Cokolwiek, co ci przeszkadza, a czego nie ma na liście:
       brak garażu, zbyt mała kuchnia, odległość od szkoły.</p>
     ${wlasne.map(wlasnyWiersz).join('')}
     <button class="btn sm sec" style="margin-top:8px" onclick="negDodaj()">Dodaj własną pozycję</button>
+    ${wlasne.length?`
+    <details class="wycbox" style="margin-top:12px;border-top:1px solid #2a2a2a;padding-top:10px">
+      <summary style="cursor:pointer;font-weight:600">Wyceń dodane pozycje w cenach regionu (${wlasne.length})</summary>
+      <p class="lead" style="margin:8px 0">To samo dla pozycji dopisanych ręcznie. Nazwij je najpierw, potem skopiuj prompt, wklej do wtyczki i wróć z wyceną.</p>
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn sm sec" onclick="copyPromptWyceny('wlasne', this)">Kopiuj prompt wyceny</button>
+      </div>
+      <textarea id="wycText_wlasne" placeholder="Wklej tu wycenę zwróconą przez wtyczkę" style="width:100%;min-height:90px"></textarea>
+      <button class="btn sm" style="margin-top:8px" onclick="importWyceny('wlasne')">Wczytaj wyceny</button>
+    </details>`:''}
   </div>
 
   ${cena?`
