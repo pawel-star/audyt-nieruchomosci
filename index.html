@@ -182,7 +182,7 @@ details.hlp[open] summary::before{content:"▾ "}
 .negsec{font-size:11.5px;color:var(--tx3);margin-top:2px}
 .negop{font-size:12.5px;color:var(--tx2);margin-top:4px;line-height:1.45}
 .negskad{font-size:11.5px;color:#7dabf8;margin-top:4px;line-height:1.4;font-style:italic}
-.negkw{flex:none;width:112px;text-align:right;font-weight:650;font-size:14px;
+input.negkw{flex:none;width:112px;text-align:right;font-weight:650;font-size:14px;
   background:var(--panel2);border:1px solid var(--line);color:var(--tx);padding:8px 10px;border-radius:8px}
 .negkw:disabled{opacity:.35}
 .negsum{display:flex;gap:16px;flex-wrap:wrap}
@@ -341,7 +341,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.6', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.7', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -3188,6 +3188,13 @@ function viewNeg(){
   const r=rynek();
   const wady=rows.filter(x=>x.typ==='wada'), notatki=rows.filter(x=>x.typ==='notatka'),
         rynkowe=rows.filter(x=>x.typ==='rynek'), wlasne=rows.filter(x=>x.typ==='wlasna');
+  /* nie wrzucamy do jednej kupy wszystkiego, co audyt zauważył: pozycje z policzoną
+     kwotą (te, które automat sam zaznaczył ptaszkiem) idą na górę, żeby od razu było
+     widać, co realnie wchodzi do obniżki. Reszta — uwagi bez wyceny — czeka niżej */
+  const wadyWycenione=wady.filter(x=>negState(x).on&&(+negState(x).kwota||0)>0)
+    .sort((a,b)=>(+negState(b).kwota||0)-(+negState(a).kwota||0));
+  const wadyBezWyceny=wady.filter(x=>!(negState(x).on&&(+negState(x).kwota||0)>0))
+    .sort((a,b)=>(a.lv==='red'?0:1)-(b.lv==='red'?0:1));
   const sugOferta = cena&&suma ? Math.max(0,Math.round((cena-suma*1.35)/1000)*1000) : 0;
   const sugCel = cena&&suma ? Math.round((cena-suma)/1000)*1000 : 0;
   const sugGranica = cena&&suma ? Math.round((cena-suma*0.5)/1000)*1000 : 0;
@@ -3270,8 +3277,14 @@ function viewNeg(){
       <button class="btn sm sec" onclick="negAll(false)">Odznacz wszystkie</button>
     </div>
     ${rynkowe.length?`<h3 style="margin-top:4px">Odniesienie do rynku</h3>${rynkowe.map(wiersz).join('')}`:''}
-    <h3 ${!rynkowe.length?'style="margin-top:4px"':''}>Wady wykryte w audycie (${wady.length})</h3>
-    ${wady.length?wady.map(wiersz).join(''):'<div class="msg info">Audyt nie wykazał jeszcze wad.</div>'}
+
+    <h3 ${!rynkowe.length?'style="margin-top:4px"':''}>Wady z policzoną kwotą — zaznaczone automatycznie (${wadyWycenione.length})</h3>
+    <p class="lead" style="margin-bottom:8px">Te audyt sam wycenił i włączył do obniżki. Odznacz te, których nie chcesz podnosić w rozmowie.</p>
+    ${wadyWycenione.length?wadyWycenione.map(wiersz).join(''):'<div class="msg info">Żadna wykryta wada nie ma jeszcze policzonej kwoty — sprawdź sekcję niżej albo dokończ audyt.</div>'}
+
+    <h3>Pozostałe uwagi z audytu, bez wyceny (${wadyBezWyceny.length})</h3>
+    <p class="lead" style="margin-bottom:8px">Realne spostrzeżenia, ale bez gotowej kwoty w złotówkach: albo ustalasz cenę sam, albo znaczenie ma nie pieniądz, tylko sama decyzja o zakupie. Włączasz je do obniżki tylko wtedy, gdy sam wpiszesz kwotę.</p>
+    ${wadyBezWyceny.length?wadyBezWyceny.map(wiersz).join(''):'<div class="msg info">Wszystkie wykryte wady mają już policzoną kwotę.</div>'}
 
     <h3>Z twoich notatek (${notatki.length})</h3>
     <p class="lead" style="margin-bottom:8px">Rozpoznaję w notatkach typowe problemy i proponuję widełki.
