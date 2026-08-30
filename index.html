@@ -341,7 +341,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.5', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.6', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -1866,14 +1866,22 @@ const M = [
    <b>Praktyka:</b> podejdź do dwóch–trzech domów, przedstaw się i powiedz wprost, że rozważasz kupno sąsiedniej nieruchomości.`},
 
  {id:'n_plany', src:'wlasne', mode:'man', q:'Czy w okolicy planowane są inwestycje drogowe lub infrastrukturalne?',
+  why:'Sama mapa GDDKiA nie wystarczy: obwodnice i drogi łączące bywają wojewódzkie albo powiatowe, więc GDDKiA ich w ogóle nie pokazuje. Trzeba sprawdzić właściwego zarządcę drogi, nie tylko krajowego.',
   type:'yn', opts:YN,
-  flag:v=>v==='tak'?Y('Planowane inwestycje w okolicy','Nowa droga szybkiego ruchu, obwodnica, linia kolejowa albo farma fotowoltaiczna zmieniają charakter miejsca. Bywa to plus (lepszy dojazd) i minus (hałas, wywłaszczenia). Ustal dokładny przebieg i etap procedury.',0,0,'Planowane inwestycje infrastrukturalne mogące wpłynąć na charakter otoczenia.'):(v==='nie'?G('Brak znanych planów inwestycyjnych',''):null),
-  help:`<b>Gdzie sprawdzić:</b>
-   <ol><li><b>Plany GDDKiA</b> — mapa inwestycji drogowych.</li>
+  manual:`<b>Zarząd dróg wojewódzkich</b> właściwy dla województwa — sprawdź stronę i aktualności, jeśli droga łączy dwie drogi wojewódzkie albo omija miasto powiatowe, to zwykle jego inwestycja, nie GDDKiA.
+   <br><br><b>Powiatowy zarząd dróg</b> — dla dróg powiatowych, mniejsza skala, ale ten sam mechanizm.
+   <br><br><b>Urząd gminy / miasta, zakładka „Aktualności"</b> — lokalne władze ogłaszają etapy budowy, harmonogram i przetargi zwykle wcześniej i bardziej szczegółowo niż ogólnopolskie mapy inwestycyjne.`,
+  flag:v=>v==='tak'?Y('Planowane inwestycje w okolicy','Nowa droga szybkiego ruchu, obwodnica, linia kolejowa albo farma fotowoltaiczna zmieniają charakter miejsca. Bywa to plus (lepszy dojazd, mniej ruchu tranzytowego na starych drogach) i minus (nowe źródło hałasu bliżej domu, kilkanaście miesięcy uciążliwości budowy, wywłaszczenia). Ustal dokładny przebieg trasy względem działki, etap procedury i planowany termin, sam kierunek inwestycji nie mówi jeszcze, czy wyjdzie na plus czy na minus.',0,0,'Planowane inwestycje infrastrukturalne mogące wpłynąć na charakter otoczenia — przebieg trasy względem działki do potwierdzenia.'):(v==='nie'?G('Brak znanych planów inwestycyjnych',''):null),
+  help:`<b>Gdzie sprawdzić, w tej kolejności:</b>
+   <ol><li><b>Plany GDDKiA</b> — mapa inwestycji drogowych, ale tylko drogi krajowe.</li>
+   <li><b>Zarząd dróg wojewódzkich</b> dla twojego województwa — obwodnice łączące drogi wojewódzkie są jego inwestycją, nie GDDKiA, i nie znajdziesz ich na mapie krajowej.</li>
+   <li><b>Powiatowy zarząd dróg</b> — analogicznie dla dróg powiatowych.</li>
+   <li><b>Aktualności na stronie gminy lub miasta</b> — urząd lokalny publikuje etapy, harmonogram i wartość inwestycji szybciej niż ogólnopolskie mapy, często z konkretną datą startu kolejnego odcinka.</li>
    <li><b>Studium i plan ogólny gminy</b> — rezerwy terenu pod drogi są tam zaznaczone.</li>
    <li><b>BIP gminy i starostwa</b> — obwieszczenia o decyzjach środowiskowych i lokalizacyjnych.</li>
    <li><b>Zapytaj sąsiadów</b> — o planowanych inwestycjach mieszkańcy wiedzą wcześniej niż mapy.</li></ol>
-   <b>Szczególnie sprawdź:</b> plany budowy farm fotowoltaicznych i wiatrowych, ferm, masztów i punktów zbiórki odpadów.`}
+   <b>Jeśli trasa faktycznie powstaje w pobliżu:</b> ustal na mapie przebiegu, po której stronie działki biegnie i w jakiej odległości, zanim ocenisz to jako plus albo minus. Nowa obwodnica bywa ulgą (ruch znika ze starej drogi) albo nowym źródłem hałasu (wiadukt czy węzeł blisko domu) w zależności właśnie od tego.
+   <br><br><b>Szczególnie sprawdź:</b> plany budowy farm fotowoltaicznych i wiatrowych, ferm, masztów i punktów zbiórki odpadów.`}
 ]},
 
 /* ---------------- M9 CENA ---------------- */
@@ -1905,6 +1913,21 @@ const M = [
    <li>Zbierz 3–5 transakcji z ostatnich 12–18 miesięcy, o zbliżonej powierzchni.</li>
    <li>Przelicz na zł/m² powierzchni użytkowej i porównaj z ofertą.</li></ol>
    <b>Uwaga na pułapkę:</b> cena transakcyjna dotyczy całej nieruchomości. Porównuj domy o podobnym standardzie i wieku.`},
+
+ {id:'c_cechy', src:'wlasne', mode:'man', q:'Czy oferty i transakcje branе do porównania mają podobne udogodnienia?',
+  why:'Cena za m² bez korekty o garaż, standard wykończenia i wielkość działki porównuje różne produkty, nie tę samą nieruchomość. To najczęstszy błąd w samodzielnej wycenie.',
+  type:'select', opts:[['tak','Tak, porównywalne'],['garaz','Porównania mają garaż, ta nieruchomość nie'],['standard','Inny standard wykończenia (deweloperski kontra gotowy)'],['oba','Oba naraz: garaż i inny standard'],['?','Nie sprawdzono']],
+  flag:v=>{
+    if(v==='garaz')return Y('Brak garażu względem porównań','Wolnostojący garaż jednostanowiskowy to dziś koszt budowy rzędu 50 000–120 000 zł, zależnie od technologii i wykończenia bramy, a dobudowanie go po fakcie wychodzi drożej niż postawienie razem z domem. Jeśli porównywane oferty w tym samym przedziale cenowym mają garaż, a ta nieruchomość nie, różnica w cenie ofertowej powinna to pokrywać.',50000,120000,'Nieruchomość nie ma garażu, w przeciwieństwie do porównywanych ofert w tym samym segmencie cenowym.');
+    if(v==='standard')return Y('Inny standard wykończenia w porównaniu','Różnica między stanem deweloperskim a wykończeniem pod klucz w wysokim standardzie to zwykle 200 000–350 000 zł dla domu tej wielkości. Porównanie ceny za m² ma sens tylko między ofertami o zbliżonym standardzie, inaczej wniosek jest fałszywy, nawet jeśli liczby wyglądają solidnie.',0,0,'Porównywane oferty różnią się standardem wykończenia, co zniekształca wniosek z porównania cen za m².');
+    if(v==='oba')return Y('Garaż i standard wykończenia różne od porównań naraz','Dwie zmienne jednocześnie utrudniają rzetelne porównanie. Rozdziel je: policz osobno wartość brakującego garażu i osobno różnicę w standardzie, zamiast szacować różnicę „na oko" jedną liczbą.',50000,120000,'Porównania różnią się jednocześnie obecnością garażu i standardem wykończenia.');
+    if(v==='tak')return G('Porównania jabłko do jabłka','Udogodnienia zbliżone, wniosek z porównania cen za m² jest wiarygodny.');
+    return null;},
+  help:`<b>Zanim uznasz różnicę w cenie za m² za argument negocjacyjny, sprawdź, czy w ogóle porównujesz to samo:</b>
+   <ul><li><b>Stan wykończenia</b> — stan deweloperski (bez podłóg, glazury, malowania, białego montażu) to inny produkt niż dom gotowy do zamieszkania. Różnica w koszcie dojścia do tego samego standardu to zwykle 200–350 tys. zł.</li>
+   <li><b>Garaż</b> — jego brak przy podobnej cenie ofertowej to realna luka, budowa dziś kosztuje 50–120 tys. zł, a dobudowa po fakcie jeszcze więcej.</li>
+   <li><b>Wielkość działki</b> — 900 m² i 300 m² to inny produkt nawet przy tym samym metrażu domu, licz to osobno, nie w cenie za m² budynku.</li></ul>
+   <b>Zasada:</b> odrzuć z porównania oferty różniące się więcej niż jedną istotną cechą, albo policz korektę dla każdej różnicy osobno, zamiast uśredniać wszystko razem w jedną stawkę zł/m².`},
 
  {id:'c_czas', src:'wlasne', mode:'man', q:'Jak długo nieruchomość jest w sprzedaży?',
   type:'select', opts:[['nowa','Do miesiąca'],['sred','1–3 miesiące'],['dlugo','Powyżej 3 miesięcy'],['?','Nie ustalono']],
@@ -1952,6 +1975,7 @@ const POIDEF=[
  {k:'quarry', q:'nwr["landuse"="quarry"]',                   n:'Kopalnia / kamieniołom',lv:'red',    r:2000, w:'Hałas, pył, ruch ciężarówek, możliwe wstrząsy.'},
  {k:'landfl', q:'nwr["landuse"="landfill"]',                 n:'Składowisko odpadów',   lv:'red',    r:2000, w:'Zapachy, ptactwo, gryzonie, ruch śmieciarek.'},
  {k:'waste',  q:'nwr["man_made"="wastewater_plant"]',        n:'Oczyszczalnia ścieków', lv:'red',    r:1500, w:'Uciążliwość zapachowa, zwłaszcza przy wietrze z tej strony.'},
+ {k:'pump',   q:'nwr["man_made"="pumping_station"]',        n:'Przepompownia ścieków', lv:'yellow', r:400,  w:'Mniejsza skala niż oczyszczalnia, ale możliwy zapach przy awarii lub upale i niewielki hałas silnika. Sprawdź typ komory (zamknięta czy otwarta) i czy w pobliżu nie biegnie służebność przesyłu.'},
  {k:'motor',  q:'way["highway"~"^(motorway|trunk)$"]',       n:'Droga szybkiego ruchu', lv:'yellow', r:1500, w:'Stały szum. Poniżej 500 m bywa dokuczliwy, zwłaszcza nocą.'},
  {k:'prim',   q:'way["highway"="primary"]',                  n:'Droga krajowa / główna',lv:'yellow', r:600,  w:'Ruch tranzytowy i hałas.'},
  {k:'rail',   q:'way["railway"="rail"]["usage"!="industrial"]',n:'Linia kolejowa',      lv:'yellow', r:1000, w:'Hałas i wibracje. Sprawdź, czy linia jest czynna.'},
@@ -1997,7 +2021,9 @@ function LK(key){
    wody:['https://wody.gov.pl/kontakt','Wody Polskie — kontakt','Zgoda wodnoprawna przy zjeździe przez rów'],
    drogi: pw?['https://duckduckgo.com/?q='+encodeURIComponent('zarząd dróg '+(p.county||'')+' zjazd z drogi publicznej wniosek'),'Zarządca drogi','Decyzja lokalizacyjna zjazdu'] : null,
    pinb: pw?['https://duckduckgo.com/?q='+encodeURIComponent('PINB '+(p.county||'')+' nadzór budowlany kontakt'),'Nadzór budowlany (PINB)','Zapytaj o postępowania dla działki'] : null,
-   gddkia:['https://www.gov.pl/web/gddkia/mapa-stanu-budowy-drog','Mapa inwestycji drogowych GDDKiA','Planowane drogi i obwodnice'],
+   gddkia:['https://www.gov.pl/web/gddkia/mapa-stanu-budowy-drog','Mapa inwestycji drogowych GDDKiA','Tylko drogi krajowe — obwodnice bywają wojewódzkie lub powiatowe i tu się nie pokażą'],
+   zdw: p.voiv?['https://duckduckgo.com/?q='+encodeURIComponent('zarząd dróg wojewódzkich '+p.voiv+' inwestycje obwodnica mapa'),'Zarząd dróg wojewódzkich','Drogi wojewódzkie — GDDKiA ich nie prowadzi, a to często ta kategoria'] : null,
+   aktualnosciGmina: g?['https://duckduckgo.com/?q='+encodeURIComponent((p.commune||'')+' aktualności obwodnica inwestycja drogowa'),'Aktualności gminy / miasta','Lokalne wiadomości urzędu wyprzedzają oficjalne mapy inwestycji o miesiące'] : null,
    maps: la?['https://www.google.com/maps/@'+la+','+lo+',19z','Google Maps','Street View i zdjęcia satelitarne'] : null,
    street: la?['https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+la+','+lo,'Street View','Zobacz z poziomu ulicy'] : null,
    osm: la?['https://www.openstreetmap.org/#map=17/'+la+'/'+lo,'OpenStreetMap','Podgląd okolicy'] : null,
@@ -2027,7 +2053,7 @@ const MODLINKS={
  m5:['geoportal','powiat'],
  m6:['geoportal','drogi','maps','street','wody'],
  m7:['isok','sopo','gdos','gios'],
- m8:['mpzp','gddkia','osm','maps'],
+ m8:['mpzp','gddkia','zdw','aktualnosciGmina','osm','maps'],
  m9:['rcn','oferta','maps']
 };
 function toolbar(mid){
