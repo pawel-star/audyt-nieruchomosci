@@ -341,7 +341,7 @@ function note(k,v){ S.n[k]=v; save(); paintBar(); }
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.8', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.11', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -396,7 +396,7 @@ ${cur?'\nW audycie zapisano już odpowiedź: „'+curLab+'”. Zweryfikuj ją i 
 TRYB PRACY
 - Wykonaj wszystkie kroki jednym ciągiem. Nie zatrzymuj się między nimi po potwierdzenie.
 - Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
-- Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Niczego nie zapisujesz, nie wysyłasz formularzy, nie logujesz się i nie akceptujesz regulaminów.
+- Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Banner z cookies albo regulaminem serwisu, który zasłania mapę, możesz zaakceptować — masz na to moją zgodę, to jedyny wyjątek od zasady „nic nie klikam poza odczytem". Poza tym niczego nie zapisujesz, nie wysyłasz formularzy i nie logujesz się.
 - Jeśli któraś strona nie działa albo brakuje warstwy, nie przerywaj całości: zanotuj to i przejdź do kolejnego zadania.
 - Nie ponawiaj tego samego kroku (ponowne otwarcie strony, ponowne wyszukanie działki) więcej niż raz. Jeśli się nie uda za drugim razem, zanotuj i przejdź dalej — to droższe niż warte.
 - Wyniki z paneli informacyjnych (np. po kliknięciu narzędziem "informacja" w działkę) czytaj jako tekst strony, nie jako zrzut ekranu — to szybsze i tańsze. Zrzut ekranu rób tylko wtedy, gdy informacja jest widoczna wyłącznie wizualnie na samej mapie (np. zasięg strefy, kolor warstwy), i wystarczy jeden na warstwę.
@@ -435,7 +435,7 @@ ${done.length?'\nNa te pytania audyt ma już odpowiedzi — zweryfikuj i popraw,
 TRYB PRACY
 - Wykonaj wszystkie kroki jednym ciągiem. Nie zatrzymuj się między nimi po potwierdzenie.
 - Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
-- Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Niczego nie zapisujesz, nie wysyłasz formularzy, nie logujesz się i nie akceptujesz regulaminów.
+- Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Banner z cookies albo regulaminem serwisu, który zasłania mapę, możesz zaakceptować — masz na to moją zgodę, to jedyny wyjątek od zasady „nic nie klikam poza odczytem". Poza tym niczego nie zapisujesz, nie wysyłasz formularzy i nie logujesz się.
 - Jeśli któraś strona nie działa albo brakuje warstwy, nie przerywaj całości: zanotuj to i przejdź do kolejnego zadania.
 - Nie ponawiaj tego samego kroku (ponowne otwarcie strony, ponowne wyszukanie działki) więcej niż raz. Jeśli się nie uda za drugim razem, zanotuj i przejdź dalej — to droższe niż warte.
 - Wyniki z paneli informacyjnych (np. po kliknięciu narzędziem "informacja" w działkę) czytaj jako tekst strony, nie jako zrzut ekranu — to szybsze i tańsze. Zrzut ekranu rób tylko wtedy, gdy informacja jest widoczna wyłącznie wizualnie na samej mapie (np. zasięg strefy, kolor warstwy), i wystarczy jeden na warstwę.
@@ -2314,6 +2314,8 @@ function viewStart(){
       <button class="btn sm sec" onclick="copyDomains()">Kopiuj</button></div>
       <b>3. Sam prompt też pomaga.</b> Każdy prompt zaczyna się sekcją „Tryb pracy”, która mówi: wykonaj wszystko jednym ciągiem,
       nie przedstawiaj planu do akceptacji, przy przeszkodzie nie przerywaj. To nie zastąpi ustawienia trybu, ale zmniejsza liczbę zatrzymań.
+      <br><br><b>4. Bannery z cookies i regulaminem.</b> Prompt ma teraz wprost moją zgodę na zaklikanie bannera, który zasłania mapę —
+      to jedyny wyjątek od reguły „tylko odczyt”. Reszta (logowanie, wysyłanie formularzy, zapis czegokolwiek) zostaje zabroniona.
     </div>
   </div>
 
@@ -2800,27 +2802,121 @@ function cienBudynku(obrys, dlugosc, kierunek){
   const przes=obrys.map(p=>({x:p.x+dx,y:p.y+dy}));
   return otoczkaWypukla(obrys.concat(przes));
 }
-/* rysunek: rzut z góry, północ do góry */
-function rysunekCienia(obrys, cien, dzialka, opis, rozmiar){
-  const R=rozmiar||210, pad=14;
-  const all=[].concat(obrys, cien||[], dzialka||[]);
+/* barwy nieba i światła w zależności od wysokości słońca nad horyzontem */
+const NIEBO_STOPY=[
+  {alt:0,  top:'#161d2e', bottom:'#8a5a35', glow:'#e8a55c', sun:'#ffcf8a', r:7.2},
+  {alt:10, top:'#152238', bottom:'#a9713f', glow:'#f0b46a', sun:'#ffd98f', r:6.6},
+  {alt:25, top:'#122544', bottom:'#3e5f86', glow:'#9db8dd', sun:'#fff0c4', r:6},
+  {alt:45, top:'#0f2036', bottom:'#2f4f79', glow:'#7fa3d1', sun:'#fff6dc', r:5.4},
+  {alt:65, top:'#0d1c30', bottom:'#1f3b60', glow:'#5c86bd', sun:'#ffffff', r:5}
+];
+const ALT_MAX_NIEBO=NIEBO_STOPY[NIEBO_STOPY.length-1].alt;
+/* miesza dwa kolory hex w proporcji t (0..1) */
+function mixHex(a,b,t){
+  const pa=parseInt(a.slice(1),16), pb=parseInt(b.slice(1),16);
+  const ar=(pa>>16)&255, ag=(pa>>8)&255, ab=pa&255, br=(pb>>16)&255, bg=(pb>>8)&255, bb=pb&255;
+  const r=Math.round(ar+(br-ar)*t), g=Math.round(ag+(bg-ag)*t), bl=Math.round(ab+(bb-ab)*t);
+  return '#'+[r,g,bl].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+/* interpolacja barw nieba/światła między progami NIEBO_STOPY dla danej wysokości słońca */
+function barwyNieba(alt){
+  const a=Math.max(0,Math.min(ALT_MAX_NIEBO,alt||0));
+  let i=0; while(i<NIEBO_STOPY.length-2 && a>NIEBO_STOPY[i+1].alt) i++;
+  const s0=NIEBO_STOPY[i], s1=NIEBO_STOPY[i+1];
+  const t=(a-s0.alt)/((s1.alt-s0.alt)||1);
+  return {
+    top:mixHex(s0.top,s1.top,t), bottom:mixHex(s0.bottom,s1.bottom,t),
+    glow:mixHex(s0.glow,s1.glow,t), sun:mixHex(s0.sun,s1.sun,t),
+    r:s0.r+(s1.r-s0.r)*t
+  };
+}
+/* rysunek: rzut z góry, północ do góry. Niebo, poświata, ściana budynku i pozycja
+   słońca liczone z alt/az tej konkretnej sytuacji — to samo źródło co reszta karty,
+   geometria cienia się nie zmienia, zmienia się tylko to, jak pokazuję światło. */
+/* wspólna rama (skala i środek) dla całej siatki dwunastu kafelków — liczona raz, z uwzględnieniem
+   obrysu, działki i wszystkich dwunastu możliwych cieni naraz, żeby budynek i działka wypadały
+   zawsze w tym samym miejscu i tej samej wielkości, a między kafelkami zmieniał się tylko cień */
+function ramaWspolna(obrys, dzialka, cienie, R, pad){
+  const all=[].concat(obrys, dzialka||[], ...cienie);
   const xs=all.map(p=>p.x), ys=all.map(p=>p.y);
   const minx=Math.min(...xs), maxx=Math.max(...xs), miny=Math.min(...ys), maxy=Math.max(...ys);
   const w=Math.max(maxx-minx,1), h=Math.max(maxy-miny,1);
   const s=Math.min((R-2*pad)/w,(R-2*pad)/h);
-  const cx=(minx+maxx)/2, cy=(miny+maxy)/2;
-  const T=p=>[(R/2+(p.x-cx)*s).toFixed(1),(R/2-(p.y-cy)*s).toFixed(1)].join(',');
+  return {R, pad, cx:(minx+maxx)/2, cy:(miny+maxy)/2, s};
+}
+function rysunekCienia(obrys, cien, dzialka, opis, alt, az, uid, rama){
+  /* bez przekazanej ramy liczę dopasowanie lokalnie z tego, co akurat rysuję (dawne zachowanie) —
+     w sunCard() zawsze przekazuję wspólną ramę, żeby budynek nie „skakał” między kafelkami */
+  const R=rama?rama.R:210, pad=rama?rama.pad:14;
+  let cx,cy,s;
+  if(rama){cx=rama.cx;cy=rama.cy;s=rama.s;}
+  else{
+    const all=[].concat(obrys, cien||[], dzialka||[]);
+    const xs=all.map(p=>p.x), ys=all.map(p=>p.y);
+    const minx=Math.min(...xs), maxx=Math.max(...xs), miny=Math.min(...ys), maxy=Math.max(...ys);
+    const w=Math.max(maxx-minx,1), h=Math.max(maxy-miny,1);
+    s=Math.min((R-2*pad)/w,(R-2*pad)/h);
+    cx=(minx+maxx)/2; cy=(miny+maxy)/2;
+  }
+  const Txy=p=>[R/2+(p.x-cx)*s, R/2-(p.y-cy)*s];
+  const T=p=>Txy(p).map(v=>v.toFixed(1)).join(',');
   const poly=(pts,fill,stroke,extra)=>pts&&pts.length?`<polygon points="${pts.map(T).join(' ')}" fill="${fill}" stroke="${stroke}" ${extra||''}/>`:'';
   /* podziałka: ładna okrągła długość mieszcząca się w rysunku */
   const kandydaci=[5,10,20,25,50,100];
   const skalaM=kandydaci.find(k=>k*s<R*0.42)||5;
+  const id=String(uid||'x').replace(/[^a-zA-Z0-9_-]/g,'')||'x';
+  const barwy=barwyNieba(alt);
+
+  /* pozycja słońca: kąt = azymut (N do góry, jak reszta rysunku), promień maleje z wysokością słońca —
+     nisko nad horyzontem blisko krawędzi, wysoko na niebie bliżej środka */
+  const azR=(az||0)*D2R;
+  const rf=Math.max(0,Math.min(1,(alt||0)/ALT_MAX_NIEBO));
+  const edgeR=R/2-8, innerR=30;
+  const sunR=edgeR-rf*(edgeR-innerR);
+  const sunX=R/2+Math.sin(azR)*sunR, sunY=R/2-Math.cos(azR)*sunR;
+  const promyki=[0,60,120,180,240,300].map(rot=>{
+    const ra=azR+rot*D2R, r1=barwy.r+2, r2=barwy.r+5;
+    const x1=sunX+Math.sin(ra)*r1, y1=sunY-Math.cos(ra)*r1;
+    const x2=sunX+Math.sin(ra)*r2, y2=sunY-Math.cos(ra)*r2;
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${barwy.sun}" stroke-width="1" stroke-linecap="round" opacity=".8"/>`;
+  }).join('');
+
+  /* ściana budynku: gradient od strony oświetlonej (w stronę słońca) do zacienionej (w stronę cienia) */
+  const cxo=obrys.reduce((acc,p)=>acc+p.x,0)/obrys.length, cyo=obrys.reduce((acc,p)=>acc+p.y,0)/obrys.length;
+  const extent=Math.max(...obrys.map(p=>Math.hypot(p.x-cxo,p.y-cyo)),1);
+  const sdx=Math.sin(azR), sdy=Math.cos(azR);
+  const [lx1,ly1]=Txy({x:cxo+sdx*extent,y:cyo+sdy*extent});
+  const [lx2,ly2]=Txy({x:cxo-sdx*extent,y:cyo-sdy*extent});
+  const scianaJasna=mixHex('#ffd9a0','#e4eeff',rf);
+
   return `<svg viewBox="0 0 ${R} ${R}" class="sunsvg">
-    <rect width="${R}" height="${R}" rx="8" fill="#0d1520"/>
+    <defs>
+      <linearGradient id="sky-${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${barwy.top}"/>
+        <stop offset="100%" stop-color="${barwy.bottom}"/>
+      </linearGradient>
+      <radialGradient id="glow-${id}" cx="${(sunX/R*100).toFixed(1)}%" cy="${(sunY/R*100).toFixed(1)}%" r="75%">
+        <stop offset="0%" stop-color="${barwy.glow}" stop-opacity=".35"/>
+        <stop offset="55%" stop-color="${barwy.glow}" stop-opacity=".08"/>
+        <stop offset="100%" stop-color="${barwy.glow}" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="wall-${id}" gradientUnits="userSpaceOnUse" x1="${lx1.toFixed(1)}" y1="${ly1.toFixed(1)}" x2="${lx2.toFixed(1)}" y2="${ly2.toFixed(1)}">
+        <stop offset="0%" stop-color="${scianaJasna}"/>
+        <stop offset="100%" stop-color="#16233d"/>
+      </linearGradient>
+    </defs>
+    <rect width="${R}" height="${R}" rx="8" fill="url(#sky-${id})"/>
+    <rect width="${R}" height="${R}" rx="8" fill="url(#glow-${id})"/>
     ${poly(dzialka,'rgba(148,163,184,.10)','rgba(148,163,184,.45)','stroke-width="1" stroke-dasharray="3 2"')}
-    ${poly(cien,'rgba(15,23,42,.72)','rgba(71,85,105,.7)','stroke-width="1"')}
-    ${poly(obrys,'#3b82f6','#93c5fd','stroke-width="1.2"')}
+    ${poly(cien,'rgba(15,23,42,.66)','rgba(71,85,105,.7)','stroke-width="1"')}
+    ${poly(obrys,`url(#wall-${id})`,'#cfe0ff','stroke-width="1.2"')}
+    <circle cx="${sunX.toFixed(1)}" cy="${sunY.toFixed(1)}" r="${barwy.r.toFixed(1)}" fill="${barwy.sun}" stroke="rgba(0,0,0,.25)" stroke-width=".5"/>
+    ${promyki}
     <g font-size="9" fill="#64748b" font-family="system-ui">
       <text x="${R/2}" y="12" text-anchor="middle" fill="#94a3b8">N</text>
+      <text x="${R/2}" y="${R-3}" text-anchor="middle" opacity=".55">S</text>
+      <text x="${R-4}" y="${R/2+3}" text-anchor="end" opacity=".55">E</text>
+      <text x="4" y="${R/2+3}" text-anchor="start" opacity=".55">W</text>
       <line x1="${pad}" y1="${R-10}" x2="${pad+skalaM*s}" y2="${R-10}" stroke="#64748b" stroke-width="1.5"/>
       <text x="${pad+skalaM*s/2}" y="${R-14}" text-anchor="middle">${skalaM} m</text>
       ${opis?`<text x="${R-pad}" y="${R-10}" text-anchor="end" fill="#94a3b8">${esc(opis)}</text>`:''}
@@ -2857,11 +2953,18 @@ function sunCard(){
   const zasiegDzialki = dzialka ? Math.max(...dzialka.map(q=>Math.hypot(q.x,q.y))) : null;
   const pokrywa = zasiegDzialki && zima.cien ? zima.cien > zasiegDzialki : null;
 
+  /* wszystkie dwanaście cieni naraz, żeby policzyć jedną wspólną ramę rysunku dla całej siatki */
+  const wszystkieCienie=[];
+  siatka.forEach(dt=>dt.pory.forEach(po=>{
+    if(po.alt>0.5){const c=cienBudynku(obrys,po.cien,po.kier); if(c)wszystkieCienie.push(c);}
+  }));
+  const rama = ramaWspolna(obrys, dzialka, wszystkieCienie, 210, 14);
+
   const kafel=(dt,po)=>{
     const cien = po.alt>0.5 ? cienBudynku(obrys, po.cien, po.kier) : null;
     return `<div class="sunkafel">
       <div class="sunhd">${esc(dt.n.split(' ')[0])} · ${esc(po.n.toLowerCase())}</div>
-      ${po.alt>0.5?rysunekCienia(obrys,cien,dzialka,''):`<div class="sunnoc">słońce pod horyzontem</div>`}
+      ${po.alt>0.5?rysunekCienia(obrys,cien,dzialka,'',po.alt,po.az,dt.k+'-'+po.k,rama):`<div class="sunnoc">słońce pod horyzontem</div>`}
       <div class="sunmeta">
         ${po.alt>0.5?`wysokość <b>${po.alt.toFixed(0)}°</b> · cień <b>${po.cien<100?po.cien.toFixed(0):'ponad 100'} m</b><br>
         pada na ${esc(stronaPL(po.kier))}`:`o ${po.h}:00 jest już ciemno`}
@@ -2873,7 +2976,9 @@ function sunCard(){
     <h2>Nasłonecznienie i cienie <span class="pill">obliczenia lokalne</span></h2>
     <p class="lead">Rzut z góry na dwanaście sytuacji: cztery pory roku i trzy pory dnia.
       Ciemny obszar to cień rzucany przez budynek, przerywana linia to granica działki.
-      Pozycja słońca liczona z algorytmu astronomicznego dla twoich współrzędnych.</p>
+      Pozycja słońca liczona z algorytmu astronomicznego dla twoich współrzędnych.
+      Kolor nieba i żółty punkt pokazują porę dnia i wysokość słońca, jaśniejsza strona
+      budynku to ta, na którą w danej chwili pada światło.</p>
 
     <div class="row" style="align-items:flex-end">
       <label class="f" style="max-width:190px"><span>Wysokość budynku (m)</span>

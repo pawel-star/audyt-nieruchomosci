@@ -1,5 +1,27 @@
 # Historia zmian
 
+## 2.11
+- **Prompty dla wtyczki Claude w Chrome mają teraz wprost zgodę na zaklikanie bannera z cookies albo regulaminem, który zasłania mapę.** Sekcja „TRYB PRACY” w `promptFor()` i `promptModule()` (czyli w każdym prompcie, który kopiujesz do wtyczki) zabraniała dotąd akceptowania jakichkolwiek regulaminów w ogóle — co w praktyce blokowało wtyczkę, gdy trafiała na baner z cookies albo regulaminem serwisu (geoportal, ULDK i podobne rejestry często je pokazują, zanim odsłonią mapę) i zatrzymywało całą sesję do ręcznej interwencji.
+- Nowe brzmienie: baner zasłaniający mapę można zaklikać — to jedyny wyjątek od zasady „tylko odczyt”. Reszta zakazów zostaje bez zmian: żadnych formularzy, żadnego logowania, niczego nie zapisujesz.
+- Dopisany punkt 4 w karcie „Wtyczka przerywa i pyta o zgodę? Ustaw ją raz” (widok Start), żeby ta sama informacja była widoczna też w interfejsie, nie tylko w treści promptu.
+
+## 2.10
+- **Naprawiony realny bug: budynek „skakał” po kafelku między dwunastoma sytuacjami.** `rysunekCienia()` liczyła dopasowanie (skalę i środek rysunku) osobno dla każdego kafelka, na podstawie bieżącego obrysu, cienia i działki *razem* — a że sam cień ma zupełnie inny zasięg zależnie od pory (4–66 m w przykładzie testowym), bounding box był za każdym razem inny. Efekt: budynek wyglądał, jakby zmieniał pozycję i wielkość między kafelkami, chociaż naprawdę stoi na działce w jednym miejscu — zmienia się tylko cień.
+- Nowa funkcja `ramaWspolna(obrys, dzialka, cienie, R, pad)` liczy skalę i środek rysunku **raz**, dla całej siatki dwunastu sytuacji naraz — bierze pod uwagę obrys, działkę i wszystkie dwanaście możliwych cieni jednocześnie (żeby żaden się nie obciął), a wynik (`{R,pad,cx,cy,s}`) jest przekazywany do `rysunekCienia()` jako ostatni argument zamiast dawnego `rozmiar`.
+- `rysunekCienia()` bez przekazanej ramy liczy dopasowanie lokalnie jak poprzednio (zachowana ścieżka awaryjna na wypadek innego wywołania w przyszłości) — w `sunCard()` rama jest przekazywana zawsze.
+- Konsekwencja świadoma i zamierzona: skala jest teraz taka sama we wszystkich dwunastu kafelkach, dopasowana do najdłuższego możliwego cienia — więc w sytuacjach z krótkim cieniem (wysokie słońce w południe) budynek zajmuje mniejszą część kafelka niż w poprzedniej wersji, za to naprawdę stoi w tym samym miejscu co we wszystkich pozostałych jedenastu.
+- Sprawdzone: `node --check` na wyciągniętym skrypcie oraz ponowny render w headless Chromium — porównanie zrzutów przed i po pokazuje budynek w identycznym miejscu i rozmiarze we wszystkich renderowanych kafelkach, zmienia się tylko cień, niebo i pozycja słońca.
+
+## 2.9
+- **Grafika nasłonecznienia pokazuje teraz światło, nie tylko geometrię cienia.** `rysunekCienia()` w module „Grunt" rysował dwanaście identycznych, płasko-granatowych kafelków niezależnie od tego, czy to mroźne południe w grudniu, czy lipcowy wieczór — sama pozycja i długość cienia były policzone poprawnie (`cienBudynku()`, bez zmian), ale rysunek tego nie pokazywał. Geometria cienia i cała astronomia (`sunPos`, `sunDay`, `sunGrid`) zostają dokładnie takie jak były — zmienia się wyłącznie warstwa graficzna.
+- Nowa funkcja `barwyNieba(alt)` (z tabelą progów `NIEBO_STOPY` i interpolacją `mixHex()`) liczy kolor nieba i światła z wysokości słońca: ciepły, bursztynowy przy horyzoncie, chłodny i jasny błękit w południe.
+- Pozycja słońca jest teraz widoczna na rysunku — mały glif ze szpilkami promieni, ustawiony biegunowo (kąt = azymut, promień maleje z wysokością słońca), nie tylko opisana tekstem pod spodem.
+- Budynek ma teraz gradient ściana-oświetlona/ściana-zacieniona wzdłuż osi słońce-cień (`gradientUnits="userSpaceOnUse"`), zamiast jednolitego niebieskiego wypełnienia.
+- Miękka poświata (`radialGradient`) wokół pozycji słońca sugeruje, jak pada światło na teren, bez zmiany samego, dokładnie policzonego kształtu cienia.
+- Pełna róża kierunków (N/E/S/W) zamiast samego „N”.
+- Teren w obliczeniach pozostaje płaski — to świadoma decyzja: GUGiK nie udostępnia ukształtowania terenu (NMPT) przez darmowe API, a płatne opcje (Google Photorealistic 3D Tiles) są ograniczone do dużych miast. Adnotacja o tym w karcie „Nasłonecznienie i cienie” zostaje bez zmian.
+- Sprawdzone: `node --check` na wyciągniętym skrypcie oraz renderowanie w headless Chromium (Playwright) dla przykładowej lokalizacji — wszystkie warianty czterech pór roku i trzech pór dnia rysują się bez błędów konsoli, w tym poprawne pominięcie rysunku, gdy słońce jest pod horyzontem.
+
 ## 2.8
 - **Naprawiony bug: ręczna zmiana kwoty przy wadzie nie odświeżała propozycji cen do negocjacji.** Wpisanie nowej kwoty przy pojedynczej wadzie woła `negPaint()`, nie pełny `render()` — to celowe, żeby nie tracić fokusu i kursora w polu, w którym akurat piszesz. Tyle że `negPaint()` odświeżał tylko sumę wad i cenę po korekcie, a trzy sugerowane ceny („Pierwsza oferta”, „Cena docelowa”, „Granica”) razem z podpisami „Sugestia X zł” oraz ocena atrakcyjności ceny wobec rynku były liczone wyłącznie przy pełnym renderze widoku Negocjacje — czyli zostawały nieaktualne, dopóki nie przełączyłeś zakładki i nie wróciłeś. To samo dotyczyło ostrzeżenia o przekroczeniu 20% ceny ofertowej.
 - Wydzieliłem liczenie tych trzech cen (`sugCeny()`) i oceny atrakcyjności (`ocenaCeny()`) do osobnych funkcji, używanych teraz zarówno przy pełnym renderze, jak i przez `negPaint()` po każdej zmianie kwoty — jedna logika w jednym miejscu, żeby te dwie ścieżki nie mogły się rozjechać w przyszłości.
