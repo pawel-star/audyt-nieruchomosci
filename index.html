@@ -63,6 +63,7 @@ nav.tabs::-webkit-scrollbar{display:none}
 .b-semi{background:#2a2110;color:#fbbf24}
 .b-man{background:#241a2e;color:#c084fc}
 .b-field{background:#0e2a26;color:#5eead4}
+.b-kryt{background:#2e1416;color:#fca5a5}
 
 /* ---------- forms ---------- */
 label.f{display:block;margin:11px 0}
@@ -111,12 +112,17 @@ details.hlp summary::-webkit-details-marker{display:none}
 details.hlp summary::before{content:"▸ ";display:inline-block;transition:transform .15s}
 details.hlp[open] summary::before{content:"▾ "}
 
+/* ---------- pasek bilansu sekcji ---------- */
+.bil .bilbar{height:6px;border-radius:99px;background:#1b2230;overflow:hidden}
+.bil .bilbar span{display:block;height:100%;background:#3f7fd6}
+
 /* ---------- flag inline ---------- */
 .fl{margin-top:9px;padding:10px 12px;border-radius:9px;font-size:13px;display:flex;gap:9px;align-items:flex-start}
 .fl .ico{font-size:14px;line-height:1.35;flex:none}
 .fl.red{background:var(--redbg);border:1px solid #4a2226;color:#fecaca}
 .fl.yellow{background:var(--yellowbg);border:1px solid #4a3a15;color:#fde68a}
 .fl.green{background:var(--greenbg);border:1px solid #1d4429;color:#bbf7d0}
+.fl.spr{background:#131a26;border:1px solid #26364d;color:#bfd3ee}
 .fl b{display:block;margin-bottom:2px}
 .fl .cost{margin-top:5px;font-size:12px;opacity:.85;font-weight:600}
 
@@ -326,22 +332,51 @@ const S = {
   a:{},                 // odpowiedzi: {checkId: value}
   n:{},                 // notatki: {checkId: text}
   poi:null,             // wynik Overpass
+  s:{},                 // znaczniki sprawdzenia: {checkId:{ts, src}} — src: prompt | reczne | import
+  exp:{},               // ostatni eksport do Notion: {checkId: odcisk treści}
   rcn:{},
   ts:new Date().toISOString()
 };
 let TAB='start';
 
 function save(){ try{localStorage.setItem('audyt_v1',JSON.stringify(S))}catch(e){} }
-function load(){ try{const d=localStorage.getItem('audyt_v1'); if(d)Object.assign(S,JSON.parse(d))}catch(e){} }
+function load(){ try{const d=localStorage.getItem('audyt_v1'); if(d)Object.assign(S,JSON.parse(d))}catch(e){} migruj(); }
+
+/* Starsze audyty nie miały znaczników sprawdzenia. Notatka bez odpowiedzi
+   znaczyła wtedy dokładnie to samo, co dziś znacznik: sprawdzone, rejestr
+   nie dał rozstrzygnięcia. Odtwarzam to przy wczytaniu, bez daty. */
+function migruj(){
+  if(!S.s||typeof S.s!=='object')S.s={};
+  if(!S.exp||typeof S.exp!=='object')S.exp={};
+  Object.keys(S.n||{}).forEach(k=>{
+    if(S.n[k]&&!S.s[k])S.s[k]={ts:null,src:'archiwum'};
+  });
+}
+/* Znacznik „to pytanie było sprawdzane". Zapisuję datę i skąd przyszedł wynik,
+   bo bez tego nie widać różnicy między „nie tknięte" a „sprawdzone, pusto w rejestrze". */
+function mark(id,src,ts){
+  if(!id)return;
+  if(!S.s)S.s={};
+  S.s[id]={ts:ts||new Date().toISOString(),src:src||'reczne'};
+}
+function odznaczSprawdzenie(id){
+  if(S.s)delete S.s[id];
+  save();render();
+}
+const sprData=id=>{const x=S.s&&S.s[id];return x&&x.ts?new Date(x.ts).toLocaleDateString('pl-PL'):null;};
+const SRCLAB={prompt:'z promptu',reczne:'ręcznie',import:'z wklejki',archiwum:'ze starszego zapisu'};
+const rozstrzygniete=c=>S.a[c.id]!=null&&S.a[c.id]!==''&&S.a[c.id]!=='?';
+const sprawdzone=c=>rozstrzygniete(c)||!!(S.s&&S.s[c.id]);
+const bezRozstrzygniecia=c=>!rozstrzygniete(c)&&!!(S.s&&S.s[c.id]);
 /* ponowne kliknięcie zaznaczonej opcji ją odznacza — bez tego
    przypadkowy klik zostawał w audycie jako potwierdzona odpowiedź */
-function set(k,v){ if(S.a[k]===v)delete S.a[k]; else S.a[k]=v; save(); render(); }
-function note(k,v){ S.n[k]=v; save(); paintBar(); }
+function set(k,v){ if(S.a[k]===v){delete S.a[k];} else {S.a[k]=v;mark(k,'reczne');} save(); render(); }
+function note(k,v){ S.n[k]=v; if(v&&v.trim())mark(k,'reczne'); save(); paintBar(); }
 
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.11', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.12', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -558,9 +593,11 @@ function importGlobal(){
   });
   el.value='';save();render();
   const lista=Object.keys(zm).map(k=>k+': '+zm[k].a+(zm[k].n?' (+'+zm[k].n+' notatek)':'')).join(' · ');
+  const bezRoz=allChecks().filter(c=>c.type!=='info'&&bezRozstrzygniecia(c)).length;
   setPasteMsg(`<div class="msg ok"><b>Wczytano ${A.n} ${A.n===1?'odpowiedź':'odpowiedzi'}${A.notes?' i '+A.notes+' notatek':''}.</b>
     ${lista?'<br>'+esc(lista):''}
     ${A.skipped?'<br>Pominięto '+A.skipped+' nierozpoznanych wartości.':''}
+    ${bezRoz?'<br>'+bezRoz+' '+(bezRoz===1?'punkt ma znacznik':'punktów ma znacznik')+' „sprawdzone, bez rozstrzygnięcia” — sprawdzenie się odbyło, ale rejestr nie dał odpowiedzi.':''}
     <br><br>Odznaczenia są już widoczne w sekcjach i w podsumowaniu na dole ekranu.
     Możesz wkleić kolejną porcję — poprzednie odpowiedzi zostaną zachowane.</div>`);
 }
@@ -592,7 +629,7 @@ function parseNotion(t){
   const zapiszNotatke=()=>{
     if(cur&&notatka!==null){
       const v=notatka.join(' ').trim();
-      if(v){S.n[cur]=v;acc.notes++;}
+      if(v){S.n[cur]=v.replace(/^\s*\[(?:z promptu|ręcznie|z wklejki|ze starszego zapisu|dopisane w Notion)[^\]]*\]\s*/i,'');acc.notes++;mark(cur,'import');}
     }
     notatka=null;
   };
@@ -608,6 +645,17 @@ function parseNotion(t){
       const kandydat=reszta.split(/\s*[—–-]\s*|\s{2,}/)[0].trim();
       if(applyAnswer(cur,kandydat,acc))acc.n++;
       else if(applyAnswer(cur,reszta,acc))acc.n++;
+      return;
+    }
+    /* wiersz statusu z eksportu — odtwarza znacznik sprawdzenia razem z datą */
+    const st=l.match(/^\s*>?\s*\*{0,2}status:?\*{0,2}\s*(.+)$/i);
+    if(st){
+      const dt=st[1].match(/(\d{4}-\d{2}-\d{2})/);
+      const zr=/prompt/i.test(st[1])?'prompt':(/wklejk/i.test(st[1])?'import':(/starszego zapisu/i.test(st[1])?'archiwum':'reczne'));
+      if(!/nie sprawdz/i.test(st[1])){
+        mark(cur,zr,dt?new Date(dt[1]+'T12:00:00').toISOString():null);
+        acc.marks=(acc.marks||0)+1;
+      }
       return;
     }
     /* odpowiedź tekstowa */
@@ -654,6 +702,7 @@ function applyAnswer(id,val,acc){
     if(!hit){acc.skipped++;return false;}
     S.a[id]=hit[0];
   } else S.a[id]=val;
+  mark(id,'import');
   return true;
 }
 function parseTxt(t){
@@ -668,7 +717,7 @@ function parseTxt(t){
     const mFree=l.match(/^\s*odpowiedz:\s*(.+)$/i);
     if(mFree){ if(applyAnswer(cur,mFree[1],acc))acc.n++; return; }
     const mN=l.match(/^\s*(?:#\s*)?notatka:\s*(.*)$/i);
-    if(mN&&mN[1].trim()){S.n[cur]=mN[1].trim();acc.notes++;}
+    if(mN&&mN[1].trim()){S.n[cur]=mN[1].trim();acc.notes++;mark(cur,'import');}
   });
   return acc;
 }
@@ -696,7 +745,7 @@ function parseCsv(t){
     const c=splitCsvLine(l,sep).map(x=>x.trim());
     if(!c[0])return;
     if(c[3]&&applyAnswer(c[0],c[3],acc))acc.n++;
-    if(c[5]){const ch=allChecks().find(x=>x.id===c[0]); if(ch){S.n[c[0]]=c[5];acc.notes++;}}
+    if(c[5]){const ch=allChecks().find(x=>x.id===c[0]); if(ch){S.n[c[0]]=c[5];acc.notes++;mark(c[0],'import');}}
   });
   return acc;
 }
@@ -742,7 +791,7 @@ function resetAll(){
   if(!confirm(m))return;
   Object.keys(S).forEach(k=>delete S[k]);
   Object.assign(S,{meta:{adres:'',otodom:'',cena:'',powDom:'',powDzialka:'',rok:'',opis:''},
-    parcel:null,a:{},n:{},poi:null,rcn:{},ts:new Date().toISOString()});
+    parcel:null,a:{},n:{},s:{},exp:{},poi:null,rcn:{},ts:new Date().toISOString()});
   LASTMSG='';
   try{localStorage.removeItem('audyt_v1')}catch(e){}
   if(MAP){try{MAP.remove()}catch(e){}MAP=null;}
@@ -752,14 +801,14 @@ function clearModule(mid){
   const m=M.find(x=>x.id===mid); if(!m)return;
   const n=m.checks.filter(c=>S.a[c.id]!=null&&S.a[c.id]!=='').length;
   if(n&&!confirm('Wyczyścić odpowiedzi w module „'+m.name+'"?\n\nStracisz '+n+' '+(n===1?'odpowiedź':'odpowiedzi')+'.'))return;
-  m.checks.forEach(c=>{delete S.a[c.id];delete S.n[c.id];});
+  m.checks.forEach(c=>{delete S.a[c.id];delete S.n[c.id];if(S.s)delete S.s[c.id];if(S.exp)delete S.exp[c.id];});
   save();render();
 }
 function loadFile(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);
-    Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,d);S.plik=f.name;save();TAB='start';render();
+    Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,d);S.plik=f.name;migruj();save();TAB='start';render();
   }catch(x){alert('Nie udało się wczytać pliku.');}};
   r.readAsText(f);
 }
@@ -809,13 +858,18 @@ function paintBar(){
   const cmin=f.reduce((s,x)=>s+(x.cmin||0),0), cmax=f.reduce((s,x)=>s+(x.cmax||0),0);
   $('#cR').textContent=r; $('#cY').textContent=y; $('#cG').textContent=g;
   $('#cCost').textContent = cmin? fmt(cmin)+'+ zł' : (cmax? 'do '+fmt(cmax)+' zł' : '0 zł');
-  const done=allChecks().filter(c=>c.type!=='info'&&S.a[c.id]!=null&&S.a[c.id]!==''&&S.a[c.id]!=='?').length;
-  const tot=allChecks().filter(c=>c.type!=='info').length;
+  const CS=allChecks().filter(c=>c.type!=='info');
+  const tot=CS.length;
+  const done=CS.filter(rozstrzygniete).length;
+  const spr=CS.filter(sprawdzone).length;
+  const kryt=CS.filter(c=>isCrit(c)&&!sprawdzone(c)).length;
+  const ogon=' Sprawdzono '+spr+'/'+tot+(done!==spr?', rozstrzygnięto '+done:'')+
+    (kryt?'. Zostało '+kryt+' krytycznych.':'.');
   let v;
-  if(done<5) v='Sprawdzono '+done+' z '+tot+' punktów. Wypełniaj kolejne sekcje.';
-  else if(r>0) v='<b>Wstrzymaj się.</b> '+r+' '+(r===1?'wada blokująca':'wady blokujące')+' do wyjaśnienia przed umową przedwstępną. Sprawdzono '+done+'/'+tot+'.';
-  else if(y>2) v='<b>Można kupić, ale negocjuj.</b> '+y+' wad do wyceny. Sprawdzono '+done+'/'+tot+'.';
-  else v='<b>Bez poważnych zastrzeżeń.</b> Sprawdzono '+done+'/'+tot+' punktów.';
+  if(spr<5) v='Sprawdzono '+spr+' z '+tot+' punktów. Wypełniaj kolejne sekcje.';
+  else if(r>0) v='<b>Wstrzymaj się.</b> '+r+' '+(r===1?'wada blokująca':'wady blokujące')+' do wyjaśnienia przed umową przedwstępną.'+ogon;
+  else if(y>2) v='<b>Można kupić, ale negocjuj.</b> '+y+' wad do wyceny.'+ogon;
+  else v='<b>Bez poważnych zastrzeżeń.</b>'+ogon;
   $('#verdict').innerHTML=v;
 }
 
@@ -953,6 +1007,11 @@ const M = [
    <br><br><b>Sprawdź też zacienienie:</b> wysokie drzewa i budynki od południa potrafią odciąć słońce zimą, gdy jest najniżej.`},
 
  {id:'g_historia', src:'raport', mode:'semi', q:'Co było na tym terenie 10–20 lat temu?',
+  task:`Porównaj dzisiejszy stan terenu ze zdjęciami archiwalnymi.
+1. Otwórz mapy.geoportal.gov.pl i znajdź działkę.
+2. Włącz warstwę ortofotomapy archiwalnej i przejrzyj najstarsze dostępne zdjęcie oraz jedno pośrednie. Podaj lata zdjęć, które udało się otworzyć.
+3. Porównaj z aktualną ortofotomapą i opisz, co się zmieniło na samej działce i tuż przy niej: zabudowa, zbiornik wodny, wyrobisko, hałda, nasyp, sad, pole.
+4. Jeśli dostępne jest tylko jedno zdjęcie albo warstwa archiwalna nie działa, napisz to wprost. Braku zdjęć nie interpretuj jako braku zmian.`,
   why:'Wyrównany, ładny teren bywa zasypanym stawem, wyrobiskiem albo dzikim wysypiskiem.',
   type:'select', opts:[['bezzmian','Bez zmian — zawsze wyglądał tak samo'],['zabudowa','Wcześniejsza zabudowa'],
     ['woda','Był tam staw / rozlewisko'],['wyrobisko','Wyrobisko, żwirownia, wysypisko'],['?','Nie sprawdzone']],
@@ -973,6 +1032,12 @@ const M = [
    sprawdź, czy nie ma pęknięć i czy posadzki są poziome.`},
 
  {id:'g_spadek', src:'raport', mode:'field', q:'Jakie jest nachylenie działki?',
+  task:`Ustal nachylenie działki z numerycznego modelu terenu.
+1. Otwórz mapy.geoportal.gov.pl, znajdź działkę po identyfikatorze ewidencyjnym.
+2. Włącz narzędzie pomiaru wysokości (NMT) albo profil terenu. Odczytaj wysokość w metrach w czterech narożnikach działki i w środku.
+3. Policz różnicę między najwyższym a najniższym punktem i podziel przez odległość między nimi. Wynik podaj w procentach, razem z surowymi wysokościami, żeby dało się to sprawdzić.
+4. Jeśli serwis nie udostępnia pomiaru wysokości albo zwraca puste wartości, napisz to wprost zamiast szacować ze zdjęcia lotniczego.
+Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powyżej 10 procent stromy.`,
   why:'Spadek powyżej 10% podnosi koszt zagospodarowania i może wymagać murów oporowych.',
   type:'select', opts:[['plaska','Płaska lub delikatny spadek'],['sredni','Wyraźny spadek (ok. 5–10%)'],['duzy','Stromy (powyżej 10%)'],['?','Nie oceniono']],
   flag:v=>{
@@ -1577,6 +1642,11 @@ const M = [
  checks:[
 
  {id:'u_prad', src:'raport', mode:'field', q:'Przyłącze elektryczne',
+  task:`Sprawdź przyłącze elektryczne w ewidencji uzbrojenia terenu.
+1. Otwórz geoportal powiatowy i włącz warstwę GESUT, podwarstwa elektroenergetyczna.
+2. Sprawdź, czy do budynku na działce dochodzi przewód elektroenergetyczny i czy w drodze biegnie sieć. Zapisz etykiety obiektów.
+3. Uwaga: GESUT nie mówi, czy przyłącze jest jedno-, czy trójfazowe. Jeśli tego nie ustalisz z żadnego źródła, nie wybieraj kodu jest1 ani jest3 — zostaw sam opis w notatce i zaznacz, że liczbę faz trzeba potwierdzić w rozdzielni albo w umowie z operatorem.
+4. Kod brak wybieraj wyłącznie wtedy, gdy w GESUT nie ma żadnego przewodu dochodzącego do budynku.`,
   type:'select', opts:[['jest3','Jest, trójfazowe (siła)'],['jest1','Jest, jednofazowe'],['brak','Brak przyłącza'],['?','Nie sprawdzone']],
   flag:v=>{
     if(v==='brak')return R('Brak przyłącza elektrycznego','Przy istniejącym domu to sytuacja nietypowa i wymaga wyjaśnienia — możliwe zaległości i odcięcie. Nowe przyłącze to wniosek o warunki przyłączenia, umowa z operatorem i oczekiwanie liczone w miesiącach.',5000,30000,'Brak przyłącza elektrycznego.');
@@ -1588,6 +1658,11 @@ const M = [
    <br><br>Zapytaj też o zaległości. Dług za prąd nie przechodzi na ciebie, ale odcięte przyłącze i tak trzeba przywrócić.`},
 
  {id:'u_woda', src:'raport', mode:'field', q:'Zaopatrzenie w wodę',
+  task:`Sprawdź zaopatrzenie w wodę w ewidencji uzbrojenia terenu.
+1. Otwórz geoportal powiatowy, włącz warstwę GESUT, podwarstwa wodociągowa.
+2. Ustal, czy w drodze przy działce biegnie wodociąg i czy do budynku dochodzi przyłącze. Zapisz etykiety i średnice, jeśli serwis je podaje.
+3. Kod siec wybierz tylko wtedy, gdy widać przyłącze wodociągowe do budynku. Sam wodociąg w ulicy bez przyłącza opisz w notatce i nie wybieraj kodu.
+4. Studni własnej z GESUT zwykle nie widać, więc kodu studnia nie wybieraj na podstawie samego braku wodociągu.`,
   type:'select', opts:[['siec','Wodociąg sieciowy'],['studnia','Studnia własna'],['brak','Brak'],['?','Nie sprawdzone']],
   flag:v=>{
     if(v==='brak')return R('Brak zaopatrzenia w wodę','Przy istniejącym domu wymaga natychmiastowego wyjaśnienia. Przyłącze wodociągowe to koszt zależny od odległości; studnia głębinowa 15–30 tys. zł bez gwarancji wydajności.',15000,40000,'Brak zaopatrzenia nieruchomości w wodę.');
@@ -1599,6 +1674,11 @@ const M = [
    <br><br><b>Przy wodociągu</b> poproś o rachunki i sprawdź, czy licznik jest legalizowany.`},
 
  {id:'u_kanal', src:'raport', mode:'field', q:'Odprowadzenie ścieków',
+  task:`Sprawdź odprowadzenie ścieków w ewidencji uzbrojenia terenu.
+1. Otwórz geoportal powiatowy, włącz warstwę GESUT, podwarstwa kanalizacyjna.
+2. Ustal, czy w drodze biegnie kanalizacja sanitarna i czy od budynku odchodzi przewód kanalizacyjny do studzienki w pasie drogowym. Zapisz etykiety obiektów.
+3. Kod siec wybierz tylko przy widocznym połączeniu budynku z siecią. Sam przewód wewnątrz działki, kończący się zbiornikiem, opisz w notatce.
+4. Szamba i przydomowej oczyszczalni GESUT zwykle nie pokazuje. Jeśli nie ma połączenia z siecią, nie wybieraj kodu szambo ani oczyszcz — napisz, że rozwiązanie trzeba potwierdzić u właściciela i w gminie, bo gmina prowadzi ewidencję zbiorników bezodpływowych.`,
   type:'select', opts:[['siec','Kanalizacja sieciowa'],['oczyszcz','Przydomowa oczyszczalnia'],['szambo','Zbiornik bezodpływowy (szambo)'],['brak','Brak'],['?','Nie sprawdzone']],
   flag:v=>{
     if(v==='brak')return R('Brak odprowadzenia ścieków','Budynek mieszkalny bez rozwiązanej gospodarki ściekowej nie może być legalnie użytkowany.',15000,45000,'Brak rozwiązanej gospodarki ściekowej.');
@@ -1611,6 +1691,11 @@ const M = [
    <br><br><b>Przy oczyszczalni</b> poproś o zgłoszenie do gminy i protokoły serwisowe.`},
 
  {id:'u_gaz', src:'raport', mode:'field', q:'Przyłącze gazowe',
+  task:`Sprawdź przyłącze gazowe w ewidencji uzbrojenia terenu.
+1. Otwórz geoportal powiatowy, włącz warstwę GESUT, podwarstwa gazowa.
+2. Ustal dwie rzeczy osobno: czy gazociąg biegnie w drodze przy działce i czy od niego odchodzi przyłącze wchodzące na działkę. Zapisz etykiety obiektów.
+3. Kod jest wybierz przy widocznym przyłączu na działkę, kod siecblisko przy gazociągu w ulicy bez przyłącza, kod brak przy braku gazociągu w promieniu ulicy.
+4. Jeśli warstwy gazowej nie ma w serwisie, napisz to wprost. Mapa operatora gazowego bywa dokładniejsza, ale nie loguj się nigdzie.`,
   type:'select', opts:[['jest','Jest przyłącze'],['siecblisko','Brak, ale sieć jest w ulicy'],['brak','Brak sieci w okolicy'],['?','Nie sprawdzone']],
   flag:v=>{
     if(v==='brak')return Y('Brak sieci gazowej','Zostają: pompa ciepła, pellet, gaz zbiornikowy albo prąd. Nie jest to wada blokująca, ale zawęża wybór i zwykle podnosi koszt ogrzewania.',0,0,null);
@@ -1696,6 +1781,11 @@ const M = [
    <br><br><b>Kiedy to szczególnie ważne:</b> droga krajowa lub wojewódzka, zakręt, wzniesienie ograniczające widoczność, bliskie skrzyżowanie.`},
 
  {id:'d_szer', src:'raport', mode:'field', q:'Jaka jest szerokość drogi dojazdowej?',
+  task:`Ustal szerokość pasa drogowego drogi dojazdowej.
+1. Otwórz geoportal powiatowy albo gminny z warstwą ewidencji gruntów. Znajdź działkę drogową, z którą graniczy nieruchomość.
+2. Zmierz szerokość pasa drogowego narzędziem pomiaru odległości, w dwóch miejscach: na wysokości działki i przy najbliższym skrzyżowaniu. Podaj obie wartości.
+3. Sprawdź uchwałę rady gminy o zaliczeniu dróg do kategorii dróg gminnych w BIP. Wykaz dróg zwykle podaje długość i szerokość każdej z nich. Jeśli znajdziesz tam tę ulicę, zacytuj wartość i numer uchwały.
+4. Rozróżnij w notatce szerokość pasa drogowego od szerokości samej jezdni, bo to dwie różne liczby. Kod wybierz według szerokości pasa drogowego.`,
   type:'select', opts:[['ok','Powyżej 5 m'],['waska','3–5 m'],['bardzo','Poniżej 3 m'],['?','Nie zmierzone']],
   flag:v=>{
     if(v==='bardzo')return R('Droga węższa niż 3 metry','Poniżej minimum technicznego. Problem nie tylko z pozwoleniem na budowę: nie wjedzie tam śmieciarka, karetka ani wóz strażacki. Dostawa materiałów przy remoncie będzie kosztowna.',0,0,'Szerokość drogi dojazdowej poniżej wymogów technicznych.');
@@ -1708,6 +1798,11 @@ const M = [
    jak wygląda dojazd zimą, czy nie ma niskiego wiaduktu albo ostrego zakrętu na trasie dostaw.`},
 
  {id:'d_utrzym', src:'wlasne', mode:'field', q:'Kto utrzymuje drogę i w jakim jest stanie?',
+  task:`Ustal zarządcę drogi i rodzaj nawierzchni.
+1. Sprawdź w BIP gminy uchwałę o zaliczeniu dróg do kategorii dróg gminnych oraz aktualną numerację dróg. Jeśli ulica jest na wykazie, zarządcą jest gmina — podaj numer drogi i numer uchwały.
+2. Jeśli ulicy nie ma w żadnym wykazie dróg publicznych, napisz to wprost. Droga wewnętrzna oznacza utrzymanie po stronie właścicieli, ale nie przesądzaj tego bez sprawdzenia właściciela działki drogowej.
+3. Rodzaj nawierzchni odczytaj z aktualnej ortofotomapy na mapy.geoportal.gov.pl i napisz, że to odczyt ze zdjęcia, nie z rejestru.
+4. Stanu nawierzchni ze zdjęcia nie oceniaj. To zostaje do oględzin.`,
   type:'select', opts:[['gmina','Gmina — asfalt / utwardzona'],['gmina_grunt','Gmina — droga gruntowa'],['mieszkancy','Mieszkańcy we własnym zakresie'],['?','Nie ustalono']],
   flag:v=>{
     if(v==='mieszkancy')return Y('Droga utrzymywana przez mieszkańców','Koszty odśnieżania, równania i napraw dzielone między sąsiadów, bez formalnego mechanizmu egzekwowania. Bywa źródłem konfliktów. Zapytaj, jak to działa w praktyce i ile kosztuje rocznie.',1000,8000,'Koszty utrzymania drogi po stronie mieszkańców.');
@@ -1797,6 +1892,12 @@ const M = [
    <br><br><b>Jak zmierzyć:</b> taśmą krawiecką owiń pień na wysokości 5 cm nad gruntem. Mierzysz obwód, nie średnicę.`},
 
  {id:'s_smog', src:'wlasne', mode:'field', q:'Jaka jest jakość powietrza w okolicy?',
+  task:`Sprawdź jakość powietrza z pomiarów Głównego Inspektoratu Ochrony Środowiska.
+1. Otwórz powietrze.gios.gov.pl i znajdź najbliższą stację pomiarową. Podaj jej nazwę i odległość od nieruchomości w kilometrach.
+2. Odczytaj ostatnie dostępne dane roczne dla pyłu PM10 i PM2,5: stężenie średnioroczne oraz liczbę dni z przekroczeniem normy dobowej PM10.
+3. Sprawdź, czy w województwie obowiązuje uchwała antysmogowa i od kiedy zakazuje kotłów pozaklasowych. Podaj daty.
+4. Kod wybierz według progów: dobra, gdy PM2,5 poniżej 15 mikrogramów i mniej niż 20 dni przekroczeń PM10; srednia przy PM2,5 15–20 albo 20–35 dniach przekroczeń; zla przy PM2,5 powyżej 20 albo ponad 35 dniach przekroczeń.
+5. Jeśli najbliższa stacja jest dalej niż 15 km, napisz to wprost i zaznacz, że wynik jest orientacyjny.`,
   type:'select', opts:[['dobra','Dobra'],['srednia','Bywa problem zimą'],['zla','Wyraźny smog zimą'],['?','Nie sprawdzone']],
   flag:v=>{
     if(v==='zla')return Y('Zła jakość powietrza','Domy opalane węglem w okolicy oznaczają realny smog od października do marca. To wpływa na komfort życia i zdrowie, a przy odsprzedaży bywa argumentem kupujących.',0,10000,'Zła jakość powietrza w sezonie grzewczym.');
@@ -1866,6 +1967,12 @@ const M = [
    <b>Praktyka:</b> podejdź do dwóch–trzech domów, przedstaw się i powiedz wprost, że rozważasz kupno sąsiedniej nieruchomości.`},
 
  {id:'n_plany', src:'wlasne', mode:'man', q:'Czy w okolicy planowane są inwestycje drogowe lub infrastrukturalne?',
+  task:`Sprawdź planowane inwestycje u wszystkich zarządców dróg, nie tylko krajowego.
+1. BIP gminy, zakładki aktualności, inwestycje i zamówienia publiczne. Szukaj inwestycji drogowych, kanalizacyjnych i decyzji o lokalizacji inwestycji celu publicznego w promieniu kilku kilometrów.
+2. Strona zarządu dróg wojewódzkich właściwego dla województwa oraz powiatowego zarządu dróg. Obwodnice i drogi łączące bywają wojewódzkie, więc mapa GDDKiA ich nie pokaże.
+3. Mapa inwestycji GDDKiA dla dróg krajowych i ekspresowych.
+4. Sprawdź też plan miejscowy okolicy pod kątem terenów oznaczonych jako drogi w projekcie, farmy fotowoltaiczne i tereny produkcyjne.
+5. W notatce podaj przy każdej znalezionej inwestycji: nazwę, zarządcę, etap procedury, planowany termin i odległość od nieruchomości. Kod tak wybierz tylko wtedy, gdy inwestycja realnie dotyczy okolicy, a nie całego powiatu.`,
   why:'Sama mapa GDDKiA nie wystarczy: obwodnice i drogi łączące bywają wojewódzkie albo powiatowe, więc GDDKiA ich w ogóle nie pokazuje. Trzeba sprawdzić właściwego zarządcę drogi, nie tylko krajowego.',
   type:'yn', opts:YN,
   manual:`<b>Zarząd dróg wojewódzkich</b> właściwy dla województwa — sprawdź stronę i aktualności, jeśli droga łączy dwie drogi wojewódzkie albo omija miasto powiatowe, to zwykle jego inwestycja, nie GDDKiA.
@@ -2115,15 +2222,65 @@ function render(){
   $('#hdSub').textContent = APP.name+' v'+APP.ver+' · '+APP.prawo;
 }
 
+/* ---------- WAGA PYTANIA ----------
+   Krytyczne jest to pytanie, którego odpowiedź potrafi zapalić czerwoną flagę,
+   czyli może zatrzymać zakup. Wyliczam to z samych definicji flag, zamiast
+   utrzymywać drugą, ręczną listę, która rozjedzie się przy pierwszej zmianie.
+   Dwa wyjątki dopisane ręcznie: bez numeru księgi nie sprawdzisz nic z działu III,
+   a rezygnacja z inspekcji technicznej to decyzja o tej samej wadze co czerwona flaga. */
+const CRIT_EXTRA=['kw_nr','b_ekspert'];
+const _critMemo={};
+function isCrit(c){
+  if(!c||c.type==='info')return false;
+  if(CRIT_EXTRA.indexOf(c.id)>=0)return true;
+  if(_critMemo[c.id]!=null)return _critMemo[c.id];
+  let out=false;
+  if(c.flag&&c.opts){
+    for(const o of c.opts){
+      if(o[0]==='?')continue;
+      let f=null; try{f=c.flag(o[0]);}catch(e){f=null;}
+      if(f&&f.lv==='red'){out=true;break;}
+    }
+  }
+  _critMemo[c.id]=out; return out;
+}
+/* Bilans sekcji: ile zostało i ile z tego naprawdę musi być zrobione. */
+function bilans(m){
+  const cs=m.checks.filter(c=>c.type!=='info');
+  const spr=cs.filter(sprawdzone).length;
+  const roz=cs.filter(rozstrzygniete).length;
+  const zost=cs.filter(c=>!sprawdzone(c));
+  return {all:cs.length,spr,roz,bezRoz:cs.filter(bezRozstrzygniecia).length,
+    krytZost:zost.filter(isCrit).length, resztaZost:zost.length-zost.filter(isCrit).length,
+    kryt:cs.filter(isCrit).length};
+}
+function bilansPasek(m){
+  const b=bilans(m);
+  const pct=Math.round(b.spr/b.all*100);
+  const czesci=[];
+  if(b.krytZost)czesci.push(`<b>${b.krytZost} ${b.krytZost===1?'krytyczny':'krytycznych'}</b> przed decyzją`);
+  if(b.resztaZost)czesci.push(`${b.resztaZost} ${b.resztaZost===1?'uzupełniający':'uzupełniających'}`);
+  const zostTxt=czesci.length?'Zostało: '+czesci.join(' i ')+'.':'Wszystkie punkty tej sekcji masz sprawdzone.';
+  return `<div class="card tight bil">
+    <div class="bilbar"><span style="width:${pct}%"></span></div>
+    <p class="lead" style="margin:8px 0 0">
+      <b>${b.spr} z ${b.all}</b> punktów sprawdzonych${b.bezRoz?', w tym '+b.bezRoz+' bez rozstrzygnięcia':''}.
+      ${zostTxt}
+      ${b.kryt?`<br><span class="tg">Krytyczne w tej sekcji: ${b.kryt}. To te, których odpowiedź potrafi zatrzymać zakup.</span>`:''}
+    </p></div>`;
+}
+
 /* ---------- WIDOK: SEKCJA ---------- */
 const BADGE={auto:'<span class="badge b-auto">automat</span>',
   semi:'<span class="badge b-semi">półautomat</span>',
   man:'<span class="badge b-man">dokumenty</span>',
   field:'<span class="badge b-field">w terenie</span>',info:''};
+const BADGE_PROMPT='<span class="badge b-semi">prompt</span>';
 
 function viewModule(m){
   if(!m)return;
   let h=`<div class="card"><h2>${esc(m.title)}</h2><p class="lead">${esc(m.lead)}</p></div>`;
+  h+=bilansPasek(m);
   h+=toolbar(m.id);
   h+=modPromptCard(m.id);
   if(m.id==='m1')h+=sunCard();
@@ -2162,14 +2319,29 @@ function renderCheck(c,n){
     fl=`<div class="fl ${f.lv}"><span class="ico">${ico}</span><div><b>${esc(f.t)}</b>${f.w?esc(f.w).replace(/&lt;b&gt;/g,'<b>').replace(/&lt;\/b&gt;/g,'</b>').replace(/&lt;i&gt;/g,'<i>').replace(/&lt;\/i&gt;/g,'</i>'):''}${cost}</div></div>`;
   }
   const nt=S.n[c.id]||'';
-  const noteBox=c.type!=='info'?`<details class="hlp" ${nt?'open':''}><summary>${nt?'<span class="hasnote">Notatka</span>':'Notatka'}</summary>
-    <textarea placeholder="Co zaobserwowałeś, z kim rozmawiałeś, co ustalić dalej…" oninput="note('${c.id}',this.value)">${esc(nt)}</textarea></details>`:'';
+  const zn=S.s&&S.s[c.id]?S.s[c.id]:null;
+  const dt=sprData(c.id);
+  const meta=zn?`<span class="tg">sprawdzone${dt?' '+dt:''} · ${SRCLAB[zn.src]||zn.src}</span>`:'';
+  const noteBox=c.type!=='info'?`<details class="hlp" ${nt?'open':''}><summary>${nt?'<span class="hasnote">Notatka</span>':'Notatka'} ${meta}</summary>
+    <textarea placeholder="Co zaobserwowałeś, z kim rozmawiałeś, co ustalić dalej…" oninput="note('${c.id}',this.value)">${esc(nt)}</textarea>
+    <div class="row noprint" style="margin-top:8px">
+      <button class="btn sm sec" onclick="copyBlock('${c.id}',this)">Kopiuj blok dla Notion</button>
+      ${zn?`<button class="btn sm sec" onclick="odznaczSprawdzenie('${c.id}')">Cofnij znacznik sprawdzenia</button>`:
+           `<button class="btn sm sec" onclick="mark('${c.id}','reczne');save();render()">Oznacz jako sprawdzone</button>`}
+    </div></details>`:'';
+
+  /* Sprawdzone, a bez odpowiedzi. Bez tego paska nie widać różnicy między
+     „jeszcze tego nie robiłem” a „robiłem, rejestr nic nie podał”. */
+  const stan=(c.type!=='info'&&bezRozstrzygniecia(c))?`<div class="fl spr"><span class="ico">◍</span><div>
+    <b>Sprawdzone${dt?' '+dt:''}, bez rozstrzygnięcia</b>
+    Sprawdzenie się odbyło${zn?' ('+(SRCLAB[zn.src]||zn.src)+')':''}, ale nie dało jednoznacznej odpowiedzi.
+    Szczegóły są w notatce poniżej. Ten punkt nie wraca już na listę „do zrobienia”.</div></div>`:'';
 
   return `<div class="q">
     <div class="qt"><span class="n">${c.type==='info'?'!':n}</span>
-      <span>${esc(c.q)} ${BADGE[c.mode]||''}</span></div>
+      <span>${esc(c.q)} ${BADGE[c.mode]||''}${(c.task&&c.mode!=='semi')?' '+BADGE_PROMPT:''}${isCrit(c)?' <span class="badge b-kryt">krytyczne</span>':''}</span></div>
     ${c.why?`<div class="qw">${esc(c.why)}</div>`:''}
-    <div class="qbody">${body}${fl}
+    <div class="qbody">${body}${fl}${stan}
       ${c.task?`<details class="hlp"><summary>Prompt dla wtyczki Claude w Chrome</summary>
         <div class="pbox"><div class="ph"><b>Skopiuj i wklej do wtyczki</b>
           <button class="btn sm" onclick="copyPrompt('${c.id}', this)">Kopiuj</button></div>
@@ -2289,8 +2461,11 @@ function viewStart(){
     <div class="row">
       <button class="btn sec" onclick="exportTxt()">Notatka (.txt)</button>
       <button class="btn sec" onclick="exportCsv()">Arkusz (.csv)</button>
-      <button class="btn sec" onclick="exportNotion()">Kopiuj dla Notion</button>
+      <button class="btn sec" onclick="exportNotion()">Notion: cała karta</button>
+      <button class="btn sec" onclick="exportNotionDiff()">Notion: tylko zmiany</button>
     </div>
+    <p class="lead" style="margin-top:8px">Kartę w Notion zakładasz raz, całością. Potem kopiujesz same zmiany
+      i podmieniasz w Notion bloki o tych samych kodach, żeby nie stracić uwag dopisanych ręcznie.</p>
     <div class="msg info" style="margin-top:14px">Pytania, które da się sprawdzić w rejestrach online,
       mają gotowe prompty dla wtyczki Claude w Chrome. Znajdziesz je <b>na górze każdej sekcji</b>
       razem z przyciskiem kopiowania.</div>
@@ -2631,32 +2806,98 @@ function exportCsv(){
   const csv='﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n');
   dl(baseName()+'-do-sprawdzenia.csv',csv,'text/csv;charset=utf-8');
 }
-function notionMd(){
+/* ============================================================
+   EKSPORT DO NOTION
+   Karta w Notion jest dokumentem trwałym, nie zrzutem z jednego spotkania.
+   Dlatego eksport obejmuje wszystkie pytania, także te sprawdzane w rejestrach,
+   idzie w kolejności sekcji aplikacji i daje każdemu pytaniu stały nagłówek
+   z kodem. Po tym kodzie podmieniasz pojedynczy blok, zamiast nadpisywać
+   całą stronę i tracić uwagi dopisane ręcznie.
+   ============================================================ */
+const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+/* Notatka wraca z Notion razem z prefiksem, którym ją opisałem przy eksporcie.
+   Przy kolejnym eksporcie ten prefiks trzeba zdjąć, żeby się nie mnożył. */
+const notatkaCzysta=id=>String(S.n[id]||'').replace(/^\s*\[(?:z promptu|ręcznie|z wklejki|ze starszego zapisu|dopisane w Notion)[^\]]*\]\s*/i,'').trim();
+function statusLinia(c){
+  const zn=S.s&&S.s[c.id]?S.s[c.id]:null;
+  if(!zn&&!rozstrzygniete(c))return 'nie sprawdzone';
+  const dt=zn&&zn.ts?zn.ts.slice(0,10):null;
+  const zr=zn?(SRCLAB[zn.src]||zn.src):'ręcznie';
+  return 'sprawdzone'+(dt?' '+dt:'')+' · '+zr+' · '+(rozstrzygniete(c)?'rozstrzygnięte':'bez rozstrzygnięcia');
+}
+function notionBlock(c){
+  const nt=notatkaCzysta(c.id);
+  const zn=S.s&&S.s[c.id]?S.s[c.id]:null;
+  const zrLab=zn?(SRCLAB[zn.src]||zn.src):'dopisane w Notion';
+  const dt=zn&&zn.ts?' '+zn.ts.slice(0,10):'';
+  let t='### '+c.q+'  `'+c.id+'`'+(isCrit(c)?'  ·  **krytyczne**':'')+'\n';
+  t+='**Status:** '+statusLinia(c)+'\n';
+  if(c.why)t+='_'+strip(c.why)+'_\n';
+  if(c.opts)c.opts.filter(o=>o[0]!=='?').forEach(o=>{
+    t+='- ['+(S.a[c.id]===o[0]?'x':' ')+'] '+o[0]+' — '+o[1]+'\n';});
+  else t+='- [ ] odpowiedz: '+(S.a[c.id]||'')+'\n';
+  t+='> notatka: '+(nt?'['+zrLab+dt+'] '+nt:'')+'\n';
+  return t;
+}
+/* Odcisk treści punktu — po nim widać, co zmieniło się od ostatniego eksportu. */
+function odcisk(c){ return (S.a[c.id]||'')+'|'+(S.n[c.id]||'')+'|'+((S.s&&S.s[c.id]&&S.s[c.id].ts)||''); }
+function zmienioneOdEksportu(){
+  return allChecks().filter(c=>c.type!=='info'&&(S.exp||{})[c.id]!==odcisk(c));
+}
+function zapiszOdciski(lista){
+  if(!S.exp)S.exp={};
+  (lista||allChecks().filter(c=>c.type!=='info')).forEach(c=>{S.exp[c.id]=odcisk(c);});
+  S.expTs=new Date().toISOString(); save();
+}
+function notionNaglowek(ile){
   const p=S.parcel||{};
-  const strip=s=>String(s==null?'':s).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
-  let t='_'+APP.name+' v'+APP.ver+'_\n\n> **Lista do sprawdzenia samodzielnie.** '+fieldChecks().length
-    +' punktów, których nie znajdziesz w płatnym raporcie o terenie.\n\n';
-  if(S.meta.adres)t+='**Nieruchomość:** '+S.meta.adres+(p.id?'  ·  działka `'+p.id+'`':'')+'\n\n';
-  t+='**Kolejność jest ustawiona pod spotkanie:** najpierw to, co widzisz i o co pytasz na miejscu, na końcu dokumenty.\n\n'
-    +'**Jak wypełniać:** zaznacz jedno pole wyboru przy każdym pytaniu i dopisz uwagi po słowie „notatka”. '
-    +'Kodów w apostrofach nie zmieniaj — po nich aplikacja rozpozna odpowiedzi przy imporcie.\n\n---\n\n';
-  let last='';
-  fieldChecks().forEach(c=>{
-    if(c.mname!==last){t+='## '+secName(c.mname)+'\n\n';last=c.mname;}
-    t+='### '+c.q+'  `'+c.id+'`\n';
-    if(c.why)t+='_'+strip(c.why)+'_\n';
-    if(c.opts)c.opts.filter(o=>o[0]!=='?').forEach(o=>{
-      t+='- ['+(S.a[c.id]===o[0]?'x':' ')+'] '+o[0]+' — '+o[1]+'\n';});
-    else t+='- [ ] odpowiedz: '+(S.a[c.id]||'')+'\n';
-    t+='> notatka: '+(S.n[c.id]||'')+'\n\n';
+  const cs=allChecks().filter(c=>c.type!=='info');
+  let t='_'+APP.name+' v'+APP.ver+'_\n\n';
+  t+='**Nieruchomość:** '+(S.meta.adres||'(bez adresu)')+(p.id?'  ·  działka `'+p.id+'`':'')+'\n';
+  if(S.plik)t+='**Plik audytu:** `'+S.plik+'`\n';
+  t+='**Eksport:** '+new Date().toLocaleDateString('pl-PL')+'  ·  '+ile+' z '+cs.length+' punktów  ·  '
+    +cs.filter(sprawdzone).length+' sprawdzonych, '+cs.filter(rozstrzygniete).length+' rozstrzygniętych\n\n';
+  t+='> **Jak aktualizować tę kartę.** Każde pytanie ma nagłówek z kodem w apostrofach, na przykład `g_uzytek`. '
+    +'Podmieniaj pojedynczy blok, od nagłówka do wiersza z notatką, dopasowując go po tym kodzie. '
+    +'Bloków, których nie ma w nowym eksporcie, nie kasuj — kod ich nie zawiera, bo nic się w nich nie zmieniło. '
+    +'Wiersza „Status” nie edytuj ręcznie, aplikacja czyta go z powrotem przy imporcie. '
+    +'Uwagi dopisuj po słowie „notatka”, wracają do audytu przez okno „Wklej wyniki”.\n\n---\n\n';
+  return t;
+}
+function notionMd(tylkoZmienione){
+  const cs=(tylkoZmienione?zmienioneOdEksportu():allChecks().filter(c=>c.type!=='info'));
+  let t=notionNaglowek(cs.length);
+  if(tylkoZmienione&&!cs.length)return t+'Od ostatniego eksportu nic się nie zmieniło.\n';
+  M.forEach(m=>{
+    const w=cs.filter(c=>m.checks.some(x=>x.id===c.id));
+    if(!w.length)return;
+    const b=bilans(m);
+    t+='## '+m.name+'\n';
+    t+='_'+b.spr+' z '+b.all+' sprawdzonych'+(b.krytZost?', zostało '+b.krytZost+' krytycznych':'')+'_\n\n';
+    w.forEach(c=>{t+=notionBlock(c)+'\n';});
   });
   return t;
 }
+function copyBlock(id, btn){
+  const c=allChecks().find(x=>x.id===id); if(!c)return;
+  const t='<!-- audyt: podmień blok o kodzie '+id+' -->\n'+notionBlock(c);
+  copyText(t.replace(/^<!--.*-->\n/,''), btn);
+  zapiszOdciski([c]);
+}
+function exportNotionDiff(){
+  const zm=zmienioneOdEksportu();
+  if(!zm.length){alert('Od ostatniego eksportu nic się nie zmieniło.');return;}
+  const t=notionMd(true);
+  navigator.clipboard.writeText(t).then(()=>{
+    zapiszOdciski(zm);
+    alert('Skopiowano '+zm.length+' '+(zm.length===1?'zmieniony blok':'zmienionych bloków')+'.\n\nW Notion podmień bloki o tych samych kodach. Reszty karty nie ruszaj.');
+  },()=>{dl(baseName()+'-notion-zmiany.md',t);zapiszOdciski(zm);alert('Schowek niedostępny — pobrałem plik .md.');});
+}
 function exportNotion(){
-  const t=notionMd();
+  const t=notionMd(false);
   navigator.clipboard.writeText(t).then(
-    ()=>alert('Skopiowano do schowka.\n\nW Notion otwórz kartę nieruchomości, utwórz nową podstronę i wklej (Cmd+V).'),
-    ()=>{dl(baseName()+'-notion.md',t);alert('Schowek niedostępny — pobrałem plik .md.');});
+    ()=>{zapiszOdciski();alert('Skopiowano całą kartę.\n\nPierwszy raz: wklej jako nową podstronę nieruchomości.\nKolejnym razem używaj przycisku „Kopiuj zmiany”, żeby podmienić tylko te bloki, które się ruszyły.');},
+    ()=>{dl(baseName()+'-notion.md',t);zapiszOdciski();alert('Schowek niedostępny — pobrałem plik .md.');});
 }
 
 
@@ -3522,14 +3763,20 @@ function viewReport(){
   const cmin=f.reduce((s,x)=>s+(x.cmin||0),0), cmax=f.reduce((s,x)=>s+(x.cmax||0),0);
   const cena=+S.meta.cena||0;
   const p=S.parcel||{};
-  const done=allChecks().filter(c=>c.type!=='info'&&S.a[c.id]!=null&&S.a[c.id]!==''&&S.a[c.id]!=='?').length;
-  const tot=allChecks().filter(c=>c.type!=='info').length;
+  const CS=allChecks().filter(c=>c.type!=='info');
+  const done=CS.filter(rozstrzygniete).length;
+  const spr=CS.filter(sprawdzone).length;
+  const bezRoz=CS.filter(bezRozstrzygniecia);
+  const zostaje=CS.filter(c=>!sprawdzone(c));
+  const zostKryt=zostaje.filter(isCrit), zostReszta=zostaje.filter(c=>!isCrit(c));
+  const tot=CS.length;
   const d=new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});
 
   const R_ALL=allChecks().filter(c=>c.src==='raport'&&c.type!=='info');
   const W_ALL=allChecks().filter(c=>c.src==='wlasne'&&c.type!=='info');
-  const filled=c=>S.a[c.id]!=null&&S.a[c.id]!==''&&S.a[c.id]!=='?';
+  const filled=rozstrzygniete;
   const rDone=R_ALL.filter(filled).length, wDone=W_ALL.filter(filled).length;
+  const rSpr=R_ALL.filter(sprawdzone).length, wSpr=W_ALL.filter(sprawdzone).length;
   const fR=f.filter(x=>{const c=allChecks().find(y=>y.id===x.cid);return c&&c.src==='raport';});
   const fW=f.filter(x=>{const c=allChecks().find(y=>y.id===x.cid);return !c||c.src==='wlasne';});
   const kosztR=fR.reduce((s,x)=>s+(x.cmin||0),0), kosztW=fW.reduce((s,x)=>s+(x.cmin||0),0);
@@ -3537,7 +3784,7 @@ function viewReport(){
   let verdict,vcls;
   if(red.length){verdict='WSTRZYMAJ SIĘ — wady wymagające wyjaśnienia przed umową';vcls='rr';}
   else if(yel.length>3){verdict='MOŻNA KUPIĆ — po wynegocjowaniu ceny';vcls='ry';}
-  else if(done<tot*0.4){verdict='AUDYT NIEKOMPLETNY — uzupełnij brakujące punkty';vcls='ry';}
+  else if(spr<tot*0.4){verdict='AUDYT NIEKOMPLETNY — uzupełnij brakujące punkty';vcls='ry';}
   else {verdict='BEZ POWAŻNYCH ZASTRZEŻEŃ';vcls='rg';}
 
   const rows=arr=>arr.map(x=>`<tr><td>${esc(x.mname)}</td><td><b>${esc(x.t)}</b><br><span style="color:#555;font-size:12px">${esc(String(x.w).replace(/<[^>]+>/g,'')).slice(0,300)}</span></td>
@@ -3582,6 +3829,19 @@ function viewReport(){
   }
 
 
+  /* Bez policzonych kosztów pismo nie może twierdzić, że coś kosztuje.
+     Wcześniej wychodziło z tego „koszt co najmniej 0 zł” i „proponuję X zamiast X”,
+     czyli zdania, które psują rozmowę zanim się zacznie. */
+  const wycenione = obnizka>0 && cena && propon && propon<cena;
+  const zdanieKoszt = obnizka>0
+    ? '\nSzacowany koszt usunięcia samych wad wskazanych powyżej to co najmniej '+fmt(obnizka)+' zł.\n'
+    : '';
+  const zdanieCena = wycenione
+    ? 'W związku z powyższym proponuję cenę '+fmt(propon)+' zł zamiast '+fmt(cena)+' zł.'
+    : (args.length
+      ? 'Żadnej z tych okoliczności nie wyceniłem jeszcze kwotowo, natomiast wszystkie obniżają wartość użytkową nieruchomości. Proponuję rozmowę o cenie z ich uwzględnieniem.'
+      : 'Proponuję rozmowę o cenie po zakończeniu weryfikacji stanu prawnego i technicznego.');
+
   const letter=`Szanowni Państwo,
 
 dziękuję za możliwość obejrzenia nieruchomości${S.meta.adres?' przy '+S.meta.adres:''}${p.id?' (działka nr '+p.id+')':''}.
@@ -3589,10 +3849,8 @@ dziękuję za możliwość obejrzenia nieruchomości${S.meta.adres?' przy '+S.me
 Jestem zainteresowany zakupem, natomiast przed złożeniem wiążącej oferty przeprowadziłem szczegółową analizę stanu prawnego i technicznego. Wykazała ona okoliczności, które wpływają na wartość nieruchomości i wiążą się z nakładami po mojej stronie:
 
 ${args.length?args.map((a,i)=>(i+1)+'. '+a.arg+(a.kwota?'  (szacunek: '+fmt(a.kwota)+' zł)':'')).join('\n'):'(uzupełnij po wypełnieniu audytu)'}${pozostale>0?'\n\nPoza powyższymi zidentyfikowałem jeszcze '+pozostale+' drobniejszych kwestii, które chętnie omówię przy spotkaniu.':''}
-
-Szacowany koszt usunięcia samych wad wskazanych powyżej to co najmniej ${fmt(obnizka)} zł.
-
-${cena&&propon?`W związku z powyższym proponuję cenę ${fmt(propon)} zł zamiast ${fmt(cena)} zł.`:'W związku z powyższym proponuję odpowiednią korektę ceny.'}
+${zdanieKoszt}
+${zdanieCena}
 
 Jestem gotów sfinalizować transakcję szybko i bez zbędnych formalności. Jeśli powyższa propozycja jest do rozważenia, proponuję zawarcie umowy przedwstępnej z warunkami dotyczącymi ${red.length?'wyjaśnienia wskazanych kwestii prawnych oraz ':''}stanu technicznego budynku.
 
@@ -3613,7 +3871,8 @@ Z poważaniem`;
     <div class="row">
       <button class="btn sm sec" onclick="exportTxt()">Notatka (.txt)</button>
       <button class="btn sm sec" onclick="exportCsv()">Arkusz (.csv)</button>
-      <button class="btn sm sec" onclick="exportNotion()">Kopiuj dla Notion</button>
+      <button class="btn sm sec" onclick="exportNotion()">Notion: cała karta</button>
+      <button class="btn sm sec" onclick="exportNotionDiff()">Notion: tylko zmiany</button>
       <button class="btn sm" onclick="togglePaste(true)">Wklej wyniki</button>
     </div>
   </div>
@@ -3638,22 +3897,27 @@ Z poważaniem`;
       ${rynkOcena?`<p style="margin:8px 0 0;font-size:13px"><b>Cena:</b> ${esc(rynkOcena)}</p>`:''}
     </div>`:''}
     <table>
-      <tr><th>Wady blokujące</th><th>Wady do negocjacji</th><th>Punkty bez zastrzeżeń</th><th>Kompletność</th></tr>
+      <tr><th>Wady blokujące</th><th>Wady do negocjacji</th><th>Punkty bez zastrzeżeń</th><th>Sprawdzone</th><th>Rozstrzygnięte</th></tr>
       <tr><td class="rr">${red.length}</td><td class="ry">${yel.length}</td><td class="rg">${grn.length}</td>
+      <td>${spr}/${tot} (${Math.round(spr/tot*100)}%)</td>
       <td>${done}/${tot} (${Math.round(done/tot*100)}%)</td></tr>
     </table>
+
+    <p style="font-size:12.5px;color:#555;margin-top:6px">Sprawdzone to punkty, którymi się zająłeś, razem z tymi, gdzie rejestr
+      nie dał odpowiedzi. Rozstrzygnięte to te, które mają wybraną odpowiedź i wchodzą do oceny.
+      ${bezRoz.length?'Różnicę robi '+bezRoz.length+' '+(bezRoz.length===1?'punkt':'punktów')+' sprawdzonych bez rozstrzygnięcia — lista niżej.':''}</p>
 
     <h2>Podział pracy: raport a twoje oględziny</h2>
     <p style="font-size:12.5px;color:#555">Płatny raport o terenie (rzędu 100–300 zł) odczytuje dane z rejestrów i map.
     Nie ma dostępu do księgi wieczystej ani do wnętrza budynku — to musisz sprawdzić sam albo zlecić inspektorowi.</p>
     <table>
-      <tr><th>Zakres</th><th>Punktów</th><th>Sprawdzone</th><th>Znalezione wady</th><th>Koszty</th></tr>
+      <tr><th>Zakres</th><th>Punktów</th><th>Sprawdzone / rozstrzygnięte</th><th>Znalezione wady</th><th>Koszty</th></tr>
       <tr><td><b>Zwykle w płatnym raporcie</b><br><span style="color:#666;font-size:11.5px">grunt, plan miejscowy, media, drogi, zagrożenia środowiskowe, ceny transakcyjne</span></td>
-        <td>${R_ALL.length}</td><td>${rDone}</td>
+        <td>${R_ALL.length}</td><td>${rSpr} / ${rDone}</td>
         <td>${fR.filter(x=>x.lv==='red').length} czerw. / ${fR.filter(x=>x.lv==='yellow').length} żółt.</td>
         <td>${kosztR?fmt(kosztR)+' zł':'—'}</td></tr>
       <tr><td><b>Tylko twoje: dokumenty i oględziny</b><br><span style="color:#666;font-size:11.5px">księga wieczysta, stan i legalność budynku, wnętrze, rozmowy</span></td>
-        <td>${W_ALL.length}</td><td>${wDone}</td>
+        <td>${W_ALL.length}</td><td>${wSpr} / ${wDone}</td>
         <td>${fW.filter(x=>x.lv==='red').length} czerw. / ${fW.filter(x=>x.lv==='yellow').length} żółt.</td>
         <td>${kosztW?fmt(kosztW)+' zł':'—'}</td></tr>
     </table>
@@ -3691,14 +3955,39 @@ Z poważaniem`;
     ${grn.length?`<h2>Sprawdzone bez zastrzeżeń</h2>
       <p style="font-size:12.5px;color:#555">${grn.map(x=>esc(x.t)).join(' &middot; ')}</p>`:''}
 
-    ${done<tot?`<h2>Do uzupełnienia</h2><p style="font-size:12.5px;color:#555">${
-      allChecks().filter(c=>c.type!=='info'&&(S.a[c.id]==null||S.a[c.id]===''||S.a[c.id]==='?'))
-      .map(c=>esc(c.q)).join(' &middot; ')}</p>`:''}
+    ${bezRoz.length?`<h2>Sprawdzone, bez rozstrzygnięcia</h2>
+      <p style="font-size:12.5px;color:#555">Te punkty były sprawdzane, ale rejestr, mapa albo rozmowa nie dały jednoznacznej odpowiedzi.
+      Nie wracają na listę do zrobienia. Uzasadnienie każdego znajdziesz w notatkach.</p>
+      <table><tr><th>Sekcja</th><th>Pytanie</th><th>Sprawdzone</th></tr>
+      ${bezRoz.map(c=>{const m=M.find(x=>x.id===c.mid);
+        return `<tr><td>${esc(m?m.name:'')}</td><td>${esc(c.q)}${isCrit(c)?' <b>(krytyczne)</b>':''}</td>
+          <td style="white-space:nowrap">${sprData(c.id)||'wcześniej'}</td></tr>`;}).join('')}</table>`:''}
 
-    ${Object.keys(S.n).filter(k=>S.n[k]).length?`<h2>Notatki z oględzin</h2>
-      ${Object.keys(S.n).filter(k=>S.n[k]).map(k=>{
-        const c=allChecks().find(x=>x.id===k);
-        return `<p style="font-size:12.5px"><b>${esc(c?c.q:k)}</b><br>${esc(S.n[k])}</p>`;}).join('')}`:''}
+    ${zostaje.length?`<h2>Do zrobienia</h2>
+      ${zostKryt.length?`<p style="font-size:12.5px"><b>Krytyczne przed decyzją (${zostKryt.length}).</b>
+        Każdy z tych punktów potrafi zatrzymać zakup, więc zamknij je, zanim podpiszesz cokolwiek.<br>
+        <span style="color:#555">${zostKryt.map(c=>esc(c.q)).join(' &middot; ')}</span></p>`:
+        `<p style="font-size:12.5px"><b>Krytyczne punkty masz sprawdzone.</b> Zostały same uzupełniające.</p>`}
+      ${zostReszta.length?`<p style="font-size:12.5px"><b>Warte sprawdzenia (${zostReszta.length}).</b>
+        Wpływają na komfort i na siłę w negocjacjach, ale same z siebie nie zatrzymają transakcji.<br>
+        <span style="color:#555">${zostReszta.map(c=>esc(c.q)).join(' &middot; ')}</span></p>`:''}`:''}
+
+    ${Object.keys(S.n).filter(k=>S.n[k]).length?`<h2>Notatki ze sprawdzeń</h2>
+      <p style="font-size:12.5px;color:#555">Pełny zapis tego, co ustaliłeś przy każdym punkcie, razem ze źródłem i datą odczytu.
+      To ten sam tekst, który trafia na kartę w Notion.</p>
+      ${M.map(m=>{
+        const ks=m.checks.filter(c=>S.n[c.id]);
+        if(!ks.length)return '';
+        return `<h3 style="font-size:13px;margin:14px 0 4px">${esc(m.name)}</h3>`+ks.map(c=>{
+          const zn=S.s&&S.s[c.id]?S.s[c.id]:null;
+          const dt=sprData(c.id);
+          const opis=zn?(SRCLAB[zn.src]||zn.src)+(dt?', '+dt:''):'źródło niezapisane';
+          return `<p style="font-size:12.5px"><b>${esc(c.q)}</b>
+            <span style="color:#777">(${esc(opis)}${rozstrzygniete(c)?'':', bez rozstrzygnięcia'})</span><br>${esc(S.n[c.id])}</p>`;
+        }).join('');
+      }).join('')}
+      ${Object.keys(S.n).filter(k=>S.n[k]&&!allChecks().some(c=>c.id===k)).map(k=>
+        `<p style="font-size:12.5px"><b>${esc(k)}</b><br>${esc(S.n[k])}</p>`).join('')}`:''}
 
     <h2>Propozycja pisma negocjacyjnego</h2>
     <blockquote id="letterBox" style="white-space:pre-wrap">${esc(letter)}</blockquote>
