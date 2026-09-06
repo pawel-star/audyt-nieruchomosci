@@ -376,7 +376,7 @@ function note(k,v){ S.n[k]=v; if(v&&v.trim())mark(k,'reczne'); save(); paintBar(
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.13', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.14', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -426,7 +426,9 @@ const TRYB_PRACY=`TRYB PRACY
 - Jeśli któraś strona nie działa albo brakuje warstwy, nie przerywaj całości: zanotuj to i przejdź do kolejnego zadania.
 - Nie ponawiaj tego samego kroku (ponowne otwarcie strony, ponowne wyszukanie działki) więcej niż raz. Jeśli się nie uda za drugim razem, zanotuj i przejdź dalej — to droższe niż warte.
 - Wyniki z paneli informacyjnych (np. po kliknięciu narzędziem "informacja" w działkę) czytaj jako tekst strony, nie jako zrzut ekranu — to szybsze i tańsze. Zrzut ekranu rób tylko wtedy, gdy informacja jest widoczna wyłącznie wizualnie na samej mapie (np. zasięg strefy, kolor warstwy), i wystarczy jeden na warstwę.
-- Ewentualne pytania zbierz na koniec, po zwróceniu wyników.`;
+- Ewentualne pytania zbierz na koniec, po zwróceniu wyników.
+- Odpowiadaj po polsku, także w komentarzach i podsumowaniach.
+- Nagłówek każdej odpowiedzi przepisz dokładnie tak, jak podano niżej, razem z kodem w apostrofach. Bez tego kodu odpowiedź trafia w próżnię.`;
 
 function promptFor(c){
   const opts=c.opts?c.opts.filter(o=>o[0]!=='?'):[];
@@ -591,7 +593,7 @@ function importModuleAnswers(mid){
   const acc=parseNotion(t);
   const A=(!acc.n&&!acc.notes)?parseTxt(t):acc;
   if(!A.n&&!A.notes){
-    alert('Nie rozpoznałem żadnej odpowiedzi.\n\nTekst musi zawierać kody pytań (np. `s_powodz`) i wiersze z zaznaczeniem [x]. Wklej całą odpowiedź wtyczki, nie jej fragment.');
+    alert('Nie rozpoznałem żadnej odpowiedzi.\n\nSzukam nagłówka pytania: kodu w apostrofach (np. `g_geo`) albo dokładnej treści pytania po znakach ###.\n\nNajczęstsza przyczyna to wklejony fragment bez nagłówka. Skopiuj całą odpowiedź wtyczki, razem z wierszem zaczynającym się od ###.');
     return;
   }
   save(); render();
@@ -622,8 +624,10 @@ function importGlobal(){
   const A=accTxt||acc;
   if(!A.n&&!A.notes){
     setPasteMsg(`<div class="msg err"><b>Nie rozpoznałem żadnej odpowiedzi.</b><br>
-      Tekst musi zawierać kody pytań w apostrofach (np. <span class="mono">\`s_powodz\`</span>)
-      oraz wiersze z zaznaczeniem <span class="mono">[x]</span>. Wklej całą odpowiedź wtyczki, nie jej fragment.</div>`);
+      Szukam nagłówka pytania: kodu w apostrofach (np. <span class="mono">\`g_geo\`</span>)
+      albo dokładnej treści pytania po znakach <span class="mono">###</span>.
+      Najczęstsza przyczyna to wklejony fragment bez nagłówka — skopiuj całą odpowiedź wtyczki,
+      razem z wierszem zaczynającym się od <span class="mono">###</span>.</div>`);
     return;}
   /* rozbicie na sekcje — żeby było widać, co dokładnie doszło */
   const zm={};
@@ -652,6 +656,25 @@ function setPasteMsg(html){
    gubią backticki, zamieniają je na apostrofy typograficzne, wstawiają
    znaki ☑ zamiast [x], łamią notatki na kilka linii. Kod pytania rozpoznaję
    po dopasowaniu do listy znanych identyfikatorów, a nie po znacznikach. */
+const _norm=s=>String(s||'').toLowerCase()
+  .replace(/[ąàáâ]/g,'a').replace(/[ćç]/g,'c').replace(/[ęèéê]/g,'e').replace(/ł/g,'l')
+  .replace(/ń/g,'n').replace(/[óòô]/g,'o').replace(/ś/g,'s').replace(/[żź]/g,'z')
+  .replace(/[^a-z0-9]+/g,' ').trim();
+/* Wtyczka bywa niesolidna z formatem i zwraca sam nagłówek pytania, bez kodu
+   w apostrofach. Treść pytania jest wtedy jedyną informacją, po której da się
+   trafić w punkt — i w praktyce wystarczającą, bo pytania są długie i unikalne.
+   Dopasowuję wyłącznie w wierszach wyglądających na nagłówek (### albo **pogrubienie**),
+   żeby nie złapać zdania ze środka notatki. */
+function kodPoTresci(linia){
+  if(!/^\s*(?:#{1,6}\s|\*\*)/.test(linia))return null;
+  const l=_norm(linia.replace(/^\s*#{1,6}\s*/,'').replace(/\*\*/g,''));
+  if(l.length<12)return null;
+  const cs=allChecks().filter(c=>c.q);
+  let hit=cs.find(c=>_norm(c.q)===l);
+  if(!hit)hit=cs.filter(c=>_norm(c.q).length>=12&&l.indexOf(_norm(c.q))>=0)
+    .sort((a,b)=>_norm(b.q).length-_norm(a.q).length)[0];
+  return hit?hit.id:null;
+}
 function znajdzKod(linia){
   const ids=allChecks().map(c=>c.id);
   /* najpierw jawne oznaczenia: `kod`, 'kod', „kod", (kod), [kod] */
@@ -663,7 +686,7 @@ function znajdzKod(linia){
     const t=tokeny[i].replace(/[`'‘’"„”\[\](),.:;]/g,'');
     if(ids.indexOf(t)>=0)return t;
   }
-  return null;
+  return kodPoTresci(linia);
 }
 function parseNotion(t){
   const acc={n:0,notes:0,skipped:0};
@@ -671,7 +694,7 @@ function parseNotion(t){
   let cur=null, notatka=null;
   const zapiszNotatke=()=>{
     if(cur&&notatka!==null){
-      const v=notatka.join(' ').trim();
+      const v=notatka.join(' ').replace(/\s{2,}/g,' ').trim();
       if(v){S.n[cur]=v.replace(/^\s*\[(?:z promptu|ręcznie|z wklejki|ze starszego zapisu|dopisane w Notion)[^\]]*\]\s*/i,'');acc.notes++;mark(cur,'import');}
     }
     notatka=null;
@@ -711,7 +734,12 @@ function parseNotion(t){
     if(notatka!==null){
       const dalej=l.match(/^\s*>\s?(.*)$/);
       if(dalej){notatka.push(dalej[1]);return;}
-      if(l.trim()&&!/^\s*(?:[-*•]|\[|#|=)/.test(l)){notatka.push(l.trim());return;}
+      /* Notatka trwa aż do nowego pytania, wiersza opcji albo linii poziomej.
+         Wcześniej kończyła ją pusta linia i każdy wiersz zaczynający się od
+         gwiazdki albo myślnika — czyli akapit „**Ustalenia:**” i zwykła lista
+         wypunktowana ucinały odpowiedź wtyczki w pół zdania. */
+      if(!l.trim()){notatka.push('');return;}
+      if(!/^\s*(?:#{1,6}\s|={3,}|-{3,}|(?:[-*•]\s*)?\[)/.test(l)){notatka.push(l.trim().replace(/\*\*/g,''));return;}
       zapiszNotatke();
     }
     /* niezaznaczona opcja kończy zbieranie notatki */
