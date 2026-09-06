@@ -376,7 +376,7 @@ function note(k,v){ S.n[k]=v; if(v&&v.trim())mark(k,'reczne'); save(); paintBar(
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.12', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'2.13', data:'sierpień 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -416,6 +416,18 @@ function knownFacts(c){
   return F;
 }
 
+/* Jeden blok zasad pracy dla wtyczki, używany w prompcie pojedynczym,
+   sekcyjnym i zbiorczym. Wcześniej ten sam tekst stał w dwóch miejscach
+   i rozjeżdżał się przy każdej poprawce. */
+const TRYB_PRACY=`TRYB PRACY
+- Wykonaj wszystkie kroki jednym ciągiem. Nie zatrzymuj się między nimi po potwierdzenie.
+- Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
+- Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Banner z cookies albo regulaminem serwisu, który zasłania mapę, możesz zaakceptować — masz na to moją zgodę, to jedyny wyjątek od zasady „nic nie klikam poza odczytem". Poza tym niczego nie zapisujesz, nie wysyłasz formularzy i nie logujesz się.
+- Jeśli któraś strona nie działa albo brakuje warstwy, nie przerywaj całości: zanotuj to i przejdź do kolejnego zadania.
+- Nie ponawiaj tego samego kroku (ponowne otwarcie strony, ponowne wyszukanie działki) więcej niż raz. Jeśli się nie uda za drugim razem, zanotuj i przejdź dalej — to droższe niż warte.
+- Wyniki z paneli informacyjnych (np. po kliknięciu narzędziem "informacja" w działkę) czytaj jako tekst strony, nie jako zrzut ekranu — to szybsze i tańsze. Zrzut ekranu rób tylko wtedy, gdy informacja jest widoczna wyłącznie wizualnie na samej mapie (np. zasięg strefy, kolor warstwy), i wystarczy jeden na warstwę.
+- Ewentualne pytania zbierz na koniec, po zwróceniu wyników.`;
+
 function promptFor(c){
   const opts=c.opts?c.opts.filter(o=>o[0]!=='?'):[];
   const F=knownFacts(c);
@@ -428,15 +440,7 @@ CO JUŻ USTALONE
 ${F.length?F.map(x=>'- '+x).join('\n'):'- brak danych, zacznij od wyszukania nieruchomości'}
 ${cur?'\nW audycie zapisano już odpowiedź: „'+curLab+'”. Zweryfikuj ją i popraw, jeśli źródła mówią co innego.':''}
 
-TRYB PRACY
-- Wykonaj wszystkie kroki jednym ciągiem. Nie zatrzymuj się między nimi po potwierdzenie.
-- Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
-- Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Banner z cookies albo regulaminem serwisu, który zasłania mapę, możesz zaakceptować — masz na to moją zgodę, to jedyny wyjątek od zasady „nic nie klikam poza odczytem". Poza tym niczego nie zapisujesz, nie wysyłasz formularzy i nie logujesz się.
-- Jeśli któraś strona nie działa albo brakuje warstwy, nie przerywaj całości: zanotuj to i przejdź do kolejnego zadania.
-- Nie ponawiaj tego samego kroku (ponowne otwarcie strony, ponowne wyszukanie działki) więcej niż raz. Jeśli się nie uda za drugim razem, zanotuj i przejdź dalej — to droższe niż warte.
-- Wyniki z paneli informacyjnych (np. po kliknięciu narzędziem "informacja" w działkę) czytaj jako tekst strony, nie jako zrzut ekranu — to szybsze i tańsze. Zrzut ekranu rób tylko wtedy, gdy informacja jest widoczna wyłącznie wizualnie na samej mapie (np. zasięg strefy, kolor warstwy), i wystarczy jeden na warstwę.
-- Ewentualne pytania zbierz na koniec, po zwróceniu wyników.
-
+${TRYB_PRACY}
 ZADANIE
 ${c.task}
 
@@ -447,12 +451,14 @@ ZASADY
 
 ODPOWIEDŹ — zwróć dokładnie w tym formacie i nic poza nim:
 ### ${c.q}  \`${c.id}\`
-- [x] KOD — OPIS
-> notatka: co ustaliłeś, z jakiego serwisu i z jakiej daty pochodzą dane
-
-Zamiast KOD wstaw jedną z wartości:
+${c.obs?'':'- [x] KOD — OPIS\n'}> notatka: co ustaliłeś, z jakiego serwisu i z jakiej daty pochodzą dane
+${c.obs?`
+Nie wybieraj żadnej odpowiedzi i nie wstawiaj wiersza z [x]. Tego punktu nie da się rozstrzygnąć zdalnie —
+zdjęcie lotnicze i rejestr dają poszlakę, nie dowód. Twoim zadaniem jest zebrać materiał do notatki,
+a odpowiedź wybiorę sam na miejscu. Napisz w notatce, na co konkretnie mam popatrzeć podczas oględzin.`
+:`Zamiast KOD wstaw jedną z wartości:
 ${opts.map(o=>'  '+o[0]+' = '+o[1]).join('\n')}
-Jeśli nie udało się ustalić, pomiń wiersz z [x] i zostaw samą notatkę z wyjaśnieniem, czego zabrakło.`;
+Jeśli nie udało się ustalić, pomiń wiersz z [x] i zostaw samą notatkę z wyjaśnieniem, czego zabrakło.`}`;
 }
 function promptModule(mid){
   const m=M.find(x=>x.id===mid); if(!m)return '';
@@ -467,15 +473,7 @@ CO JUŻ USTALONE
 ${F.length?F.map(x=>'- '+x).join('\n'):'- brak danych, zacznij od wyszukania nieruchomości'}
 ${done.length?'\nNa te pytania audyt ma już odpowiedzi — zweryfikuj i popraw, jeśli źródła mówią co innego:\n'
   +done.map(c=>'- '+c.id+': '+(c.opts?((c.opts.find(o=>o[0]===S.a[c.id])||[])[1]||S.a[c.id]):S.a[c.id])).join('\n')+'\n':''}
-TRYB PRACY
-- Wykonaj wszystkie kroki jednym ciągiem. Nie zatrzymuj się między nimi po potwierdzenie.
-- Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
-- Wszystkie czynności to wyłącznie odczyt publicznych map i rejestrów: otwarcie strony, kliknięcie w mapę, włączenie warstwy, odczytanie wartości. Banner z cookies albo regulaminem serwisu, który zasłania mapę, możesz zaakceptować — masz na to moją zgodę, to jedyny wyjątek od zasady „nic nie klikam poza odczytem". Poza tym niczego nie zapisujesz, nie wysyłasz formularzy i nie logujesz się.
-- Jeśli któraś strona nie działa albo brakuje warstwy, nie przerywaj całości: zanotuj to i przejdź do kolejnego zadania.
-- Nie ponawiaj tego samego kroku (ponowne otwarcie strony, ponowne wyszukanie działki) więcej niż raz. Jeśli się nie uda za drugim razem, zanotuj i przejdź dalej — to droższe niż warte.
-- Wyniki z paneli informacyjnych (np. po kliknięciu narzędziem "informacja" w działkę) czytaj jako tekst strony, nie jako zrzut ekranu — to szybsze i tańsze. Zrzut ekranu rób tylko wtedy, gdy informacja jest widoczna wyłącznie wizualnie na samej mapie (np. zasięg strefy, kolor warstwy), i wystarczy jeden na warstwę.
-- Ewentualne pytania zbierz na koniec, po zwróceniu wyników.
-
+${TRYB_PRACY}
 Wykonaj ${cs.length===1?'poniższe zadanie':'poniższe zadania ('+cs.length+') po kolei'}.
 Nie zgaduj: jeśli danych nie ma albo pole jest puste, napisz to wprost.
 Podaj datę publikacji danych, jeśli serwis ją pokazuje.
@@ -485,13 +483,58 @@ Podaj datę publikacji danych, jeśli serwis ją pokazuje.
   t+=`\n════════════ FORMAT ODPOWIEDZI ════════════\nZwróć dokładnie taki blok dla każdego zadania, nic poza nim:\n\n`;
   cs.forEach(c=>{
     const opts=c.opts?c.opts.filter(o=>o[0]!=='?'):[];
-    t+=`### ${c.q}  \`${c.id}\`\n- [x] KOD — OPIS\n> notatka: ustalenie, serwis, data\n`;
-    if(opts.length)t+=`   kody: ${opts.map(o=>o[0]).join(' / ')}\n`;
+    t+=`### ${c.q}  \`${c.id}\`\n${c.obs?'':'- [x] KOD — OPIS\n'}> notatka: ustalenie, serwis, data\n`;
+    if(c.obs)t+=`   bez wiersza [x] — ten punkt rozstrzygam sam na miejscu, ty zbierasz materiał\n`;
+    else if(opts.length)t+=`   kody: ${opts.map(o=>o[0]).join(' / ')}\n`;
     t+='\n';
   });
   t+=`Gdzie KOD to jedna z wartości wypisanych pod pytaniem. Jeśli czegoś nie ustalisz, pomiń wiersz z [x] i zostaw samą notatkę.`;
   return t;
 }
+/* Prompt zbiorczy: wszystkie zadania online z całego audytu w jednej sesji wtyczki.
+   Domyślnie pomija punkty już sprawdzone, żeby nie płacić drugi raz za to samo. */
+function promptAll(tylkoBraki){
+  const cs=allChecks().filter(c=>c.task&&(!tylkoBraki||!sprawdzone(c)));
+  if(!cs.length)return '';
+  const F=knownFacts({});
+  const kryt=cs.filter(isCrit).length;
+  let t=`[${APP.name} v${APP.ver}] Cały audyt — zadania do sprawdzenia w rejestrach
+Nieruchomość: ${S.meta.adres||'(adres nie podany)'}
+
+CO JUŻ USTALONE
+${F.length?F.map(x=>'- '+x).join('\n'):'- brak danych, zacznij od wyszukania nieruchomości'}
+
+${TRYB_PRACY}
+To jest długa sesja: ${cs.length} ${cs.length===1?'zadanie':'zadań'}${kryt?', z tego '+kryt+' przy punktach krytycznych':''}.
+Zacznij od zadań oznaczonych jako krytyczne. Jeśli sesja zostanie przerwana albo zabraknie miejsca,
+zwróć wyniki tych zadań, które zdążyłeś zrobić, i wypisz na końcu numery pozostałych — dokończę je osobno.
+Nie zgaduj: jeśli danych nie ma albo pole jest puste, napisz to wprost.
+Podaj datę publikacji danych, jeśli serwis ją pokazuje.
+
+`;
+  let ost='';
+  cs.forEach((c,i)=>{
+    const m=M.find(x=>x.checks.some(y=>y.id===c.id));
+    if(m&&m.name!==ost){t+=`\n════════ SEKCJA: ${m.name.toUpperCase()} ════════\n`;ost=m.name;}
+    t+=`\n──────────── ZADANIE ${i+1} z ${cs.length}${isCrit(c)?'  ·  KRYTYCZNE':''} ────────────\n${c.task}\n`;
+  });
+  t+=`\n════════════ FORMAT ODPOWIEDZI ════════════\nZwróć dokładnie taki blok dla każdego zadania, nic poza nim:\n\n`;
+  cs.forEach(c=>{
+    const opts=c.opts?c.opts.filter(o=>o[0]!=='?'):[];
+    t+=`### ${c.q}  \`${c.id}\`\n${c.obs?'':'- [x] KOD — OPIS\n'}> notatka: ustalenie, serwis, data\n`;
+    if(c.obs)t+=`   bez wiersza [x] — ten punkt rozstrzygam sam na miejscu, ty zbierasz materiał\n`;
+    else if(opts.length)t+=`   kody: ${opts.map(o=>o[0]).join(' / ')}\n`;
+    t+='\n';
+  });
+  t+=`Gdzie KOD to jedna z wartości wypisanych pod pytaniem. Jeśli czegoś nie ustalisz, pomiń wiersz z [x] i zostaw samą notatkę.`;
+  return t;
+}
+function copyAllPrompt(tylkoBraki, btn){
+  const t=promptAll(tylkoBraki);
+  if(!t){alert('Wszystkie punkty sprawdzane w rejestrach masz już zrobione.');return;}
+  copyText(t, btn);
+}
+
 /* Karta pod paskiem modułu: kopiujesz prompty tej sekcji i w tym samym
    miejscu wklejasz odpowiedź. Bez skakania na Start i z powrotem. */
 function modPromptCard(mid){
@@ -947,6 +990,13 @@ const M = [
    <li><b>Wyłączenie z produkcji rolnej</b> — decyzja starosty, którą uzyskujesz ty przed pozwoleniem na budowę.</li></ul>`},
 
  {id:'g_geo', src:'raport', mode:'field', q:'Jaki grunt jest pod spodem?',
+  task:`Ustal budowę geologiczną podłoża z danych Państwowego Instytutu Geologicznego.
+1. Otwórz geolog.pgi.gov.pl (Geologiczne Centrum Danych). Znajdź nieruchomość po współrzędnych.
+2. Włącz warstwę otworów wiertniczych z Centralnej Bazy Danych Geologicznych. Znajdź najbliższy otwór i podaj jego odległość od działki oraz identyfikator.
+3. Otwórz profil tego otworu i wypisz warstwy od powierzchni w dół, z głębokościami, przynajmniej do 4 metrów. To głębokość, która decyduje o posadowieniu domu.
+4. Włącz Szczegółową Mapę Geologiczną Polski w skali 1:50 000 i odczytaj wydzielenie w miejscu działki. Podaj nazwę wydzielenia i genezę osadu.
+5. Kod wybierz tylko wtedy, gdy otwór wiertniczy leży bliżej niż 200 metrów od działki i profil jest jednoznaczny. Przy dalszym otworze albo przy rozbieżności między otworem a mapą zostaw sam opis w notatce i napisz, że to wymaga badań geotechnicznych na działce.
+6. Sprawdź też Bank Danych Hydrogeologicznych i podaj głębokość zwierciadła wody gruntowej, jeśli najbliższy otwór ją notuje.`,
   why:'Torfy i namuły oznaczają wymianę gruntu albo palowanie. Przy istniejącym domu — ryzyko osiadania.',
   type:'select', opts:[['pl','pl / ps — piaski'],['gl','gl — glina'],['ip','ip — ił'],['T','T — TORFY'],['Nm','Nm — namuły'],['z','z — grunty organiczne'],['?','Nie sprawdzone']],
   flag:v=>{
@@ -969,6 +1019,13 @@ const M = [
    <br><br><b>Przy domu istniejącym</b> obejrzyj cokół i ściany w piwnicy: pęknięcia ukośne w narożnikach to klasyczny objaw nierównomiernego osiadania.`},
 
  {id:'g_woda', src:'raport', mode:'field', q:'Czy teren ma zagłębienia bezodpływowe lub ślady stojącej wody?',
+  obs:true,
+  task:`Poszukaj śladów zastoisk wody na działce i wokół niej.
+1. Otwórz mapy.geoportal.gov.pl i włącz cieniowanie rzeźby terenu z numerycznego modelu terenu. Sprawdź, czy działka albo teren tuż przy niej ma lokalne zagłębienie bez odpływu. Opisz, gdzie i jak głębokie.
+2. Odczytaj wysokości w kilku punktach: na działce, przy drodze i po stronie przeciwnej. Napisz, czy działka leży niżej czy wyżej od otoczenia.
+3. Przejrzyj ortofotomapy archiwalne. Zdjęcia robione wiosną pokazują rozlewiska i mokre plamy, których latem nie widać. Podaj lata zdjęć i opisz, co widać.
+4. Sprawdź, czy w pobliżu przebiega rów melioracyjny albo ciek. Włącz warstwę wód powierzchniowych i podaj odległość.
+5. Napisz wprost, na co mam popatrzeć na miejscu: w którym rogu działki, przy której ścianie budynku.`,
   why:'Woda, która nie ma gdzie odpłynąć, wraca do piwnicy.',
   type:'yn', opts:YN,
   flag:v=>v==='tak'?Y('Zagłębienie bezodpływowe / stojąca woda','Konieczne rozwiązanie odwodnienia: drenaż opaskowy, studnia chłonna albo niwelacja terenu. Przy istniejącym domu z piwnicą sprawdź izolację przeciwwilgociową.',8000,40000,'Teren wymaga systemu odwodnienia — brak naturalnego spływu wód opadowych.'):(v==='nie'?G('Teren bez zastoisk wody','Naturalny spływ wód działa.'):null),
@@ -1395,6 +1452,12 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <b>Weryfikacja niezależna:</b> zapytaj w PINB, czy dla tej działki toczy się lub toczyło postępowanie. To informacja publiczna.`},
 
  {id:'b_samowola', src:'wlasne', mode:'field', q:'Czy stan faktyczny zgadza się z projektem i mapą?',
+  task:`Porównaj to, co stoi na działce, z tym, co jest w ewidencji budynków.
+1. Otwórz geoportal powiatowy albo mapy.geoportal.gov.pl. Włącz warstwę budynków z ewidencji gruntów i budynków razem z opisami budynków.
+2. Wypisz wszystkie budynki ujawnione na tej działce: funkcja, powierzchnia zabudowy, liczba kondygnacji, rok budowy, jeśli serwis je podaje.
+3. Włącz aktualną ortofotomapę i porównaj obrysy z ewidencji z tym, co widać na zdjęciu. Szukaj obiektów widocznych na zdjęciu, a nieujawnionych w ewidencji: dobudówek, garaży, wiat, altan, tarasów zadaszonych.
+4. Porównaj też z ortofotomapą archiwalną, żeby ustalić, kiedy taki obiekt się pojawił.
+5. Kod wybierz tylko wtedy, gdy różnica jest jednoznaczna: obiekt widoczny na zdjęciu i nieobecny w ewidencji, albo pełna zgodność obrysów. Przy wątpliwości zostaw notatkę. Ewidencja bywa nieaktualna, więc rozbieżność to sygnał do sprawdzenia dokumentów, nie dowód samowoli.`,
   why:'Zabudowany taras, przerobiony garaż na pokój albo dobudowana wiata to typowe samowole, o których sprzedający „zapomina".',
   type:'select', opts:[['zgodny','Zgodny'],['drobne','Drobne różnice'],['duze','Istotne różnice / dobudówki'],['?','Nie porównano']],
   flag:v=>{
@@ -1430,6 +1493,12 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <br><br><b>Miernik wilgotności</b> kosztuje ok. 100 zł. Przy zakupie domu za kilkaset tysięcy to najlepiej wydane pieniądze.`},
 
  {id:'b_pokrycie', src:'wlasne', mode:'field', q:'Z czego jest pokrycie dachu?',
+  obs:true,
+  task:`Zbierz wstępne rozpoznanie pokrycia dachu ze zdjęć lotniczych.
+1. Otwórz mapy.geoportal.gov.pl, włącz aktualną ortofotomapę w największym dostępnym powiększeniu i podaj rok zdjęcia.
+2. Opisz, co widać na dachu budynku: układ i regularność faktury, kolor, ślady mchu, przebarwienia, obróbki blacharskie, kominy, okna dachowe, panele fotowoltaiczne.
+3. Napisz, na jaki materiał to wygląda i jak bardzo jesteś tego pewny. Dachówka ceramiczna, blachodachówka i płyta falista wyglądają z góry inaczej, ale zdjęcie z pułapu kilkuset metrów nie rozstrzyga.
+4. Porównaj ze zdjęciem archiwalnym i napisz, czy dach zmienił wygląd w ostatnich latach. Wymiana pokrycia to informacja warta potwierdzenia u sprzedającego.`,
   why:'Materiał określa, ile lat jeszcze posłuży i jakie są koszty w razie wymiany.',
   type:'select', opts:[['ceramika','Dachówka ceramiczna'],['beton','Dachówka betonowa'],['blachodach','Blachodachówka'],
     ['blacha','Blacha na rąbek / trapezowa'],['papa','Papa / gont bitumiczny'],['eternit','Eternit (azbest)'],['?','Nie ustalono']],
@@ -1467,6 +1536,12 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    Przegląd jest obowiązkowy raz w roku.`},
 
  {id:'b_azbest', src:'wlasne', mode:'field', q:'Czy na dachu lub budynkach gospodarczych jest eternit (azbest)?',
+  obs:true,
+  task:`Sprawdź, czy w zdjęciach i rejestrach widać ślad eternitu na tej nieruchomości.
+1. Otwórz mapy.geoportal.gov.pl, włącz aktualną ortofotomapę i obejrzyj dach domu oraz wszystkie budynki gospodarcze na działce. Płyta falista daje z góry charakterystyczne, regularne prążkowanie i szary, matowy odcień. Opisz, co widzisz na każdym obiekcie osobno.
+2. Sprawdź ortofotomapy archiwalne. Jeśli na starszym zdjęciu widać prążkowaną połać, a na nowszym gładką, to ślad po wymianie pokrycia. Podaj lata obu zdjęć.
+3. Sprawdź w BIP gminy, czy prowadzony jest program usuwania azbestu i czy publikowana jest inwentaryzacja wyrobów azbestowych z adresami albo numerami działek. Jeśli jest, sprawdź w niej tę nieruchomość.
+4. Nie pisz, że azbestu nie ma. Brak prążkowania na zdjęciu nie wyklucza płyt pod inną warstwą, w ścianach, w budynku gospodarczym ani zakopanych na działce. Napisz tylko, co widać, i na co mam popatrzeć na miejscu.`,
   why:'Eternit kładziono masowo do końca lat dziewięćdziesiątych. Utylizacja jest obowiązkowa i kosztowna.',
   type:'select', opts:[['nie','Nie ma'],['dach','Tak, na dachu domu'],['gospodarcze','Tak, na budynku gospodarczym'],['?','Nie sprawdzono']],
   flag:v=>{
@@ -2469,6 +2544,14 @@ function viewStart(){
     <div class="msg info" style="margin-top:14px">Pytania, które da się sprawdzić w rejestrach online,
       mają gotowe prompty dla wtyczki Claude w Chrome. Znajdziesz je <b>na górze każdej sekcji</b>
       razem z przyciskiem kopiowania.</div>
+    <h3 style="margin-top:18px">Albo jednym zleceniem — cały audyt naraz</h3>
+    <p class="lead" style="margin-bottom:9px">Zbiera wszystkie zadania sprawdzane w rejestrach w jeden prompt,
+      od krytycznych w górę. Domyślnie pomija punkty, które masz już sprawdzone, więc nie płacisz drugi raz za to samo.
+      To długa sesja wtyczki, więc jeśli chcesz ją rozłożyć, kopiuj prompty sekcjami.</p>
+    <div class="row">
+      <button class="btn sec" onclick="copyAllPrompt(true, this)">Kopiuj prompt: co zostało (${allChecks().filter(c=>c.task&&!sprawdzone(c)).length})</button>
+      <button class="btn sec" onclick="copyAllPrompt(false, this)">Kopiuj prompt: wszystko (${allChecks().filter(c=>c.task).length})</button>
+    </div>
     <h3>Po powrocie — wczytaj wyniki</h3>
     <div class="row">
       <button class="btn" onclick="togglePaste(true)">Wklej wyniki</button>
