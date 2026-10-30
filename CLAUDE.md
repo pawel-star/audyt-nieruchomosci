@@ -25,22 +25,27 @@ Kolejność w `index.html`:
 3. `<script>` — cała logika w kolejności:
    - `S` — stan aplikacji, `save()` / `load()` na `localStorage`
    - `APP` — nazwa i wersja (podbijaj przy każdej zmianie funkcjonalnej)
-   - `knownFacts()`, `promptFor()`, `promptModule()` — generatory promptów dla wtyczki Chrome
+   - `knownFacts()`, `promptFor()`, `promptModule()`, `promptAll()` — generatory promptów dla wtyczki Chrome
+   - `zadaniaScreeningu()`, `promptScreening()` — prompt startowy screeningu
    - `togglePaste()`, `importGlobal()` — wspólne okno wklejania wyników
-   - `parseNotion()`, `parseTxt()`, `parseCsv()`, `applyAnswer()` — parsery odpowiedzi
+   - `wczytajOdpowiedz()`, `importScreening()` — jedno wklejenie odpowiedzi screeningu (wspólne z oknem „Wklej wyniki”)
+   - `kodSpecjalny()`, `parseOgloszenie()`, `parseNotion()`, `parseTxt()`, `parseCsv()`, `applyAnswer()` — parsery odpowiedzi
    - `saveFile()`, `loadFile()`, `resetAll()`, `clearModule()` — zapis i czyszczenie
    - `R()`, `Y()`, `G()` — konstruktory flag; `$`, `esc`, `fmt`, `zl`, `dist` — narzędzia
-   - `flagsAll()`, `modFlagLevel()`, `paintBar()` — logika flag i podsumowania
+   - `TRYBY`, `wTrybie()`, `checksTrybu()`, `modulyTrybu()` — zakres pytań w trybie
+   - `flagsAll(core)`, `modFlagLevel()`, `paintBar()` — logika flag i podsumowania
    - **`const M = [...]`** — moduły i pytania, największy blok
    - `POIDEF` — definicje obiektów szukanych w OpenStreetMap
    - `LK()`, `linkChips()`, `linkList()`, `MODLINKS`, `toolbar()` — linki zewnętrzne
-   - `render()`, `viewModule()`, `renderCheck()`, `poiCard()` — renderowanie
-   - `viewStart()`, `drawMap()` — sekcja startowa i mapa
-   - wyszukiwanie działki: `findAddr()`, `geocode()`, `uldk()`, `findId()`, `setLoc()`, `loadPOI()`
+   - `tabItems()`, `render()`, `viewModule()`, `renderCheck()` — renderowanie
+   - `viewWizyta()` (checklista oględzin), `kwCard()`, `promptKsiega()` (pełna księga), `poiCard()`
+   - `viewStart()` złożony z `startDane()`, `startWybor()`, `startScreening()`, `startPelny()`, `startMapa()`, `startOferta()`, `startLista()`, `startWtyczka()`, `startJak()`; `drawMap()`
+   - tryb i decyzja: `wybierzTryb()`, `poszerz()`, `odrzuc()`; werdykt wstępny: `werdyktScreening()`, `zdanieOCenie()`, `werdyktKarta()`
+   - wyszukiwanie działki: `findAddr()`, `geocode()`, `uldk()`, `uldkPoId()`, `findId()`, `setLoc()`, `loadPOI()`
    - eksporty: `fieldChecks()`, `exportTxt()`, `exportCsv()`, `notionMd()`
    - moduł słoneczny: `sunPos()`, `sunDay()`, `sunGrid()` (astronomia), `pobierzBudynek()`, `cienBudynku()`, `rysunekCienia()` (geometria i SVG), `sunCard()` (widok w sekcji Grunt)
    - negocjacje: `negRows()`, `negState()`, `negSuma()`, `viewNeg()`
-   - `viewReport()` — raport końcowy
+   - `viewReportScreening()`, `viewReport()` — raport krótki (screening) i pełny
    - `load(); render();` — start
 
 ## Model pytania
@@ -56,7 +61,9 @@ Kolejność w `index.html`:
  flag:v=>{...},            // zwraca R()/Y()/G() albo null
  task:`...`,               // opcjonalnie: polecenie dla wtyczki Chrome
  manual:`...`,             // opcjonalnie: droga urzędowa, gdy automat zawiedzie
- help:`...`}               // instrukcja „jak to sprawdzić samodzielnie”
+ help:`...`,               // instrukcja „jak to sprawdzić samodzielnie”
+ core:true,                // opcjonalnie: pytanie należy do szybkiego screeningu
+ scr:`...`}                // opcjonalnie: zadanie dla wtyczki w screeningu, zamiast task (zwykle odczyt z ogłoszenia)
 ```
 
 Flagi: `R(tytuł, opis, kosztMin, kosztMax, argumentNegocjacyjny)`. Argument trafia do pisma negocjacyjnego, więc pisz go jako zdanie gotowe do wklejenia. `G()` przyjmuje tylko tytuł i opis.
@@ -76,6 +83,20 @@ flagsAll()  →  paintBar() i viewReport()  →  wycena + pismo negocjacyjne
 ```
 
 `importGlobal()` **dopisuje**, nie nadpisuje całości: pytania nieobecne w tekście zostają nietknięte. To celowe.
+
+Screening ma skróconą drogę: `promptScreening()` → wtyczka → jedno wklejenie → `wczytajOdpowiedz()` → blok `ogl` do `S.ogl` (odczyt ogłoszenia; do `S.meta` tylko w puste pola albo gdy pole też pochodziło z ogłoszenia), odpowiedzi do `S.a`/`S.n`, blok `werdykt` do `S.scr.komentarz` → `werdyktScreening()`.
+
+## Tryby
+
+`S.tryb`: `''` (nie wybrano, widać tylko Start), `screening` albo `pelny`. Zapisuje się w JSON. `migruj()` otwiera audyt sprzed 3.0 jako pełny, jeśli ma odpowiedzi albo notatki.
+
+- Do screeningu należy pytanie z `core:true`. `wTrybie()` filtruje pytania w widokach, bilansie, pasku i prompcie sekcji. `flagsAll()` bez argumentu idzie za trybem, `flagsAll(true)` liczy zawsze same pytania podstawowe (tak liczy werdykt wstępny, także po poszerzeniu).
+- Odpowiedzi pytań ukrytych nigdy nie są kasowane. `poszerz()` zmienia tryb na `pelny` i zapisuje `S.decyzja={v:'dalej',ts}`. Przejście w drugą stronę nie istnieje, za to werdykt wstępny jest dostępny z raportu pełnego (`RAP_WIDOK='screening'`, zmienna widoku, nie stanu).
+- Pole `scr` zastępuje `task` tylko w prompcie screeningu. Pisz je tak, żeby wtyczka nie wybierała kodu na podstawie milczenia ogłoszenia.
+- Zakładka Oględziny i Negocjacje istnieją tylko w trybie pełnym. Pełna treść księgi siedzi w `S.kw` i trafia do `promptKsiega()`.
+- **Ogłoszenie i audyt to dwa źródła, nie scalaj ich.** `S.ogl` trzyma odczyt ogłoszenia, `S.meta` twoje dane (z nich idą obliczenia). `rozbieznosci()` zestawia je obok siebie, z ewidencją dla działki, a `uwagiSpojnosci()` dokłada niepewne dopasowanie i inną działkę wskazaną przez wtyczkę. Rozjazd jest ustaleniem (pomyłka, inna oferta, zawyżone parametry), więc pokazuj go nad werdyktem i nie pozwalaj mu dać zielonego światła. W 3.1 ogłoszenie nadpisywało wpis i ta informacja ginęła.
+
+**Kody odpowiedzi w promptach zawsze z opisem** (`opisKodow()`, format `kod = opis`). Same nazwy kodów wtyczka interpretuje po swojemu i wybiera źle.
 
 ## Decyzje projektowe i ich powody
 
@@ -100,16 +121,24 @@ Sprawdzian poprawności: górowanie w przesilenie zimowe musi wynosić `90 − s
 Uwaga na pułapkę, która już raz wystąpiła: `Date.UTC` obcina ułamkowe godziny, więc czasy liczy się
 przez dodanie milisekund do północy (`utcOf()`), nigdy przez podanie ułamka w argumencie godziny.
 
-Wysokość budynku jest wpisywana ręcznie, bo GUGiK udostępnia punktowe API tylko dla NMT (teren),
-nie dla NMPT (pokrycie terenu). Google Photorealistic 3D Tiles odpada: płatne, ograniczone do dużych miast,
-a klucz API w publicznym repozytorium to wyciek.
+**Cienie z otoczenia (od 3.5) liczą się z NMPT GUGiK** (model pokrycia terenu: dachy i korony drzew, oczko 0,5 m).
+Usługa WCS (`NMPT_URL`, `NMT_URL`) działa, ale nie wysyła nagłówka CORS, więc strona daje link do wycinka, a człowiek
+pobiera plik `result.asc` i wczytuje go przyciskiem (`wczytajModel()` → `parseAsc()` → `przyjmijModel()`). Nie próbuj
+pobierać tego `fetch`-em ani przez wtyczkę (za dużo liczb do przepisania). Model siedzi w `S.nmpt` i opcjonalnie `S.nmt`
+(Int16 w decymetrach, base64), w pamięci w `NMPT_MEM` z pamięcią podręczną wyników w `g.cache`.
+Współrzędne: `doPL92()` / `zPL92()` (Gauss-Krüger, GRS80). Sprawdzian: narożniki działki 302104_2.0010.259/26
+muszą wyjść w PL-1992 z dokładnością do 0,5 m wobec geoportalu (np. N 517765,99 / E 362723,37).
+Cień: `maskaCienia()` idzie od komórki w stronę słońca i sprawdza, czy coś wystaje ponad promień (próg 0,3 m).
+Bez wczytanego modelu karta wraca do wersji z jednym budynkiem (`sunCardProsta()`) i wysokością z ręki.
+Google Photorealistic 3D Tiles odpada: płatne, ograniczone do dużych miast, a klucz API w publicznym repozytorium to wyciek.
 
 ## Ograniczenia techniczne — nie próbuj ich obchodzić
 
-- **Księgi wieczyste mają captcha.** Żaden automat ich nie odczyta. Prompt dla `kw_nr` zakłada, że numer i captcha wpisuje człowiek.
+- **Księgi wieczyste mają captcha.** Żaden automat ich nie odczyta. Prompt dla `kw_nr` zakłada, że numer i captcha wpisuje człowiek. W screeningu numer bierze się z ogłoszenia (`scr`), a pełną treść człowiek wkleja w karcie księgi.
 - **Dane właścicielskie z ewidencji nie są publiczne.** Grupa rejestrowa działki drogowej wymaga telefonu do wydziału geodezji.
 - **Atrybuty EGiB bywają puste** także w geoportalach powiatowych (sprawdzone na powiecie poznańskim). To norma, nie awaria — instrukcje muszą to uwzględniać.
 - **Przy otwarciu z `file://`** przeglądarka blokuje zapytania sieciowe. Wyszukiwanie adresu, ULDK i skan okolicy działają dopiero po wrzuceniu na hosting. Kod ma to obsłużone komunikatami, nie „naprawiaj” tego.
+- **Kafelki OpenStreetMap z `file://` są blokowane** (OSM wymaga nagłówka Referer, którego plik z dysku nie wysyła). Dlatego domyślny podkład to ortofotomapa GUGiK z działkami KIEG (`warstwyMapy()`), a OSM jest dostępny tylko na hostingu. Nie wracaj do OSM jako jedynego podkładu.
 - **Wtyczka Claude w Chrome** bywa zablokowana ustawieniami konta lub organizacji. Wtedy nie pomoże żadna zmiana promptu.
 
 ## Styl tekstów w aplikacji

@@ -2,7 +2,7 @@
 
 Narzędzie do samodzielnego audytu domu z działką przed zakupem. Jeden plik HTML, działa w przeglądarce, bez serwera i bez konta.
 
-**Wersja:** 1.7 · **Stan prawny:** sierpień 2026
+**Wersja:** 3.0 · **Stan prawny:** sierpień 2026
 
 ## Co robi
 
@@ -11,6 +11,12 @@ Prowadzi przez 68 punktów kontrolnych w dziesięciu sekcjach: grunt, księga wi
 **Co robi automatycznie:** znajduje działkę po adresie, współrzędnych lub numerze ewidencyjnym, pobiera dane z ULDK, skanuje okolicę w promieniu 3 km przez OpenStreetMap (fermy, kopalnie, składowiska, drogi szybkiego ruchu, kolej, linie wysokiego napięcia, ale też szkoły i sklepy).
 
 **Czego nie robi:** nie czyta ksiąg wieczystych (captcha), nie zna danych właścicielskich z ewidencji (nie są publiczne), nie oceni stanu technicznego budynku. To zostaje po twojej stronie.
+
+## Dwa tryby
+
+**Szybki screening.** 22 pytania, które potrafią zatrzymać zakup albo rozstrzygają o opłacalności: plan i przeznaczenie, księga z ogłoszenia, dojazd, media, powódź, osuwiska, ochrona przyrody i cena na tle rynku. Jeden prompt dla wtyczki Claude w przeglądarce, jedno wklejenie odpowiedzi, werdykt w kilka minut.
+
+**Pełny audyt.** Wszystkie pytania, gdy wstępna decyzja jest na tak. Dochodzi checklista oględzin (Budynek i Wnętrze) z wyceną usterek w cenach regionu, analiza pełnej treści księgi wieczystej, negocjacje i raport z pismem do sprzedającego. Poszerzenie ze screeningu zachowuje wszystko, co już ustalone.
 
 ## Podział pracy
 

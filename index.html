@@ -132,7 +132,8 @@ details.hlp[open] summary::before{content:"▾ "}
 .kv dd{margin:0;font-weight:600;word-break:break-word}
 
 /* ---------- map ---------- */
-#map{height:230px;border-radius:10px;margin-top:11px;border:1px solid var(--line);background:var(--panel2)}
+#map{height:230px;border-radius:10px;margin-top:11px;border:1px solid var(--line);background:var(--panel2);
+  position:relative;z-index:0}
 .leaflet-container{background:#0d1117}
 
 /* ---------- summary bar ---------- */
@@ -174,6 +175,19 @@ details.hlp[open] summary::before{content:"▾ "}
 .suntab th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--tx3);font-weight:700}
 @media (max-width:640px){.sungrid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:420px){.sungrid{grid-template-columns:1fr 1fr}.sunmeta{font-size:10px}}
+#mapSun{height:340px;border-radius:10px;margin-top:11px;border:1px solid var(--line);background:var(--panel2);position:relative;z-index:0}
+.sundni{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
+.sundni .chip{padding:6px 10px;font-size:12.5px}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.sungodz{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+.sungodz figure{margin:0;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px}
+.sungodz img,.sunkafel img{width:100%;height:auto;display:block;border-radius:6px;image-rendering:pixelated}
+.sungodz figcaption{font-size:11.5px;color:var(--tx2);margin-top:6px;line-height:1.45}
+.sungodz figcaption b{color:var(--tx)}
+.skalagodz{height:10px;border-radius:99px;margin-top:4px}
+.skalaopis{display:flex;justify-content:space-between;font-size:10.5px;color:var(--tx3);margin-top:2px}
+svg.sunhz{width:100%;height:auto;display:block;background:#0d1520;border:1px solid var(--line);border-radius:10px;margin-top:8px}
+@media (max-width:640px){.sungodz{grid-template-columns:1fr}}
 
 /* ---------- negocjacje ---------- */
 .negrow{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line)}
@@ -210,6 +224,31 @@ input.negkw{flex:none;width:112px;text-align:right;font-weight:650;font-size:14p
   font-size:11.5px;line-height:1.5;color:#a9c4e4;max-height:190px;overflow-y:auto}
 .pbox .hint{font-size:11.5px;color:var(--tx3);margin-top:8px;line-height:1.45}
 .mbox{border-left:2px solid #c084fc}
+
+/* ---------- tryby i screening ---------- */
+.tryby{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:4px}
+.tryb{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:14px;
+  text-align:left;color:var(--tx);display:flex;flex-direction:column;gap:6px}
+.tryb b{font-size:15px}
+.tryb span{font-size:12.5px;color:var(--tx2);line-height:1.45}
+.tryb:hover,.tryb:active{border-color:var(--blue)}
+@media (max-width:560px){.tryby{grid-template-columns:1fr}}
+.krok{display:flex;gap:9px;align-items:center;margin:18px 0 8px}
+.krok .nr{flex:none;width:22px;height:22px;border-radius:99px;background:var(--bluebg);color:#93c5fd;
+  font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.card .krok h3{margin:0}
+.werd{border-radius:11px;padding:13px 14px;font-size:13px;line-height:1.5}
+.card .werd h3{font-size:15px;text-transform:none;letter-spacing:-.2px;margin:0 0 4px;color:inherit}
+.werd p{margin:7px 0 0}
+.werd ul{margin:4px 0 0;padding-left:18px}
+.werd .sl{opacity:.75}
+.werd.red{background:var(--redbg);border:1px solid #4a2226;color:#fecaca}
+.werd.yellow{background:var(--yellowbg);border:1px solid #4a3a15;color:#fde68a}
+.werd.green{background:var(--greenbg);border:1px solid #1d4429;color:#bbf7d0}
+.werd.none{background:var(--panel2);border:1px solid var(--line);color:var(--tx2)}
+.msg table.rozb{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
+.msg table.rozb th,.msg table.rozb td{text-align:left;padding:5px 6px;border-bottom:1px solid #4a2226;vertical-align:top}
+.msg table.rozb th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;opacity:.8}
 
 /* ---------- toolbar modulu ---------- */
 .toolbar{position:sticky;top:100px;z-index:300;background:rgba(29,36,50,.97);
@@ -335,12 +374,19 @@ const S = {
   s:{},                 // znaczniki sprawdzenia: {checkId:{ts, src}} — src: prompt | reczne | import
   exp:{},               // ostatni eksport do Notion: {checkId: odcisk treści}
   rcn:{},
+  tryb:'',              // '' = nie wybrano | 'screening' = szybki screening | 'pelny' = pełny audyt
+  decyzja:null,         // decyzja po screeningu: {v:'odpada'|'dalej', ts}
+  kw:{tresc:'',ts:null},// treść księgi wieczystej wklejona ręcznie (przeglądarka ksiąg ma captcha)
+  scr:{},               // screening: {komentarz, dopasowanie, uwagi, ts} z odpowiedzi wtyczki
+  ogl:{},               // dane oferty odczytane z ogłoszenia: {cena, powDom, powDzialka, rok, adres, ts}
   ts:new Date().toISOString()
 };
 let TAB='start';
+let RAP_WIDOK='';       // 'screening' = podgląd werdyktu wstępnego, gdy audyt jest już pełny
 
 function save(){ try{localStorage.setItem('audyt_v1',JSON.stringify(S))}catch(e){} }
-function load(){ try{const d=localStorage.getItem('audyt_v1'); if(d)Object.assign(S,JSON.parse(d))}catch(e){} migruj(); }
+function load(){ try{const d=localStorage.getItem('audyt_v1');
+  if(d){const o=JSON.parse(d);Object.assign(S,o);if(!('tryb' in o))S.tryb=null;}}catch(e){} migruj(); }
 
 /* Starsze audyty nie miały znaczników sprawdzenia. Notatka bez odpowiedzi
    znaczyła wtedy dokładnie to samo, co dziś znacznik: sprawdzone, rejestr
@@ -348,6 +394,18 @@ function load(){ try{const d=localStorage.getItem('audyt_v1'); if(d)Object.assig
 function migruj(){
   if(!S.s||typeof S.s!=='object')S.s={};
   if(!S.exp||typeof S.exp!=='object')S.exp={};
+  if(!S.kw||typeof S.kw!=='object')S.kw={tresc:'',ts:null};
+  if(!S.scr||typeof S.scr!=='object')S.scr={};
+  if(!S.ogl||typeof S.ogl!=='object')S.ogl={};
+  /* 3.1 nadpisywał dane audytu ogłoszeniem i trzymał poprzednie w S.scr.zmiany.
+     Odtwarzam obie wersje: ogłoszenie do S.ogl, wcześniejszy wpis wraca do S.meta. */
+  if(Array.isArray(S.scr.zmiany)&&S.meta)S.scr.zmiany.forEach(x=>{S.ogl[x.pole]=x.nowe;S.meta[x.pole]=x.stare;});
+  delete S.scr.zmiany;
+  if(S.decyzja===undefined)S.decyzja=null;
+  /* Audyt sprzed 3.0 nie zna trybów. Jeśli ma odpowiedzi albo notatki, był pełnym
+     audytem i tak go otwieram, żeby nic nie zniknęło z widoku. Pusty stan czeka
+     na wybór trybu na ekranie Start. */
+  if(S.tryb==null)S.tryb=(Object.keys(S.a||{}).length||Object.keys(S.n||{}).length)?'pelny':'';
   Object.keys(S.n||{}).forEach(k=>{
     if(S.n[k]&&!S.s[k])S.s[k]={ts:null,src:'archiwum'};
   });
@@ -376,7 +434,7 @@ function note(k,v){ S.n[k]=v; if(v&&v.trim())mark(k,'reczne'); save(); paintBar(
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'2.14', data:'sierpień 2026',
+const APP={name:'Audyt Nieruchomości', ver:'3.5', data:'październik 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -394,10 +452,11 @@ function knownFacts(c){
   const has=id=>a[id]&&a[id]!=='?';
 
   if(p.id)F.push('Identyfikator działki: '+p.id);
+  else if(m.dzialka)F.push('Identyfikator działki (wpisany ręcznie, do sprawdzenia): '+m.dzialka);
   if(p.region)F.push('Obręb: '+p.region);
   if(p.commune)F.push('Gmina: '+p.commune+(p.county?', '+p.county:''));
   if(p.area)F.push('Powierzchnia z geometrii: '+fmt(p.area)+' m²');
-  else if(m.powDzialka)F.push('Powierzchnia działki wg ogłoszenia: '+m.powDzialka+' m²');
+  else if(m.powDzialka)F.push('Powierzchnia działki w danych oferty: '+m.powDzialka+' m²');
   if(p.lat)F.push('Współrzędne: '+p.lat.toFixed(5)+', '+p.lon.toFixed(5));
 
   /* numer księgi przydaje się nie tylko w module Księga — pozwala
@@ -408,6 +467,7 @@ function knownFacts(c){
     +(has('p_przezn')&&a.p_przezn!=='nd'?', przeznaczenie '+lab('p_przezn'):''));
   if(has('g_uzytek'))F.push('Użytek gruntowy: '+lab('g_uzytek'));
   if(has('kw_forma'))F.push('Forma własności: '+lab('kw_forma'));
+  if(has('d_typ'))F.push('Droga dojazdowa: '+lab('d_typ'));
   if(m.rok)F.push('Rok budowy: '+m.rok);
   if(m.powDom)F.push('Powierzchnia domu: '+m.powDom+' m²');
   if(m.cena)F.push('Cena ofertowa: '+fmt(m.cena)+' zł'
@@ -419,6 +479,10 @@ function knownFacts(c){
 /* Jeden blok zasad pracy dla wtyczki, używany w prompcie pojedynczym,
    sekcyjnym i zbiorczym. Wcześniej ten sam tekst stał w dwóch miejscach
    i rozjeżdżał się przy każdej poprawce. */
+/* Kody odpowiedzi zawsze z opisem. Same nazwy kodów wtyczka interpretuje
+   po swojemu: „zabudowa” przy g_historia czytała jako „teraz jest zabudowane”,
+   a kod znaczy „wcześniej stała tu zabudowa”. */
+const opisKodow=opts=>opts.map(o=>o[0]+' = '+o[1]).join(' | ');
 const TRYB_PRACY=`TRYB PRACY
 - Wykonaj wszystkie kroki jednym ciągiem. Nie zatrzymuj się między nimi po potwierdzenie.
 - Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
@@ -464,7 +528,7 @@ Jeśli nie udało się ustalić, pomiń wiersz z [x] i zostaw samą notatkę z w
 }
 function promptModule(mid){
   const m=M.find(x=>x.id===mid); if(!m)return '';
-  const cs=m.checks.filter(c=>c.task);
+  const cs=m.checks.filter(c=>c.task&&wTrybie(c));
   if(!cs.length)return '';
   const F=knownFacts({});
   const done=cs.filter(c=>S.a[c.id]&&S.a[c.id]!=='?');
@@ -487,16 +551,16 @@ Podaj datę publikacji danych, jeśli serwis ją pokazuje.
     const opts=c.opts?c.opts.filter(o=>o[0]!=='?'):[];
     t+=`### ${c.q}  \`${c.id}\`\n${c.obs?'':'- [x] KOD — OPIS\n'}> notatka: ustalenie, serwis, data\n`;
     if(c.obs)t+=`   bez wiersza [x] — ten punkt rozstrzygam sam na miejscu, ty zbierasz materiał\n`;
-    else if(opts.length)t+=`   kody: ${opts.map(o=>o[0]).join(' / ')}\n`;
+    else if(opts.length)t+=`   kody: ${opisKodow(opts)}\n`;
     t+='\n';
   });
-  t+=`Gdzie KOD to jedna z wartości wypisanych pod pytaniem. Jeśli czegoś nie ustalisz, pomiń wiersz z [x] i zostaw samą notatkę.`;
+  t+=`Gdzie KOD to jedna z wartości wypisanych pod pytaniem. Kod wybieraj po opisie za znakiem =, nie po samej nazwie kodu. Jeśli czegoś nie ustalisz, pomiń wiersz z [x] i zostaw samą notatkę.`;
   return t;
 }
 /* Prompt zbiorczy: wszystkie zadania online z całego audytu w jednej sesji wtyczki.
    Domyślnie pomija punkty już sprawdzone, żeby nie płacić drugi raz za to samo. */
 function promptAll(tylkoBraki){
-  const cs=allChecks().filter(c=>c.task&&(!tylkoBraki||!sprawdzone(c)));
+  const cs=checksTrybu().filter(c=>c.task&&(!tylkoBraki||!sprawdzone(c)));
   if(!cs.length)return '';
   const F=knownFacts({});
   const kryt=cs.filter(isCrit).length;
@@ -525,10 +589,10 @@ Podaj datę publikacji danych, jeśli serwis ją pokazuje.
     const opts=c.opts?c.opts.filter(o=>o[0]!=='?'):[];
     t+=`### ${c.q}  \`${c.id}\`\n${c.obs?'':'- [x] KOD — OPIS\n'}> notatka: ustalenie, serwis, data\n`;
     if(c.obs)t+=`   bez wiersza [x] — ten punkt rozstrzygam sam na miejscu, ty zbierasz materiał\n`;
-    else if(opts.length)t+=`   kody: ${opts.map(o=>o[0]).join(' / ')}\n`;
+    else if(opts.length)t+=`   kody: ${opisKodow(opts)}\n`;
     t+='\n';
   });
-  t+=`Gdzie KOD to jedna z wartości wypisanych pod pytaniem. Jeśli czegoś nie ustalisz, pomiń wiersz z [x] i zostaw samą notatkę.`;
+  t+=`Gdzie KOD to jedna z wartości wypisanych pod pytaniem. Kod wybieraj po opisie za znakiem =, nie po samej nazwie kodu. Jeśli czegoś nie ustalisz, pomiń wiersz z [x] i zostaw samą notatkę.`;
   return t;
 }
 function copyAllPrompt(tylkoBraki, btn){
@@ -537,16 +601,106 @@ function copyAllPrompt(tylkoBraki, btn){
   copyText(t, btn);
 }
 
+/* ---------- PROMPT STARTOWY SCREENINGU ----------
+   Jeden prompt na cały tryb: ogłoszenie, działka, potem zadania pytań core.
+   Kolejność sekcji: najpierw to, co najczęściej zatrzymuje zakup (plan,
+   środowisko, dojazd), na końcu cena. Księga idzie na początek, bo jej punkty
+   wtyczka czyta z ogłoszenia z kroku 0. Pytanie z polem scr dostaje to
+   zadanie zamiast task, bo w screeningu nie wchodzimy do księgi ani do urzędu. */
+const SCR_KOLEJNOSC=['m2','m1','m3','m7','m6','m5','m8','m9'];
+function zadaniaScreeningu(){
+  const ord=SCR_KOLEJNOSC.map(id=>M.find(m=>m.id===id)).filter(Boolean);
+  M.forEach(m=>{if(ord.indexOf(m)<0)ord.push(m);});
+  return ord.flatMap(m=>m.checks.filter(c=>c.core&&(c.scr||c.task)).map(c=>({...c,mid:m.id,mname:m.name})));
+}
+function promptScreening(){
+  const cs=zadaniaScreeningu();
+  const F=knownFacts({});
+  const p=S.parcel||{}, m=S.meta;
+  const kryt=cs.filter(isCrit).length;
+  const idDz=p.id||m.dzialka||'';
+  let t=`[${APP.name} v${APP.ver}] Szybki screening: czy ta nieruchomość jest warta pełnego audytu
+Nieruchomość: ${m.adres||idDz||'(adres nie podany, ustal go z ogłoszenia)'}
+Ogłoszenie: ${m.otodom||'(brak linku)'}
+
+CO JUŻ USTALONE
+${F.length?F.map(x=>'- '+x).join('\n'):'- brak danych, zacznij od ogłoszenia'}
+${['cena','powDom','powDzialka','rok'].some(k=>String(m[k]||'').trim())
+?`
+Cenę, metraże i rok budowy powyżej wpisałem ręcznie i mogą dotyczyć innej oferty. Ważniejsze jest ogłoszenie:
+w bloku \`ogl\` podaj wartości z ogłoszenia, nawet jeśli są inne, a rozbieżność opisz w podsumowaniu.
+`:''}
+${TRYB_PRACY}
+CEL
+To screening przed decyzją, nie pełny audyt. Szukasz rzeczy, które potrafią zatrzymać zakup: wad prawnych,
+zagrożeń środowiskowych, braku dojazdu, złego przeznaczenia w planie. Do tego sprawdzasz cenę na tle rynku.
+Przy każdym zadaniu wystarczy odczyt, który rozstrzyga sprawę. Nie pogłębiaj tego, co już jest jasne.
+Zadań jest ${cs.length}, z tego ${kryt} przy punktach krytycznych. Jeśli sesja zostanie przerwana albo zabraknie miejsca,
+zwróć wyniki tych zadań, które zdążyłeś zrobić, i wypisz na końcu numery pozostałych.
+Nie zgaduj: jeśli danych nie ma albo pole jest puste, napisz to wprost.
+
+──────────── KROK 0: OGŁOSZENIE ────────────
+${m.otodom?'Otwórz ogłoszenie: '+m.otodom+'\nPrzeczytaj cały opis, parametry i podpisy zdjęć.'
+:'Linku do ogłoszenia nie ma. Pomiń ten krok i pracuj na danych podanych wyżej.'}
+Wypisz z niego cenę, powierzchnię użytkową domu, powierzchnię działki, rok budowy, adres albo lokalizację,
+a jeśli są podane, także numer działki i numer księgi wieczystej. Zapamiętaj opis, bo kolejne zadania się do niego odwołują.
+
+──────────── KROK 1: DZIAŁKA ────────────
+${idDz?'Identyfikator działki: '+idDz+(p.id?'':' (wpisany ręcznie, potwierdź go w ULDK albo w geoportalu)')+'. Wszystkie zadania wykonuj dla tej działki.'
+:`Ustal identyfikator działki. W geoportalu (mapy.geoportal.gov.pl) znajdź adres z ogłoszenia, kliknij w budynek
+narzędziem informacji i odczytaj identyfikator (format 302101_2.0001.123/4). Usługa ULDK (uldk.gugik.gov.pl) zwraca go
+także po współrzędnych. Ogłoszenia często podają tylko ulicę albo miejscowość: wtedy porównaj zdjęcia z ogłoszenia
+z ortofotomapą i w bloku z danymi napisz, jak pewne jest dopasowanie. Wszystkie kolejne zadania wykonuj dla tej działki.`}
+`;
+  let ost='';
+  cs.forEach((c,i)=>{
+    if(c.mname!==ost){t+=`\n════════ SEKCJA: ${c.mname.toUpperCase()} ════════\n`;ost=c.mname;}
+    t+=`\n──────────── ZADANIE ${i+1} z ${cs.length}${isCrit(c)?'  ·  KRYTYCZNE':''} ────────────\n${c.scr||c.task}\n`;
+  });
+  t+=`\n════════════ FORMAT ODPOWIEDZI ════════════
+Zwróć dokładnie takie bloki, nic poza nimi. Najpierw dane z ogłoszenia i działki:
+
+### Dane z ogłoszenia  \`ogl\`
+- cena: kwota w złotych, same cyfry
+- pow_dom: powierzchnia użytkowa domu w m²
+- pow_dzialka: powierzchnia działki w m²
+- rok: rok budowy
+- adres: adres albo lokalizacja z ogłoszenia
+- dzialka: identyfikator działki
+- dopasowanie: jak pewne jest dopasowanie działki do ogłoszenia (pewne, prawdopodobne, niepewne) i dlaczego
+- rynek_m2: średnia cena transakcyjna za m² powierzchni użytkowej z zadania o cenach, same cyfry
+Pomiń wiersz, jeśli wartości nie ustaliłeś.
+
+Potem blok dla każdego zadania:
+
+`;
+  cs.forEach(c=>{
+    const opts=c.opts?c.opts.filter(o=>o[0]!=='?'):[];
+    t+=`### ${c.q}  \`${c.id}\`\n`;
+    if(c.obs)t+=`> notatka: ustalenie, serwis, data\n   bez wiersza [x], ten punkt rozstrzygam sam na miejscu\n`;
+    else if(c.type==='text')t+=`- odpowiedź: wartość\n> notatka: ustalenie, źródło\n`;
+    else t+=`- [x] KOD — OPIS\n> notatka: ustalenie, serwis, data\n   kody: ${opisKodow(opts)}\n`;
+    t+='\n';
+  });
+  t+=`Na koniec krótkie podsumowanie:
+
+### Podsumowanie screeningu  \`werdykt\`
+> notatka: dwa, trzy zdania: czy widzisz coś, co zatrzymuje zakup, jak cena wypada na tle rynku i o co trzeba dopytać sprzedającego.
+
+Gdzie KOD to jedna z wartości wypisanych pod pytaniem. Kod wybieraj po opisie za znakiem =, nie po samej nazwie kodu. Jeśli czegoś nie ustalisz, pomiń wiersz z [x] i zostaw samą notatkę.`;
+  return t;
+}
+
 /* Karta pod paskiem modułu: kopiujesz prompty tej sekcji i w tym samym
    miejscu wklejasz odpowiedź. Bez skakania na Start i z powrotem. */
 function modPromptCard(mid){
   const n=nTask(mid); if(!n)return '';
   const m=M.find(x=>x.id===mid);
-  const ids=m.checks.filter(c=>c.task).map(c=>c.q).slice(0,4);
+  const ids=m.checks.filter(c=>c.task&&wTrybie(c)).map(c=>c.q).slice(0,4);
   return `<div class="card pcard">
     <h3 style="margin-top:0">Zlecenie dla wtyczki Claude w Chrome</h3>
     <p class="lead" style="margin-bottom:9px">${n} ${n===1?'pytanie z tej sekcji da się sprawdzić':'pytania z tej sekcji dają się sprawdzić'}
-      w rejestrach online: ${esc(ids.join(' · '))}${m.checks.filter(c=>c.task).length>4?' i inne':''}.</p>
+      w rejestrach online: ${esc(ids.join(' · '))}${m.checks.filter(c=>c.task&&wTrybie(c)).length>4?' i inne':''}.</p>
     <button class="btn wide sec" onclick="copyModulePrompt('${mid}', this)">Kopiuj prompty tej sekcji (${n})</button>
     <label class="f" style="margin-top:12px"><span>Wklej tutaj odpowiedź wtyczki</span>
       <textarea id="modText_${mid}" style="min-height:88px" placeholder="Wklej blok, który zwróciła wtyczka. Rozpoznam odpowiedzi i notatki dla tej sekcji."></textarea></label>
@@ -586,8 +740,8 @@ function copyModulePrompt(mid, btn){
   const t=promptModule(mid); if(!t)return;
   copyText(t, btn);
 }
-function importModuleAnswers(mid){
-  const el=document.getElementById('modText_'+mid); if(!el)return;
+function importModuleAnswers(mid, elId){
+  const el=document.getElementById(elId||('modText_'+mid)); if(!el)return;
   const t=el.value.trim();
   if(!t){alert('Wklej najpierw odpowiedź, którą zwróciła wtyczka.');return;}
   const acc=parseNotion(t);
@@ -619,10 +773,8 @@ function importGlobal(){
   const t=el.value.trim();
   if(!t){setPasteMsg('<div class="msg err">Wklej najpierw treść z wtyczki, z Notion albo z notatki.</div>');return;}
   const before=Object.assign({},S.a), beforeN=Object.assign({},S.n);
-  const acc=parseNotion(t);
-  const accTxt=(!acc.n&&!acc.notes)?parseTxt(t):null;
-  const A=accTxt||acc;
-  if(!A.n&&!A.notes){
+  const {A,og,pusto}=wczytajOdpowiedz(t);
+  if(pusto){
     setPasteMsg(`<div class="msg err"><b>Nie rozpoznałem żadnej odpowiedzi.</b><br>
       Szukam nagłówka pytania: kodu w apostrofach (np. <span class="mono">\`g_geo\`</span>)
       albo dokładnej treści pytania po znakach <span class="mono">###</span>.
@@ -644,9 +796,137 @@ function importGlobal(){
   setPasteMsg(`<div class="msg ok"><b>Wczytano ${A.n} ${A.n===1?'odpowiedź':'odpowiedzi'}${A.notes?' i '+A.notes+' notatek':''}.</b>
     ${lista?'<br>'+esc(lista):''}
     ${A.skipped?'<br>Pominięto '+A.skipped+' nierozpoznanych wartości.':''}
+    ${ogloszenieMsg(og)}
     ${bezRoz?'<br>'+bezRoz+' '+(bezRoz===1?'punkt ma znacznik':'punktów ma znacznik')+' „sprawdzone, bez rozstrzygnięcia” — sprawdzenie się odbyło, ale rejestr nie dał odpowiedzi.':''}
     <br><br>Odznaczenia są już widoczne w sekcjach i w podsumowaniu na dole ekranu.
     Możesz wkleić kolejną porcję — poprzednie odpowiedzi zostaną zachowane.</div>`);
+  dociagnijDzialke();
+}
+/* Wczytuje całą odpowiedź wtyczki: dane z ogłoszenia, odpowiedzi z notatkami
+   i podsumowanie. Wspólne dla karty screeningu i okna „Wklej wyniki”. */
+function wczytajOdpowiedz(t){
+  const og=parseOgloszenie(t);
+  const acc=parseNotion(t);
+  const A=(!acc.n&&!acc.notes)?parseTxt(t):acc;
+  if(!S.scr)S.scr={};
+  if(og.komentarz){S.scr.komentarz=og.komentarz;S.scr.ts=new Date().toISOString();}
+  if(og.dopasowanie)S.scr.dopasowanie=og.dopasowanie;
+  if(og.dzialka&&S.parcel&&S.parcel.id&&og.dzialka!==S.parcel.id)
+    og.uwagi.push('Wtyczka wskazała działkę '+og.dzialka+', a w audycie jest '+S.parcel.id+'.');
+  if(og.dzialka&&!(S.parcel&&S.parcel.id)){S.parcel=Object.assign({},S.parcel,{id:og.dzialka});S.meta.dzialka=og.dzialka;}
+  if(Object.keys(og.ogl).length)S.ogl=Object.assign({},S.ogl,og.ogl,{ts:new Date().toISOString()});
+  if(Object.keys(og.ogl).length||og.uwagi.length)S.scr.uwagi=og.uwagi;
+  return {A,og,pusto:!A.n&&!A.notes&&!og.pola.length&&!Object.keys(og.ogl).length&&!og.dzialka&&!og.komentarz};
+}
+/* Identyfikator z wtyczki bez geometrii: dociągam ją z ULDK, jeśli sieć pozwala
+   (z dysku nie pozwoli i wtedy zostaje sam identyfikator). */
+function dociagnijDzialke(){
+  const p=S.parcel; if(!p||!p.id||p.lat!=null)return;
+  uldkPoId(p.id).then(ok=>{if(ok){render();loadPOI();}});
+}
+function ogloszenieMsg(og){
+  let h='';
+  if(og.pola.length)h+='<br>Uzupełnione z ogłoszenia: '+esc(og.pola.map(k=>OGL_ETYK[k]).join(', '))+'.';
+  if(og.dzialka)h+='<br>Działka: <span class="mono">'+esc(og.dzialka)+'</span>.';
+  if(og.zmianyOgl.length)h+='<br>Ogłoszenie zmieniło się od poprzedniego odczytu: '
+    +og.zmianyOgl.map(r=>esc(OGL_ETYK[r.k]+' '+wart(r.z)+' → '+wart(r.na))).join('; ')+'.';
+  if(og.rynekInny)h+='<br>Stawka transakcyjna z researchu ('+esc(wart(og.rynekInny.nowe))+' zł/m²) różni się od wpisanej ('
+    +esc(wart(og.rynekInny.stare))+' zł/m²). Zostawiłem wpisaną.';
+  const r=rozbieznosci().filter(w=>w.pole!=='m2');
+  if(r.length)h+='<br><b>Ogłoszenie i audyt podają różne dane: '+esc(r.map(w=>w.etyk.toLowerCase()).join(', '))
+    +'. Obie wersje zostały, zestawienie jest przy werdykcie.</b>';
+  if(og.uwagi.length)h+='<br><b>'+og.uwagi.map(esc).join('<br>')+'</b>';
+  return h;
+}
+/* ---------- ROZBIEŻNOŚCI DANYCH OFERTY ----------
+   Dane oferty z dwóch źródeł: ogłoszenie (S.ogl, odczyt wtyczki) i audyt (S.meta,
+   twój wpis albo rozmowa ze sprzedającym). Nie scalam ich, bo rozjazd sam jest
+   ustaleniem: pomyłka przy wpisie, inna oferta albo parametry podkręcone
+   w ogłoszeniu, np. mniejsze mieszkanie opisane jako większe. Powierzchnię
+   działki porównuję też z ewidencją (ULDK). Obliczenia idą z danych audytu. */
+const ROZB_POLA=[['cena','Cena','zł'],['powDom','Powierzchnia domu','m²'],['powDzialka','Powierzchnia działki','m²'],['rok','Rok budowy','']];
+const jestW=v=>v!=null&&String(v).trim()!=='';
+function rozne(a,b,pole){
+  if(pole==='rok')return +a!==+b;
+  const mx=Math.max(+a,+b); return mx>0&&Math.abs(+a-+b)/mx>0.02;
+}
+function rozbieznosci(){
+  const o=S.ogl||{}, m=S.meta||{}, p=S.parcel||{}, w=[];
+  ROZB_POLA.forEach(([pole,etyk,jedn])=>{
+    const vo=o[pole], va=m[pole], ewid=(pole==='powDzialka'&&p.area)?Math.round(p.area):null;
+    const zEwid=v=>ewid&&jestW(v)&&Math.abs(+v-ewid)/ewid>0.1;
+    if((jestW(vo)&&jestW(va)&&rozne(vo,va,pole))||zEwid(va)||zEwid(vo))
+      w.push({pole,etyk,jedn,ogl:jestW(vo)?vo:null,audyt:jestW(va)?va:null,ewid});
+  });
+  /* cena za m² z każdego źródła: najszybciej widać, która wersja trzyma się rynku */
+  if(w.some(x=>x.pole==='cena'||x.pole==='powDom')){
+    const zm2=(c,pw)=>(+c&&+pw)?Math.round(c/pw):null;
+    w.push({pole:'m2',etyk:'Cena za m² domu',jedn:'zł/m²',ogl:zm2(o.cena,o.powDom),audyt:zm2(m.cena,m.powDom),ewid:null});
+  }
+  if(jestW(o.adres)&&jestW(m.adres)&&!adresZgodny(m.adres,o.adres))
+    w.push({pole:'adres',etyk:'Adres',jedn:'',ogl:o.adres,audyt:m.adres,ewid:null});
+  return w;
+}
+/* sygnały, że research może dotyczyć innej działki niż ta z ogłoszenia */
+function uwagiSpojnosci(){
+  const out=[], scr=S.scr||{};
+  (scr.uwagi||[]).forEach(u=>out.push(u));
+  if(scr.dopasowanie&&!/^\s*pewne/i.test(scr.dopasowanie))
+    out.push('Wtyczka nie jest pewna, czy research dotyczy działki z ogłoszenia: '+scr.dopasowanie);
+  return out;
+}
+const pokazWart=(w,v)=>v==null?'—':(w.pole==='adres'?esc(v):esc(fmt(+v)+(w.jedn?' '+w.jedn:'')));
+function tabelaRozb(r){
+  const ew=r.some(w=>w.ewid);
+  return `<table class="rozb"><tr><th></th><th>Ogłoszenie</th><th>Audyt</th>${ew?'<th>Ewidencja</th>':''}</tr>
+    ${r.map(w=>`<tr><td>${esc(w.etyk)}</td><td>${pokazWart(w,w.ogl)}</td><td>${pokazWart(w,w.audyt)}</td>${ew?`<td>${w.ewid?pokazWart(w,w.ewid):''}</td>`:''}</tr>`).join('')}</table>`;
+}
+/* podpowiedź pod polem danych oferty: wartość z ogłoszenia, gdy różni się od wpisu */
+function wOgl(pole){
+  const o=S.ogl&&S.ogl[pole], m=S.meta&&S.meta[pole];
+  if(!jestW(o)||!jestW(m)||!rozne(o,m,pole))return '';
+  const j=(ROZB_POLA.find(x=>x[0]===pole)||[])[2]||'';
+  return `<small style="display:block;margin-top:4px;color:#fca5a5">W ogłoszeniu: ${esc(fmt(+o)+(j?' '+j:''))}</small>`;
+}
+const ROZB_OPIS='Obie wersje zostają w audycie. Rozjazd może oznaczać pomyłkę przy wpisie, inną ofertę albo parametry podkręcone '
+  +'w ogłoszeniu, np. mniejsze mieszkanie opisane jako większe. Powierzchnię lokalu i działki potwierdzisz w księdze wieczystej (dział I-O). '
+  +'Obliczenia w audycie idą z kolumny „Audyt”, więc popraw dane oferty, gdy ustalisz, która wersja jest prawdziwa.';
+function spojnoscHtml(){
+  const r=rozbieznosci(), u=uwagiSpojnosci();
+  if(!r.length&&!u.length)return '';
+  return `<div class="msg err" style="margin:0 0 10px"><b>Rozbieżne dane: sprawdź, czy to ta sama nieruchomość</b>
+    ${r.length?tabelaRozb(r)+`<p style="margin:8px 0 0">${esc(ROZB_OPIS)}</p>`:''}
+    ${u.length?`<ul style="margin:6px 0 0;padding-left:18px">${u.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul>`:''}</div>`;
+}
+/* ta sama treść w białym raporcie do druku */
+function spojnoscRaport(){
+  const r=rozbieznosci(), u=uwagiSpojnosci();
+  if(!r.length&&!u.length)return '';
+  return `<div style="background:#fdf2f2;border-left:3px solid #b91c1c;padding:10px 14px;margin:10px 0;font-size:13px">
+    <b>Rozbieżne dane: sprawdź, czy to ta sama nieruchomość.</b>
+    ${r.length?tabelaRozb(r)+`<p style="margin:8px 0 0;font-size:12.5px;color:#555">${esc(ROZB_OPIS)}</p>`:''}
+    ${u.length?`<ul style="margin:6px 0 0;padding-left:18px">${u.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul>`:''}</div>`;
+}
+function importScreening(){
+  const el=document.getElementById('scrText'); if(!el)return;
+  const t=el.value.trim();
+  if(!t){SCRMSG='<div class="msg err">Wklej najpierw odpowiedź wtyczki.</div>';render();return;}
+  const {A,og,pusto}=wczytajOdpowiedz(t);
+  if(pusto){
+    SCRMSG=`<div class="msg err"><b>Nie rozpoznałem żadnej odpowiedzi.</b><br>
+      Szukam nagłówków z kodem w apostrofach, np. <span class="mono">\`s_powodz\`</span>, albo bloku
+      <span class="mono">### Dane z ogłoszenia \`ogl\`</span>. Najczęstsza przyczyna to wklejony fragment
+      zamiast całej odpowiedzi wtyczki.</div>`;
+    render();return;}
+  save();
+  SCRMSG=`<div class="msg ok"><b>Wczytano ${A.n} ${odm(A.n,'odpowiedź','odpowiedzi','odpowiedzi')}${A.notes?' i '+A.notes+' '+odm(A.notes,'notatkę','notatki','notatek'):''}.</b>
+    ${ogloszenieMsg(og)}
+    ${A.skipped?'<br>Pominięto '+A.skipped+' nierozpoznanych wartości.':''}
+    <br>Werdykt jest niżej. Możesz wkleić kolejną porcję, poprzednie odpowiedzi zostaną zachowane.</div>`;
+  el.value='';
+  render();
+  setTimeout(()=>{const e=document.getElementById('scrMsg');if(e&&e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'start'});},80);
+  dociagnijDzialke();
 }
 function setPasteMsg(html){
   const e=document.getElementById('pasteMsg'); if(e)e.innerHTML=html;
@@ -688,6 +968,88 @@ function znajdzKod(linia){
   }
   return kodPoTresci(linia);
 }
+/* Bloki odpowiedzi screeningu, które nie są pytaniami: `ogl` (dane z ogłoszenia)
+   i `werdykt` (podsumowanie wtyczki). Rozpoznaję je wyłącznie w nagłówkach. */
+function kodSpecjalny(l){
+  if(!/^\s*(?:#{1,6}\s|\*\*)/.test(l))return null;
+  const m=l.match(/[`'‘’"„”\[(]\s*(ogl|werdykt)\s*[`'‘’"„”\])]/i)||l.match(/\s(ogl|werdykt)\s*\**\s*$/i);
+  if(m)return m[1].toLowerCase();
+  const n=_norm(l);
+  if(/^dane z ogloszenia/.test(n))return 'ogl';
+  if(/^podsumowanie screeningu/.test(n))return 'werdykt';
+  return null;
+}
+/* Liczba z tekstu wtyczki: „1 090 000 zł”, „1.090.000”, „142,5 m²”. */
+function liczbaZ(s){
+  const m=String(s||'').replace(/[\s  ]/g,'').match(/\d[\d.,]*/);
+  if(!m)return null;
+  let x=m[0].replace(/[.,]$/,'');
+  if(/,\d{1,2}$/.test(x))x=x.replace(/\./g,'').replace(',','.');
+  else x=x.replace(/[.,](?=\d{3}(?:[.,]|$))/g,'').replace(',','.');
+  const v=parseFloat(x); return isNaN(v)?null:v;
+}
+/* Blok `ogl`: dane oferty odczytane z ogłoszenia. Trafiają do S.ogl, a do S.meta
+   tylko tam, gdzie pole jest puste albo wcześniej też pochodziło z ogłoszenia
+   (ogłoszenie zmieniło cenę). Wpis różny od ogłoszenia zostaje: obie wersje
+   pokazuje rozbieznosci(), bo rozjazd sam jest ustaleniem. Stawka transakcyjna
+   to wynik researchu, nie ogłoszenia, więc wypełnia tylko puste pole. */
+function adresZgodny(moj,ogl){
+  const m=String(ogl).match(/\bul\.?\s+([^\d,;]+)/i);
+  const klucz=_norm(m?m[1]:(String(ogl).split(/[,;]/)[0]||'')).split(' ').filter(w=>w.length>=4&&!/^\d/.test(w));
+  if(!klucz.length)return true;
+  const a=' '+_norm(moj)+' ';
+  return klucz.every(w=>a.indexOf(' '+w+' ')>=0);
+}
+const wart=v=>(v!==''&&!isNaN(+v))?fmt(+v):String(v);
+const OGL_POLA={cena:'cena',pow_dom:'powDom',pow_dzialka:'powDzialka',rok:'rok',rynek_m2:'rynekM2',adres:'adres'};
+const OGL_ETYK={cena:'cena',pow_dom:'powierzchnia domu',pow_dzialka:'powierzchnia działki',rok:'rok budowy',
+  rynek_m2:'stawka transakcyjna zł/m²',adres:'adres'};
+function parseOgloszenie(t){
+  const out={pola:[],ogl:{},zmianyOgl:[],rynekInny:null,uwagi:[],dzialka:null,komentarz:null,dopasowanie:null};
+  let blok=null; const kom=[];
+  String(t||'').split(/\r?\n/).forEach(l=>{
+    const sp=kodSpecjalny(l);
+    if(sp){blok=sp;return;}
+    if(/^\s*#{1,6}\s/.test(l)||znajdzKod(l)){blok=null;return;}
+    if(blok==='werdykt'){
+      const v=l.replace(/^\s*>?\s*/,'').replace(/^notatka:\s*/i,'').replace(/\*\*/g,'').trim();
+      if(v)kom.push(v);
+      return;
+    }
+    if(blok!=='ogl')return;
+    const m=l.match(/^\s*(?:[-*•]\s*)?\**\s*([a-z_0-9]+)\s*\**\s*[:=]\s*(.+)$/i);
+    if(!m)return;
+    const k=m[1].toLowerCase(), v=m[2].replace(/\*\*/g,'').trim();
+    if(k==='dzialka'){const id=v.match(/\d{6}_\d\.\d{4}\.[^\s,;)]+/);if(id)out.dzialka=id[0].replace(/\.$/,'');return;}
+    if(k==='dopasowanie'){out.dopasowanie=v.length>700?v.slice(0,700).replace(/\s+\S*$/,'')+'…':v;return;}
+    const pole=OGL_POLA[k]; if(!pole)return;
+    let val;
+    if(pole==='adres'){
+      val=v.replace(/\s+/g,' ').slice(0,120);
+      if(/^(brak|nie |-|—)/i.test(val))return;
+      out.ogl.adres=val;
+      if(!String(S.meta.adres||'').trim()){S.meta.adres=val;out.pola.push(k);}
+      return;
+    }
+    const x=liczbaZ(v); if(x==null||x<=0)return;
+    if(pole==='cena'&&x<10000)return;
+    if(pole==='rok'&&(x<1800||x>new Date().getFullYear()+3))return;
+    val=String(Math.round(x*100)/100);
+    const stare=S.meta[pole], bylo=stare!=null&&String(stare).trim()!=='';
+    if(pole==='rynekM2'){
+      if(!bylo){S.meta.rynekM2=val;out.pola.push(k);}
+      else if(+stare!==+val)out.rynekInny={stare:String(stare),nowe:val};
+      return;
+    }
+    out.ogl[pole]=val;
+    const poprz=S.ogl&&S.ogl[pole];
+    if(!bylo){S.meta[pole]=val;out.pola.push(k);}
+    else if(+stare===+val){}
+    else if(poprz!=null&&+stare===+poprz){S.meta[pole]=val;out.pola.push(k);out.zmianyOgl.push({k,z:String(poprz),na:val});}
+  });
+  if(kom.length)out.komentarz=kom.join(' ').slice(0,2500);
+  return out;
+}
 function parseNotion(t){
   const acc={n:0,notes:0,skipped:0};
   const linie=t.split(/\r?\n/);
@@ -700,6 +1062,9 @@ function parseNotion(t){
     notatka=null;
   };
   linie.forEach(l=>{
+    /* blok `ogl` albo `werdykt` kończy bieżące pytanie, inaczej podsumowanie
+       wtyczki nadpisałoby notatkę ostatniego punktu */
+    if(kodSpecjalny(l)){zapiszNotatke();cur=null;return;}
     const kod=znajdzKod(l);
     if(kod){zapiszNotatke();cur=kod;return;}
     if(!cur)return;
@@ -862,24 +1227,26 @@ function resetAll(){
   if(!confirm(m))return;
   Object.keys(S).forEach(k=>delete S[k]);
   Object.assign(S,{meta:{adres:'',otodom:'',cena:'',powDom:'',powDzialka:'',rok:'',opis:''},
-    parcel:null,a:{},n:{},s:{},exp:{},poi:null,rcn:{},ts:new Date().toISOString()});
-  LASTMSG='';
+    parcel:null,a:{},n:{},s:{},exp:{},poi:null,rcn:{},tryb:'',decyzja:null,kw:{tresc:'',ts:null},scr:{},ogl:{},
+    ts:new Date().toISOString()});
+  LASTMSG='';SCRMSG='';RAP_WIDOK='';
   try{localStorage.removeItem('audyt_v1')}catch(e){}
   if(MAP){try{MAP.remove()}catch(e){}MAP=null;}
   TAB='start';window.scrollTo(0,0);render();
 }
 function clearModule(mid){
   const m=M.find(x=>x.id===mid); if(!m)return;
-  const n=m.checks.filter(c=>S.a[c.id]!=null&&S.a[c.id]!=='').length;
+  const cs=m.checks.filter(wTrybie);
+  const n=cs.filter(c=>S.a[c.id]!=null&&S.a[c.id]!=='').length;
   if(n&&!confirm('Wyczyścić odpowiedzi w module „'+m.name+'"?\n\nStracisz '+n+' '+(n===1?'odpowiedź':'odpowiedzi')+'.'))return;
-  m.checks.forEach(c=>{delete S.a[c.id];delete S.n[c.id];if(S.s)delete S.s[c.id];if(S.exp)delete S.exp[c.id];});
+  cs.forEach(c=>{delete S.a[c.id];delete S.n[c.id];if(S.s)delete S.s[c.id];if(S.exp)delete S.exp[c.id];});
   save();render();
 }
 function loadFile(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);
-    Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,d);S.plik=f.name;migruj();save();TAB='start';render();
+    Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,d);S.plik=f.name;migruj();save();TAB='start';RAP_WIDOK='';SCRMSG='';render();
   }catch(x){alert('Nie udało się wczytać pliku.');}};
   r.readAsText(f);
 }
@@ -896,17 +1263,31 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=n=>new Intl.NumberFormat('pl-PL').format(Math.round(n));
 const zl=n=>fmt(n)+' zł';
+/* odmiana po liczebniku: 1 punkt, 2–4 punkty, 5+ punktów (12–14 jak 5+) */
+const odm=(n,a,b,c)=>n===1?a:((n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?b:c);
 function dist(a,b,c,d){const R=6371000,t=Math.PI/180,x=(c-a)*t,y=(d-b)*t,
   h=Math.sin(x/2)**2+Math.cos(a*t)*Math.cos(c*t)*Math.sin(y/2)**2;
   return 2*R*Math.asin(Math.sqrt(h));}
 const allChecks=()=>M.flatMap(m=>m.checks.map(c=>({...c,mid:m.id})));
-function nTask(mid){const m=M.find(x=>x.id===mid);return m?m.checks.filter(c=>c.task).length:0;}
+function nTask(mid){const m=M.find(x=>x.id===mid);return m?m.checks.filter(c=>c.task&&wTrybie(c)).length:0;}
+
+/* ---------- TRYBY ----------
+   screening = tylko pytania z core:true, pelny = wszystkie. Odpowiedzi z pytań
+   ukrytych zostają w stanie, nie są tylko pokazywane ani liczone. Dzięki temu
+   poszerzenie ze screeningu do pełnego audytu niczego nie gubi. */
+const TRYBY={screening:'Szybki screening',pelny:'Pełny audyt'};
+const wTrybie=c=>S.tryb!=='screening'||!!c.core;
+const checksTrybu=()=>allChecks().filter(wTrybie);
+const modulyTrybu=()=>M.filter(m=>m.checks.some(wTrybie));
 
 /* ---------- FLAGI ---------- */
-function flagsAll(){
+function flagsAll(core){
+  /* core=true liczy wyłącznie pytania screeningu. Bez argumentu zakres idzie
+     za trybem audytu, więc w screeningu nie świecą flagi z pytań ukrytych. */
+  if(core===undefined)core=S.tryb==='screening';
   const out=[];
   M.forEach(m=>m.checks.forEach(c=>{
-    if(!c.flag)return;
+    if(!c.flag||(core&&!c.core))return;
     const v=S.a[c.id]; if(v==null||v===''||v==='?')return;
     const f=c.flag(v); if(f)out.push({...f,mid:m.id,mname:m.name,cid:c.id,q:c.q});
   }));
@@ -917,7 +1298,8 @@ function flagsAll(){
   return out;
 }
 function modFlagLevel(mid){
-  const f=flagsAll().filter(x=>x.mid===mid);
+  const ids=mid==='wizyta'?['m4','m4b']:[mid];
+  const f=flagsAll().filter(x=>ids.indexOf(x.mid)>=0);
   if(f.some(x=>x.lv==='red'))return'red';
   if(f.some(x=>x.lv==='yellow'))return'yellow';
   if(f.length)return'green';
@@ -929,7 +1311,7 @@ function paintBar(){
   const cmin=f.reduce((s,x)=>s+(x.cmin||0),0), cmax=f.reduce((s,x)=>s+(x.cmax||0),0);
   $('#cR').textContent=r; $('#cY').textContent=y; $('#cG').textContent=g;
   $('#cCost').textContent = cmin? fmt(cmin)+'+ zł' : (cmax? 'do '+fmt(cmax)+' zł' : '0 zł');
-  const CS=allChecks().filter(c=>c.type!=='info');
+  const CS=checksTrybu().filter(c=>c.type!=='info');
   const tot=CS.length;
   const done=CS.filter(rozstrzygniete).length;
   const spr=CS.filter(sprawdzone).length;
@@ -937,7 +1319,14 @@ function paintBar(){
   const ogon=' Sprawdzono '+spr+'/'+tot+(done!==spr?', rozstrzygnięto '+done:'')+
     (kryt?'. Zostało '+kryt+' krytycznych.':'.');
   let v;
-  if(spr<5) v='Sprawdzono '+spr+' z '+tot+' punktów. Wypełniaj kolejne sekcje.';
+  if(!S.tryb) v='Wybierz tryb na ekranie Start: szybki screening albo pełny audyt.';
+  else if(S.tryb==='screening'){
+    /* ten sam werdykt i ta sama liczba otwartych krytycznych co na karcie werdyktu */
+    const w=werdyktScreening(), ko=w.krytOtw.length;
+    if(spr<3) v='<b>Screening.</b> Sprawdzono '+spr+' z '+tot+' punktów. Skopiuj prompt startowy na ekranie Start.';
+    else v='<b>'+esc(w.naglowek)+'.</b> Sprawdzono '+spr+'/'+tot+(ko?', '+ko+' '+odm(ko,'krytyczny otwarty','krytyczne otwarte','krytycznych otwartych'):'')+'.';
+  }
+  else if(spr<5) v='Sprawdzono '+spr+' z '+tot+' punktów. Wypełniaj kolejne sekcje.';
   else if(r>0) v='<b>Wstrzymaj się.</b> '+r+' '+(r===1?'wada blokująca':'wady blokujące')+' do wyjaśnienia przed umową przedwstępną.'+ogon;
   else if(y>2) v='<b>Można kupić, ale negocjuj.</b> '+y+' wad do wyceny.'+ogon;
   else v='<b>Bez poważnych zastrzeżeń.</b>'+ogon;
@@ -956,7 +1345,7 @@ const M = [
  lead:'Co jest pod spodem i jak zaklasyfikowany. Tu wychodzą koszty, których nie widać na oględzinach.',
  checks:[
 
- {id:'g_uzytek', src:'raport', mode:'semi', q:'Jaki użytek gruntowy figuruje w ewidencji (EGiB)?',
+ {id:'g_uzytek', core:true, src:'raport', mode:'semi', q:'Jaki użytek gruntowy figuruje w ewidencji (EGiB)?',
   why:'To zapis urzędowy, nie to co widzisz. Działka może wyglądać jak ogród, a w ewidencji być lasem.',
   type:'select', opts:[['B','B — mieszkaniowe'],['Bi','Bi — inne zabudowane'],['Br','Br — zabudowa zagrodowa'],
     ['R','R — grunty orne'],['Ps','Ps / Ł — pastwiska, łąki'],['Ls','Ls — LAS'],['Lz','Lz — zadrzewienia'],
@@ -994,7 +1383,7 @@ const M = [
    <br><br><b>Sygnał ostrzegawczy:</b> jeśli dom stoi, a użytek to R albo Ls, zapytaj sprzedającego wprost,
    dlaczego ewidencja nie została zaktualizowana.`},
 
- {id:'g_klasa', src:'raport', mode:'semi', q:'Jaka klasa bonitacyjna gruntu?',
+ {id:'g_klasa', core:true, src:'raport', mode:'semi', q:'Jaka klasa bonitacyjna gruntu?',
   why:'Klasy I–III są chronione. Zmiana przeznaczenia wymaga zgody Ministra Rolnictwa.',
   type:'select', opts:[['brak','Nie dotyczy (teren zabudowany)'],['I-III','I, II, III (IIIa/IIIb)'],['IV','IV (IVa/IVb)'],['V-VI','V, VI'],['?','Nie sprawdzone']],
   task:`Ustal klasę bonitacyjną gruntu (cyfra rzymska przy literze użytku, np. RIIIa, ŁIV).
@@ -1140,7 +1529,11 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
  lead:'Najważniejszy dokument w całej transakcji. Bez przeczytania wszystkich czterech działów nie podpisuj niczego, nawet umowy przedwstępnej.',
  checks:[
 
- {id:'kw_nr', src:'wlasne', mode:'man', q:'Numer księgi wieczystej', type:'text', ph:'np. PO1P/00123456/7',
+ {id:'kw_nr', core:true,
+  scr:`Z ogłoszenia przepisz numer księgi wieczystej, jeśli sprzedający go podał (format KOD/NUMER/CYFRA, np. PO1P/00123456/7).
+Nie otwieraj przeglądarki ksiąg wieczystych: wymaga captcha, więc ten krok i tak zostaje dla mnie.
+Jeśli numeru w ogłoszeniu nie ma, napisz to w notatce. To częsta sytuacja i pytanie do sprzedającego, a nie wada.`,
+  src:'wlasne', mode:'man', q:'Numer księgi wieczystej', type:'text', ph:'np. PO1P/00123456/7',
   why:'Sprzedający ma obowiązek go podać. Odmowa to sama w sobie czerwona flaga.',
   task:`Pomóż odczytać księgę wieczystą tej nieruchomości.
 1. Otwórz przegladarka-ekw.ms.gov.pl
@@ -1226,7 +1619,10 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    wydanie wolnej od osób i rzeczy oraz karę umowną za każdy dzień zwłoki.
    <br><br><b>Sprawdź też, czy ktoś faktycznie mieszka</b> — to ważniejsze niż meldunek.`},
 
- {id:'kw_hipoteka', src:'wlasne', mode:'man', q:'Czy w dziale IV wpisana jest hipoteka?',
+ {id:'kw_hipoteka', core:true,
+  scr:`Sprawdź, czy ogłoszenie wspomina o kredycie, hipotece, spłacie kredytu z ceny albo zgodzie banku.
+Kod tak wybierz tylko wtedy, gdy ogłoszenie mówi o hipotece wprost. Ogłoszenia zwykle o tym milczą, więc brak wzmianki nie oznacza kodu nie: zostaw wtedy samą notatkę.`,
+  src:'wlasne', mode:'man', q:'Czy w dziale IV wpisana jest hipoteka?',
   why:'Hipoteka nie znika ze sprzedażą. Przechodzi na nieruchomość, nie na dłużnika.',
   type:'yn', opts:YN,
   flag:v=>v==='tak'?Y('Hipoteka w dziale IV','Sama w sobie nie blokuje transakcji — to standard przy kredytowanych domach. Wymaga jednak prawidłowej procedury: przed aktem sprzedający musi przedstawić zaświadczenie z banku o aktualnym saldzie i promesę wykreślenia. W akcie zapisujecie spłatę bezpośrednią: część ceny idzie prosto na rachunek techniczny banku, reszta do sprzedającego. Nigdy nie płać całości sprzedającemu licząc, że sam spłaci kredyt.',0,0,null):(v==='nie'?G('Brak hipoteki','Dział IV wolny od wpisów.'):null),
@@ -1237,7 +1633,12 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <li>Składasz wniosek o wykreślenie hipoteki do sądu wieczystoksięgowego.</li></ol>
    <b>Sprawdź też kwotę:</b> jeśli hipoteka przewyższa cenę sprzedaży, transakcja się nie domknie bez dopłaty sprzedającego.`},
 
- {id:'kw_forma', src:'wlasne', mode:'man', q:'Co dokładnie jest przedmiotem sprzedaży?',
+ {id:'kw_forma', core:true,
+  scr:`Z ogłoszenia ustal, co jest przedmiotem sprzedaży: cała nieruchomość gruntowa z domem, wyodrębniony lokal z udziałem w gruncie, udział we współwłasności albo grunt w użytkowaniu wieczystym.
+Szukaj w parametrach i w opisie słów: forma własności, użytkowanie wieczyste, lokal, udział, księga wieczysta lokalu.
+Sygnały lokalu albo udziału: zabudowa bliźniacza lub szeregowa, dwa wejścia, dwa liczniki, „połowa domu", „mieszkanie w domu".
+Kod wybierz tylko wtedy, gdy ogłoszenie mówi to wprost. Jeśli sugerują to tylko zdjęcia albo opis, zostaw samą notatkę z tym, co widać.`,
+  src:'wlasne', mode:'man', q:'Co dokładnie jest przedmiotem sprzedaży?',
   why:'Dom w zabudowie bliźniaczej albo z dwoma mieszkaniami to zwykle lokal z udziałem w gruncie, a nie cała nieruchomość.',
   type:'select', opts:[['calosc','Cała nieruchomość gruntowa z budynkiem'],['lokal','Wyodrębniony lokal z udziałem w gruncie'],
     ['udzial','Udział we współwłasności'],['wieczyste','Użytkowanie wieczyste gruntu'],['?','Nie sprawdzone']],
@@ -1274,7 +1675,11 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    Bez wpisu obowiązuje tylko strony, które ją zawarły.
    <br><br><b>Gdzie szukać:</b> dział I-Sp albo III księgi nieruchomości wspólnej.`},
 
- {id:'kw_wlasciciel', src:'wlasne', mode:'man', q:'Czy właściciel z działu II zgadza się z osobą, która sprzedaje?',
+ {id:'kw_wlasciciel', core:true,
+  scr:`Z ogłoszenia ustal, kto sprzedaje, i czy są wzmianki o spadku, postępowaniu spadkowym, kilku współwłaścicielach albo pełnomocniku.
+Pełna weryfikacja wymaga działu II księgi, więc kod wybierz tylko wtedy, gdy ogłoszenie mówi o tym wprost (np. „nieruchomość ze spadku, stan prawny w trakcie regulacji" to kod spadek).
+Ogłoszenie pośrednika bez takich wzmianek to brak danych, a nie kod zgadza: zostaw wtedy samą notatkę.`,
+  src:'wlasne', mode:'man', q:'Czy właściciel z działu II zgadza się z osobą, która sprzedaje?',
   why:'Podstawowa weryfikacja, którą łatwo pominąć przy sympatycznym sprzedającym.',
   type:'select', opts:[['zgadza','Zgadza się w pełni'],['wspol','Współwłasność — kilka osób'],['spadek','Spadkobiercy / nieuregulowane'],['pelnomocnik','Sprzedaje pełnomocnik'],['?','Nie sprawdzone']],
   flag:v=>{
@@ -1294,7 +1699,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
  lead:'Stan prawny mocno się zmienił w 2026 roku. Jeśli planujesz rozbudowę, przeczytaj to uważnie.',
  checks:[
 
- {id:'p_alert', src:'wlasne', mode:'info', type:'info', q:'Co się zmieniło w 2026 roku — przeczytaj to najpierw',
+ {id:'p_alert', core:true, src:'wlasne', mode:'info', type:'info', q:'Co się zmieniło w 2026 roku — przeczytaj to najpierw',
   help:`<b>Trzy daty, które musisz znać:</b>
    <ul><li><b>31 sierpnia 2026</b> — ostateczny termin uchwalenia planów ogólnych przez gminy (przesunięty nowelizacją
      z 30 kwietnia 2026 z pierwotnego 30 czerwca). Do tego dnia obowiązują stare studia uwarunkowań.</li>
@@ -1311,7 +1716,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <br><br><b>Ważność decyzji WZ:</b> te, które stały się prawomocne do 31 grudnia 2025, są bezterminowe.
    Wydane od 1 stycznia 2026 tracą ważność po 5 latach od uprawomocnienia.`},
 
- {id:'p_mpzp', src:'raport', mode:'semi', q:'Czy działka jest objęta miejscowym planem zagospodarowania (MPZP)?',
+ {id:'p_mpzp', core:true, src:'raport', mode:'semi', q:'Czy działka jest objęta miejscowym planem zagospodarowania (MPZP)?',
   why:'Plan miejscowy jest prawem miejscowym. Rozstrzyga, co i jak możesz budować, bez uznaniowości urzędnika.',
   type:'select', opts:[['tak','Tak, jest MPZP'],['nie','Nie ma planu'],['?','Nie sprawdzone']],
   task:`Ustal, czy działka jest objęta miejscowym planem zagospodarowania przestrzennego.
@@ -1330,7 +1735,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <li>Telefonicznie: wydział architektury urzędu gminy. Podaj numer działki, powiedzą w minutę.</li></ol>
    <b>Zamów wypis i wyrys z MPZP</b> jeśli transakcja robi się poważna. To dokument urzędowy, w przeciwieństwie do podglądu na mapie.`},
 
- {id:'p_przezn', src:'raport', mode:'semi', q:'Jakie przeznaczenie ma działka w planie?',
+ {id:'p_przezn', core:true, src:'raport', mode:'semi', q:'Jakie przeznaczenie ma działka w planie?',
   type:'select', opts:[['MN','MN — zabudowa mieszkaniowa jednorodzinna'],['MNU','MN/U — mieszkaniowo-usługowa'],['MW','MW — wielorodzinna'],['RM','RM — zabudowa zagrodowa'],['R','R — tereny rolne'],['ZL','ZL — lasy'],['inne','Inne / mieszane'],['nd','Nie dotyczy — brak MPZP']],
   task:`Ustal symbol przeznaczenia terenu dla tej działki w planie miejscowym (np. MN, MN/U, RM, R, ZL).
 1. Otwórz portal mapowy gminy (wyszukaj "[nazwa gminy] mpzp mapa").
@@ -1375,7 +1780,12 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <br><br><b>Dlaczego to teraz kluczowe:</b> obszar uzupełnienia zabudowy (OUZ) to jedyne miejsce, gdzie po 1 września 2026
    można wydać WZ poza planem miejscowym.`},
 
- {id:'p_wz', src:'wlasne', mode:'man', q:'Czy dla nieruchomości wydano decyzję o warunkach zabudowy?',
+ {id:'p_wz', core:true,
+  scr:`Ten punkt ma znaczenie tylko wtedy, gdy działka nie jest objęta planem miejscowym (zadanie przy p_mpzp). Jeśli plan jest, wybierz kod nd.
+Jeśli planu nie ma: sprawdź, czy ogłoszenie wspomina o decyzji o warunkach zabudowy, i przepisz jej datę. Potem poszukaj w BIP gminy rejestru wydanych decyzji o warunkach zabudowy dla tej działki albo ulicy.
+Progi dat: decyzja prawomocna do 31.12.2025 albo wydana na wniosek złożony przed 16.10.2025 jest bezterminowa, późniejsza jest ważna 5 lat.
+Jeśli nic nie znajdziesz, nie wybieraj kodu brak, tylko napisz w notatce, gdzie szukałeś.`,
+  src:'wlasne', mode:'man', q:'Czy dla nieruchomości wydano decyzję o warunkach zabudowy?',
   type:'select', opts:[['przed2026','Prawomocna do 31.12.2025 — bezterminowa'],['wniosek2025','Wniosek przed 16.10.2025 — bezterminowa'],['po2026','Wniosek po 16.10.2025 — ważna 5 lat'],['brak','Nie ma decyzji WZ'],['nd','Nie dotyczy — jest MPZP']],
   flag:v=>{
     if(v==='przed2026')return G('Decyzja WZ bezterminowa','Decyzje prawomocne do końca 2025 roku nie wygasają. To realna wartość dodana nieruchomości.');
@@ -1744,7 +2154,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
  lead:'Przy istniejącym domu media zwykle są. Pytanie brzmi: jakie, w jakim stanie i ile kosztuje ich utrzymanie.',
  checks:[
 
- {id:'u_prad', src:'raport', mode:'field', q:'Przyłącze elektryczne',
+ {id:'u_prad', core:true, src:'raport', mode:'field', q:'Przyłącze elektryczne',
   task:`Sprawdź przyłącze elektryczne w ewidencji uzbrojenia terenu.
 1. Otwórz geoportal powiatowy i włącz warstwę GESUT, podwarstwa elektroenergetyczna.
 2. Sprawdź, czy do budynku na działce dochodzi przewód elektroenergetyczny i czy w drodze biegnie sieć. Zapisz etykiety obiektów.
@@ -1760,7 +2170,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <br><br><b>Poproś o umowę z operatorem</b> i sprawdź <b>moc przyłączeniową</b> (w kW). Dla domu z pompą ciepła potrzebujesz zwykle minimum 12–14 kW.
    <br><br>Zapytaj też o zaległości. Dług za prąd nie przechodzi na ciebie, ale odcięte przyłącze i tak trzeba przywrócić.`},
 
- {id:'u_woda', src:'raport', mode:'field', q:'Zaopatrzenie w wodę',
+ {id:'u_woda', core:true, src:'raport', mode:'field', q:'Zaopatrzenie w wodę',
   task:`Sprawdź zaopatrzenie w wodę w ewidencji uzbrojenia terenu.
 1. Otwórz geoportal powiatowy, włącz warstwę GESUT, podwarstwa wodociągowa.
 2. Ustal, czy w drodze przy działce biegnie wodociąg i czy do budynku dochodzi przyłącze. Zapisz etykiety i średnice, jeśli serwis je podaje.
@@ -1776,7 +2186,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <br><br><b>Badanie wody zleć zanim kupisz</b>, nie po. Kosztuje kilkaset złotych, a wynik potrafi zmienić decyzję.
    <br><br><b>Przy wodociągu</b> poproś o rachunki i sprawdź, czy licznik jest legalizowany.`},
 
- {id:'u_kanal', src:'raport', mode:'field', q:'Odprowadzenie ścieków',
+ {id:'u_kanal', core:true, src:'raport', mode:'field', q:'Odprowadzenie ścieków',
   task:`Sprawdź odprowadzenie ścieków w ewidencji uzbrojenia terenu.
 1. Otwórz geoportal powiatowy, włącz warstwę GESUT, podwarstwa kanalizacyjna.
 2. Ustal, czy w drodze biegnie kanalizacja sanitarna i czy od budynku odchodzi przewód kanalizacyjny do studzienki w pasie drogowym. Zapisz etykiety obiektów.
@@ -1842,7 +2252,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
  lead:'Bez prawnego dostępu do drogi publicznej nie ma pozwolenia na budowę ani rozbudowę. To jedna z niewielu wad, których nie da się szybko naprawić pieniędzmi.',
  checks:[
 
- {id:'d_typ', src:'raport', mode:'semi', q:'Jaki jest status prawny drogi dojazdowej?',
+ {id:'d_typ', core:true, src:'raport', mode:'semi', q:'Jaki jest status prawny drogi dojazdowej?',
   type:'select', opts:[['publiczna','Droga publiczna (gminna, powiatowa, krajowa)'],['wewn_udzial','Droga wewnętrzna — mam mieć udział'],['wewn_sluz','Droga wewnętrzna — służebność'],['prywatna','Droga prywatna bez uregulowania'],['?','Nie sprawdzone']],
   task:`Ustal status prawny drogi dojazdowej do tej nieruchomości.
 1. Otwórz geoportal (krajowy albo powiatowy) i znajdź działkę drogową przylegającą do nieruchomości.
@@ -1866,7 +2276,11 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <li>Sprawdź, czy droga figuruje w <b>uchwale rady gminy o zaliczeniu do kategorii dróg gminnych</b>. Ta uchwała jest w BIP.</li></ol>
    <b>Uwaga:</b> to, że droga jest asfaltowa i jeżdżą po niej wszyscy, nie znaczy, że jest publiczna.`},
 
- {id:'d_zjazd', src:'wlasne', mode:'man', q:'Czy zjazd z drogi publicznej jest legalny i uzgodniony?',
+ {id:'d_zjazd', core:true,
+  scr:`Na ortofotomapie w geoportalu i w Street View, jeśli jest dostępny, sprawdź, czy z drogi na działkę prowadzi utwardzony wjazd, brama albo przepust nad rowem. Przeczytaj też, co o dojeździe mówi ogłoszenie.
+Legalność zjazdu potwierdza dopiero zgoda zarządcy drogi, więc kod jest wybierz tylko wtedy, gdy ogłoszenie wprost mówi o uzgodnionym zjeździe.
+Widoczny wjazd bez informacji o uzgodnieniu to kod istnieje, wjazd przez przepust nad rowem to kod row, brak jakiegokolwiek wjazdu to kod brak.`,
+  src:'wlasne', mode:'man', q:'Czy zjazd z drogi publicznej jest legalny i uzgodniony?',
   why:'Przyleganie do asfaltu nie oznacza prawa wjazdu. Zjazd wymaga zgody zarządcy drogi.',
   type:'select', opts:[['jest','Zjazd istnieje i jest uzgodniony'],['istnieje','Zjazd istnieje, brak dokumentów'],['brak','Zjazdu nie ma'],['row','Zjazd przez rów melioracyjny'],['?','Nie sprawdzone']],
   flag:v=>{
@@ -1922,7 +2336,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
  lead:'Powódź, osuwisko i formy ochrony przyrody. Pierwsze dwa potrafią zablokować ubezpieczenie i kredyt, trzecie ogranicza swobodę inwestowania.',
  checks:[
 
- {id:'s_powodz', src:'raport', mode:'semi', q:'Czy działka leży na obszarze zagrożenia powodziowego?',
+ {id:'s_powodz', core:true, src:'raport', mode:'semi', q:'Czy działka leży na obszarze zagrożenia powodziowego?',
   type:'select', opts:[['nie','Nie'],['q10','Tak — woda 10-letnia (Q10)'],['q100','Tak — woda 100-letnia (Q100)'],['q500','Tak — woda 500-letnia (Q500)'],['?','Nie sprawdzone']],
   task:`Sprawdź, czy nieruchomość leży na obszarze zagrożenia powodziowego.
 1. Otwórz Hydroportal: wody.isok.gov.pl/imap_kzgw/?gpmap=gp0
@@ -1942,7 +2356,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    10% (Q10) i 1% (Q100). Tam obowiązują ograniczenia. Q500 (0,2%) ma charakter informacyjny.
    <br><br><b>Sprawdź też lokalnie:</b> zapytaj sąsiadów o powódź z 1997 i 2010 roku oraz o podtopienia po nawalnych deszczach.`},
 
- {id:'s_osuw', src:'raport', mode:'semi', q:'Czy teren jest zagrożony ruchami masowymi (osuwiska)?',
+ {id:'s_osuw', core:true, src:'raport', mode:'semi', q:'Czy teren jest zagrożony ruchami masowymi (osuwiska)?',
   type:'yn', opts:YN,
   task:`Sprawdź, czy teren jest zagrożony ruchami masowymi ziemi.
 1. Otwórz System Osłony Przeciwosuwiskowej: mapa.osuwiska.pgi.gov.pl
@@ -1958,7 +2372,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <br><br><b>Objawy w terenie:</b> pofalowana powierzchnia zbocza, pochylone drzewa („pijany las"), pęknięcia w gruncie,
    przechylone słupy i ogrodzenia, ukośne pęknięcia w ścianach budynku, klinujące się drzwi i okna.`},
 
- {id:'s_natura', src:'raport', mode:'semi', q:'Czy nieruchomość leży w formie ochrony przyrody?',
+ {id:'s_natura', core:true, src:'raport', mode:'semi', q:'Czy nieruchomość leży w formie ochrony przyrody?',
   type:'select', opts:[['nie','Nie'],['natura','Natura 2000'],['park','Park krajobrazowy'],['obszar','Obszar chronionego krajobrazu'],['rezerwat','Rezerwat / park narodowy / otulina'],['?','Nie sprawdzone']],
   task:`Sprawdź, czy nieruchomość leży w obszarze objętym ochroną przyrody.
 1. Otwórz Geoserwis GDOŚ: geoserwis.gdos.gov.pl/mapy
@@ -2019,7 +2433,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
  auto:'poi',
  checks:[
 
- {id:'n_mpzp_sasiad', src:'raport', mode:'semi', q:'Jakie przeznaczenie mają działki sąsiednie w planie?',
+ {id:'n_mpzp_sasiad', core:true, src:'raport', mode:'semi', q:'Jakie przeznaczenie mają działki sąsiednie w planie?',
   why:'To, co jest dziś polem, jutro może być halą. Plan mówi, co może powstać.',
   type:'select', opts:[['mieszk','Mieszkaniowe'],['uslugi','Usługi (U / UC)'],['przemysl','Przemysł (P / PU)'],['rolne','Rolne (R)'],['mieszane','Mieszane'],['?','Nie sprawdzone']],
   task:`Sprawdź przeznaczenie działek sąsiednich w planie miejscowym, w promieniu przynajmniej 300 metrów.
@@ -2069,7 +2483,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <li>Co się planuje w okolicy?</li></ol>
    <b>Praktyka:</b> podejdź do dwóch–trzech domów, przedstaw się i powiedz wprost, że rozważasz kupno sąsiedniej nieruchomości.`},
 
- {id:'n_plany', src:'wlasne', mode:'man', q:'Czy w okolicy planowane są inwestycje drogowe lub infrastrukturalne?',
+ {id:'n_plany', core:true, src:'wlasne', mode:'man', q:'Czy w okolicy planowane są inwestycje drogowe lub infrastrukturalne?',
   task:`Sprawdź planowane inwestycje u wszystkich zarządców dróg, nie tylko krajowego.
 1. BIP gminy, zakładki aktualności, inwestycje i zamówienia publiczne. Szukaj inwestycji drogowych, kanalizacyjnych i decyzji o lokalizacji inwestycji celu publicznego w promieniu kilku kilometrów.
 2. Strona zarządu dróg wojewódzkich właściwego dla województwa oraz powiatowego zarządu dróg. Obwodnice i drogi łączące bywają wojewódzkie, więc mapa GDDKiA ich nie pokaże.
@@ -2099,7 +2513,7 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
  lead:'Rejestr Cen Nieruchomości jest bezpłatny od lutego 2026 i obejmuje całą Polskę. Zawiera ceny transakcyjne, czyli te faktycznie zapłacone, a nie ofertowe.',
  checks:[
 
- {id:'c_rcn', src:'raport', mode:'semi', q:'Jak cena ofertowa wypada na tle cen transakcyjnych w okolicy?',
+ {id:'c_rcn', core:true, src:'raport', mode:'semi', q:'Jak cena ofertowa wypada na tle cen transakcyjnych w okolicy?',
   type:'select', opts:[['ponizej','Poniżej cen transakcyjnych'],['rynek','W rynku'],['powyzej','Powyżej cen transakcyjnych'],['?','Nie sprawdzone']],
   task:`Sprawdź ceny transakcyjne nieruchomości w okolicy.
 1. Otwórz mapy.geoportal.gov.pl
@@ -2139,7 +2553,10 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <li><b>Wielkość działki</b> — 900 m² i 300 m² to inny produkt nawet przy tym samym metrażu domu, licz to osobno, nie w cenie za m² budynku.</li></ul>
    <b>Zasada:</b> odrzuć z porównania oferty różniące się więcej niż jedną istotną cechą, albo policz korektę dla każdej różnicy osobno, zamiast uśredniać wszystko razem w jedną stawkę zł/m².`},
 
- {id:'c_czas', src:'wlasne', mode:'man', q:'Jak długo nieruchomość jest w sprzedaży?',
+ {id:'c_czas', core:true,
+  scr:`Z ogłoszenia odczytaj datę dodania albo pierwszej publikacji. Portale często pokazują tylko datę odświeżenia, więc sprawdź też, czy ta sama nieruchomość nie wisi w innych serwisach albo u innych pośredników z wcześniejszą datą lub inną ceną (wyszukaj adres albo charakterystyczny fragment opisu).
+Policz, ile miesięcy minęło do dziś, i w notatce podaj ewentualne zmiany ceny.`,
+  src:'wlasne', mode:'man', q:'Jak długo nieruchomość jest w sprzedaży?',
   type:'select', opts:[['nowa','Do miesiąca'],['sred','1–3 miesiące'],['dlugo','Powyżej 3 miesięcy'],['?','Nie ustalono']],
   flag:v=>{
     if(v==='dlugo')return G('Długi czas ekspozycji','To działa na twoją korzyść. Sprzedający po kilku miesiącach bez ofert jest bardziej skłonny do ustępstw. Zapytaj wprost, ilu było zainteresowanych i dlaczego transakcje nie doszły do skutku.');
@@ -2162,7 +2579,10 @@ Progi: poniżej 5 procent to teren płaski, 5–10 procent wyraźny spadek, powy
    <br><br><b>Najcenniejsze pytanie:</b> „Co według Pana wymaga tu największych nakładów?". Zadane spokojnie, pod koniec rozmowy,
    często przynosi szczerą odpowiedź.`},
 
- {id:'c_powod', src:'wlasne', mode:'man', q:'Znasz powód sprzedaży?',
+ {id:'c_powod', core:true,
+  scr:`Sprawdź, czy ogłoszenie podaje powód sprzedaży (przeprowadzka, zakup innej nieruchomości, spadek, rozwód, „za duży dom").
+Kod tak wybierz, gdy powód jest podany wprost, i przepisz go do notatki. Gdy ogłoszenie milczy, wybierz kod nie: to pytanie na pierwszą rozmowę ze sprzedającym.`,
+  src:'wlasne', mode:'man', q:'Znasz powód sprzedaży?',
   type:'yn', opts:YN,
   flag:v=>v==='nie'?Y('Nieznany powód sprzedaży','Warto ustalić. Przeprowadzka za pracą albo podział majątku oznacza presję czasu i skłonność do negocjacji. Sprzedaż „bo się nie da tu mieszkać" oznacza wadę, której jeszcze nie znalazłeś.',0,0,null):(v==='tak'?G('Powód sprzedaży znany',''):null),
   help:`Zapytaj wprost sprzedającego i osobno sąsiadów. Rozbieżność w odpowiedziach jest sama w sobie informacją.
@@ -2301,11 +2721,20 @@ function copyDomains(){
 /* ============================================================
    RENDER
    ============================================================ */
-function go(t){TAB=t;window.scrollTo(0,0);render();}
+function go(t,w){TAB=t;RAP_WIDOK=w||'';window.scrollTo(0,0);render();}
+/* Bez wybranego trybu jest tylko Start. Screening pokazuje sekcje, które mają
+   pytania podstawowe (bez Budynku i Wnętrza) i raport. Pełny audyt dokłada
+   checklistę oględzin i negocjacje. */
+function tabItems(){
+  const items=[{id:'start',name:'Start'}];
+  if(!S.tryb)return items;
+  modulyTrybu().forEach(m=>items.push({id:m.id,name:m.name}));
+  if(S.tryb==='pelny')items.push({id:'wizyta',name:'Oględziny'},{id:'neg',name:'Negocjacje'});
+  items.push({id:'raport',name:'Raport'});
+  return items;
+}
 function tabs(){
-  const items=[{id:'start',name:'Start'}]
-    .concat(M.map(m=>({id:m.id,name:m.name})))
-    .concat([{id:'neg',name:'Negocjacje'},{id:'raport',name:'Raport'}]);
+  const items=tabItems();
   $('#tabs').innerHTML=items.map(i=>{
     const skip=(i.id==='start'||i.id==='raport'||i.id==='neg');
     const lv=skip?'none':modFlagLevel(i.id);
@@ -2315,14 +2744,16 @@ function tabs(){
   const on=$('.tab.on'); if(on)on.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
 }
 function render(){
+  if(!tabItems().some(i=>i.id===TAB))TAB='start';
   tabs();
   if(TAB==='start')viewStart();
   else if(TAB==='neg')viewNeg();
+  else if(TAB==='wizyta')viewWizyta();
   else if(TAB==='raport')viewReport();
   else viewModule(M.find(m=>m.id===TAB));
   paintBar();
   $('#hdTitle').textContent = S.meta.adres? S.meta.adres.slice(0,42) : APP.name;
-  $('#hdSub').textContent = APP.name+' v'+APP.ver+' · '+APP.prawo;
+  $('#hdSub').textContent = APP.name+' v'+APP.ver+(S.tryb?' · '+TRYBY[S.tryb]:'')+' · '+APP.prawo;
 }
 
 /* ---------- WAGA PYTANIA ----------
@@ -2349,7 +2780,7 @@ function isCrit(c){
 }
 /* Bilans sekcji: ile zostało i ile z tego naprawdę musi być zrobione. */
 function bilans(m){
-  const cs=m.checks.filter(c=>c.type!=='info');
+  const cs=m.checks.filter(c=>c.type!=='info'&&wTrybie(c));
   const spr=cs.filter(sprawdzone).length;
   const roz=cs.filter(rozstrzygniete).length;
   const zost=cs.filter(c=>!sprawdzone(c));
@@ -2382,23 +2813,34 @@ const BADGE_PROMPT='<span class="badge b-semi">prompt</span>';
 
 function viewModule(m){
   if(!m)return;
-  let h=`<div class="card"><h2>${esc(m.title)}</h2><p class="lead">${esc(m.lead)}</p></div>`;
+  const cs=m.checks.filter(wTrybie);
+  const ukryte=m.checks.length-cs.length;
+  let h=`<div class="card"><h2>${esc(m.title)}</h2><p class="lead">${esc(m.lead)}</p>
+    ${ukryte?`<p class="lead" style="margin:0"><span class="pill">screening</span> ${cs.length} z ${m.checks.length} pytań tej sekcji.
+      Pozostałe ${ukryte} dojdą po poszerzeniu do pełnego audytu.</p>`:''}</div>`;
   h+=bilansPasek(m);
   h+=toolbar(m.id);
+  if(m.id==='m2'&&S.tryb==='pelny')h+=kwCard();
   h+=modPromptCard(m.id);
+  /* karta nasłonecznienia liczy się lokalnie i nic nie kosztuje, więc jest w obu trybach,
+     choć samo pytanie g_slonce dochodzi dopiero w pełnym audycie */
   if(m.id==='m1')h+=sunCard();
   if(m.auto==='poi')h+=poiCard();
   h+='<div class="card">';
-  m.checks.forEach((c,i)=>{h+=renderCheck(c,i+1);});
+  cs.forEach((c,i)=>{h+=renderCheck(c,i+1);});
   h+='</div>';
-  const idx=M.findIndex(x=>x.id===m.id);
+  const MT=modulyTrybu();
+  const idx=MT.findIndex(x=>x.id===m.id);
+  const dalej=S.tryb==='screening'
+    ?`<button class="btn" onclick="go('raport')">Werdykt →</button>`
+    :`<button class="btn" onclick="go('neg')">Negocjacje →</button>`;
   h+=`<div class="row noprint" style="margin:14px 0">
-    ${idx>0?`<button class="btn sec" onclick="go('${M[idx-1].id}')">← ${esc(M[idx-1].name)}</button>`:'<div></div>'}
-    ${idx<M.length-1?`<button class="btn" onclick="go('${M[idx+1].id}')">${esc(M[idx+1].name)} →</button>`
-      :`<button class="btn" onclick="go('neg')">Negocjacje →</button>`}</div>
+    ${idx>0?`<button class="btn sec" onclick="go('${MT[idx-1].id}')">← ${esc(MT[idx-1].name)}</button>`:'<div></div>'}
+    ${idx<MT.length-1?`<button class="btn" onclick="go('${MT[idx+1].id}')">${esc(MT[idx+1].name)} →</button>`:dalej}</div>
     <div class="noprint" style="text-align:center;margin:0 0 8px">
-      <button class="btn sm sec" style="color:var(--tx3)" onclick="clearModule('${m.id}')">Wyczyść tę sekcję</button></div>`;
+      <button class="btn sm sec" style="color:var(--tx3)" onclick="clearModule('${m.id}')">Wyczyść ${ukryte?'widoczne pytania tej sekcji':'tę sekcję'}</button></div>`;
   $('#view').innerHTML=h;
+  if(m.id==='m1')setTimeout(drawSunMap,80);
 }
 
 function renderCheck(c,n){
@@ -2460,10 +2902,126 @@ function renderCheck(c,n){
 let qt=null;
 function setQuiet(k,v){S.a[k]=v;save();clearTimeout(qt);qt=setTimeout(paintBar,300);}
 
+/* ---------- WIDOK: OGLĘDZINY ----------
+   Budynek i Wnętrze na jednej stronie, w kolejności wizyty, z wyceną usterek
+   na końcu. To te same pytania co w sekcjach, więc odpowiedzi są wspólne. */
+function viewWizyta(){
+  const mods=['m4','m4b'].map(id=>M.find(m=>m.id===id)).filter(Boolean);
+  const poz=wycPozycje('ogledziny');
+  let h=`<div class="card">
+    <h2>Oględziny: checklista na wizytę</h2>
+    <p class="lead">Budynek i Wnętrze w jednym miejscu. Zaznaczaj, co widzisz, a usterki opisuj w notatkach:
+      aplikacja rozpozna w nich typowe problemy i zaproponuje widełki kosztów. Na telefonie najwygodniej działa wersja
+      z hostingu, bo odpowiedzi zapisują się w przeglądarce. Jeśli na miejscu nie będzie internetu, weź listę w pliku.</p>
+    <div class="row">
+      <button class="btn sm sec" onclick="exportTxt()">Lista na telefon (.txt)</button>
+      <button class="btn sm sec" onclick="exportCsv()">Arkusz (.csv)</button>
+      <button class="btn sm sec" onclick="document.getElementById('fieldF').click()">Wczytaj wypełnioną listę</button>
+    </div>
+  </div>`;
+  h+=bilansPasek({checks:mods.flatMap(m=>m.checks)});
+  mods.forEach(m=>{
+    h+=`<div class="card"><h2>${esc(m.title)}</h2><p class="lead">${esc(m.lead)}</p>`;
+    m.checks.forEach((c,i)=>{h+=renderCheck(c,i+1);});
+    h+='</div>';
+  });
+  h+=`<div class="card pcard">
+    <h3 style="margin-top:0">Wycena usterek w cenach regionu</h3>
+    <p class="lead">${poz.length?poz.length+' '+odm(poz.length,'pozycja','pozycje','pozycji')
+      +' z oględzin: wady zapalone odpowiedziami i notatki z Budynku i Wnętrza.'
+      :'Na razie nie ma czego wyceniać. Pozycje pojawią się, gdy zaznaczysz odpowiedź z wadą albo dopiszesz notatkę o usterce.'}
+      Skopiuj prompt i wklej do wtyczki: ustali województwo z lokalizacji i znajdzie aktualne stawki wykonawców z regionu.
+      Wynik wklej poniżej, a kwoty trafią do Negocjacji.</p>
+    <button class="btn sec wide" onclick="copyPromptWyceny('ogledziny', this)" ${poz.length?'':'disabled'}>Kopiuj prompt wyceny (${poz.length})</button>
+    <textarea id="wycText_ogledziny" placeholder="Wklej tu wycenę zwróconą przez wtyczkę" style="margin-top:9px;min-height:90px"></textarea>
+    <button class="btn wide" onclick="importWyceny('ogledziny')">Wczytaj wyceny</button>
+  </div>
+  <div class="row noprint" style="margin:14px 0">
+    <button class="btn sec" onclick="go('start')">← Start</button>
+    <button class="btn" onclick="go('neg')">Negocjacje →</button></div>`;
+  $('#view').innerHTML=h;
+}
+
+/* ---------- PEŁNA KSIĘGA WIECZYSTA ----------
+   Przeglądarka ksiąg ma captcha, więc treść wkleja człowiek. Prompt niesie tę
+   treść do wtyczki razem z formatem, który wypełnia punkty sekcji Księga.
+   Meldunku w księdze nie ma, więc kw_zameldowani zostaje poza promptem. */
+const KW_POMIN=['kw_zameldowani'];
+function kwSet(v){if(!S.kw)S.kw={};S.kw.tresc=v;S.kw.ts=new Date().toISOString();save();}
+function kwCard(){
+  const t=(S.kw&&S.kw.tresc)||'';
+  return `<div class="card pcard">
+    <h3 style="margin-top:0">Pełna treść księgi wieczystej</h3>
+    <p class="lead">Księgi nie pobierze żaden automat, bo przeglądarka ksiąg ma captcha. Otwórz księgę, przejdź kolejno
+      przez działy I-O, I-Sp, II, III i IV, zaznacz tekst każdego działu i wklej tutaj, jeden pod drugim.
+      Prompt zabierze tę treść do wtyczki i każe jej wypełnić punkty tej sekcji.</p>
+    ${linkChips(['ekw'])}
+    <label class="f"><span>Treść księgi${t&&S.kw.ts?' · zapisana '+new Date(S.kw.ts).toLocaleDateString('pl-PL')+', '+fmt(t.length)+' znaków':''}</span>
+      <textarea id="kwTresc" style="min-height:120px" placeholder="Wklej treść działów I-O, I-Sp, II, III i IV"
+        oninput="kwSet(this.value)">${esc(t)}</textarea></label>
+    <button class="btn sec wide" onclick="copyPromptKsiegi(this)">Kopiuj prompt do analizy księgi</button>
+    <label class="f" style="margin-top:12px"><span>Wklej odpowiedź wtyczki</span>
+      <textarea id="kwOdp" style="min-height:88px" placeholder="Wklej blok, który zwróciła wtyczka. Rozpoznam odpowiedzi i notatki dla sekcji Księga."></textarea></label>
+    <button class="btn wide" onclick="importModuleAnswers('m2','kwOdp')">Wczytaj odpowiedzi</button>
+  </div>`;
+}
+function copyPromptKsiegi(btn){
+  if(!(S.kw&&S.kw.tresc&&S.kw.tresc.trim())){alert('Wklej najpierw treść księgi wieczystej. Bez niej wtyczka nie ma czego analizować.');return;}
+  copyText(promptKsiega(),btn);
+}
+function promptKsiega(){
+  const m=M.find(x=>x.id==='m2');
+  const cs=m.checks.filter(c=>c.type!=='info'&&KW_POMIN.indexOf(c.id)<0);
+  const F=knownFacts({});
+  let t=`[${APP.name} v${APP.ver}] Analiza treści księgi wieczystej
+Nieruchomość: ${S.meta.adres||'(adres nie podany)'}
+
+CO JUŻ USTALONE
+${F.length?F.map(x=>'- '+x).join('\n'):'- brak danych'}
+
+ZADANIE
+Poniżej jest treść księgi wieczystej, którą odczytałem ręcznie z przeglądarki ksiąg. Nie otwieraj żadnej strony:
+pracujesz wyłącznie na tym tekście. Przeczytaj wszystkie działy i ustal:
+- wzmianki o wnioskach, widoczne u góry każdego działu,
+- dział I-O: obszar i oznaczenie nieruchomości; porównaj obszar z powierzchnią z ewidencji podaną wyżej,
+- dział I-Sp: prawa związane z własnością, zwłaszcza służebność drogi (przechód i przejazd),
+- dział II: właścicieli, ich udziały i podstawę nabycia z datą (spadek, darowizna, umowa),
+- dział III: służebności przesyłu, służebności osobiste, dożywocie, roszczenia, zajęcia, ostrzeżenia, prawo pierwokupu,
+- dział IV: hipoteki z kwotą i wierzycielem,
+- co jest przedmiotem sprzedaży: cała nieruchomość gruntowa, lokal z udziałem, udział czy użytkowanie wieczyste,
+- niezgodności między działami albo z danymi wyżej, np. inny obszar niż w ewidencji, inny właściciel niż sprzedający.
+
+ZASADY
+- Opieraj się wyłącznie na treści poniżej. Czego w niej nie ma, tego nie ustalasz: zostaw samą notatkę.
+- Przy każdej odpowiedzi podaj w notatce numer działu i krótki cytat wpisu, na którym się opierasz.
+- Kod zgadza przy właścicielu wybierz tylko wtedy, gdy dane sprzedającego są podane wyżej. Inaczej wypisz
+  właścicieli w notatce, a porównanie z dowodem osobistym zrobię sam.
+- Niezgodności i wszystko, co nie pasuje do żadnego punktu, opisz w notatce przy numerze księgi.
+- Odpowiadaj po polsku. Nagłówek każdej odpowiedzi przepisz dokładnie, razem z kodem w apostrofach.
+
+TREŚĆ KSIĘGI
+<<<
+${String(S.kw&&S.kw.tresc||'').trim()}
+>>>
+
+════════════ FORMAT ODPOWIEDZI ════════════
+Zwróć dokładnie taki blok dla każdego punktu, nic poza nim:
+
+`;
+  cs.forEach(c=>{
+    const opts=c.opts?c.opts.filter(o=>o[0]!=='?'):[];
+    t+=`### ${c.q}  \`${c.id}\`\n`;
+    if(c.type==='text')t+=`- odpowiedź: wartość\n> notatka: dział, cytat wpisu\n\n`;
+    else t+=`- [x] KOD — OPIS\n> notatka: dział, cytat wpisu\n   kody: ${opisKodow(opts)}\n\n`;
+  });
+  t+=`Gdzie KOD to jedna z wartości wypisanych pod punktem. Kod wybieraj po opisie za znakiem =, nie po samej nazwie kodu. Jeśli treść księgi czegoś nie rozstrzyga, pomiń wiersz z [x] i zostaw samą notatkę.`;
+  return t;
+}
+
 /* ---------- KARTA POI ---------- */
 function poiCard(){
   const p=S.poi;
-  if(!S.parcel)return `<div class="card tight"><div class="msg info">Najpierw wskaż nieruchomość w sekcji Start — wtedy przeskanuję okolicę automatycznie.</div></div>`;
+  if(!S.parcel||S.parcel.lat==null)return `<div class="card tight"><div class="msg info">Najpierw wskaż nieruchomość w sekcji Start — wtedy przeskanuję okolicę automatycznie.</div></div>`;
   if(p&&p.loading)return `<div class="card tight"><div class="msg info"><span class="spin"></span> Skanuję okolicę w promieniu 3 km…</div></div>`;
   if(!p||p.error)return `<div class="card tight"><div class="msg err">Nie udało się przeskanować okolicy.</div>
     <button class="btn sm" onclick="loadPOI()">Spróbuj ponownie</button></div>`;
@@ -2484,31 +3042,141 @@ function poiCard(){
   </div>`;
 }
 
-/* ---------- WIDOK: START ---------- */
+/* ---------- WIDOK: START ----------
+   Start składa się z kart zależnych od trybu. Bez trybu: dane wejściowe i wybór.
+   Screening: jedno zlecenie dla wtyczki, jedno wklejenie odpowiedzi i werdykt.
+   Pełny audyt: trzy ścieżki (rejestry, oględziny, księga) oraz dawne karty Startu. */
+let SCRMSG='';
 function viewStart(){
-  const p=S.parcel;
-  $('#view').innerHTML=`
-  <div class="card">
-    <h2>Wskaż nieruchomość</h2>
-    <p class="lead">Trzy sposoby, każdy prowadzi do tego samego. Najpewniejszy to kliknięcie w mapę — nie zależy od żadnej usługi zewnętrznej.</p>
-    <label class="f"><span>1. Wyszukaj adres</span>
+  let h=startDane();
+  if(!S.tryb)h+=startWybor();
+  else if(S.tryb==='screening')h+=startScreening();
+  else h+=startPelny();
+  h+=startMapa();
+  if(S.tryb)h+=startOferta();
+  if(S.tryb==='pelny')h+=startLista();
+  h+=startWtyczka();
+  if(S.tryb!=='screening')h+=startJak();
+  $('#view').innerHTML=h;
+  setTimeout(()=>drawMap(S.parcel),60);
+}
+function startDane(){
+  const p=S.parcel||{};
+  return `<div class="card">
+    <h2>Nieruchomość</h2>
+    <p class="lead">Adres albo numer działki i link do ogłoszenia. Tyle wystarczy, żeby ruszyć, resztę ustali wtyczka.</p>
+    <label class="f"><span>Adres</span>
       <input type="text" id="inAdr" value="${esc(S.meta.adres)}" placeholder="np. Kurowskiego 6, Luboń"
-        onkeydown="if(event.key==='Enter')findAddr()"></label>
+        oninput="meta('adres',this.value)" onkeydown="if(event.key==='Enter')findAddr()"></label>
     <div class="row">
-      <button class="btn" onclick="findAddr()">Szukaj</button>
+      <button class="btn sec" onclick="findAddr()">Pokaż na mapie</button>
       <button class="btn sec" onclick="useGPS()">Jestem tutaj (GPS)</button>
     </div>
     <div id="findMsg">${LASTMSG}</div>
-
-    <h3 style="margin-top:18px">2. Albo kliknij w mapę</h3>
-    <p class="lead" style="margin-bottom:0">Przybliż i kliknij w budynek. Współrzędne wystarczą, żeby ruszyć dalej.</p>
-    <div id="map"></div>
-
-    <h3 style="margin-top:18px">3. Albo podaj numer działki</h3>
-    <div class="row">
-      <input type="text" id="inId" placeholder="np. 302107_2.0004.123" style="flex:2">
-      <button class="btn sec" onclick="findId()" style="flex:0 0 auto;min-width:100px">Sprawdź</button>
+    <label class="f"><span>Numer działki, jeśli znasz</span>
+      <input type="text" id="inId" value="${esc(p.id||S.meta.dzialka||'')}" placeholder="np. 302107_2.0004.123"
+        oninput="meta('dzialka',this.value)" onkeydown="if(event.key==='Enter')findId()"></label>
+    <button class="btn sec" onclick="findId()">Sprawdź działkę w ULDK</button>
+    <label class="f"><span>Link do ogłoszenia</span>
+      <input type="url" value="${esc(S.meta.otodom)}" placeholder="https://..." oninput="meta('otodom',this.value)"></label>
+    ${S.tryb?`<p class="lead" style="margin:4px 0 0">Tryb: <b>${TRYBY[S.tryb]}</b>${S.tryb==='screening'
+      ?` · <a href="#" style="color:#7dabf8" onclick="poszerz();return false">poszerz do pełnego audytu</a>`:''}</p>`:''}
+  </div>`;
+}
+function startWybor(){
+  const nie=c=>c.type!=='info';
+  const nCore=allChecks().filter(c=>c.core&&nie(c)).length, nAll=allChecks().filter(nie).length;
+  return `<div class="card">
+    <h2>Wybierz tryb</h2>
+    <p class="lead">Większość ogłoszeń odpada na wczesnym etapie. Zacznij od screeningu, a pełny audyt zrób wtedy,
+      gdy wstępna decyzja jest na tak. Przejście ze screeningu do pełnego audytu zachowuje wszystko, co już ustaliłeś.</p>
+    <div class="tryby">
+      <button class="tryb" onclick="wybierzTryb('screening')">
+        <b>Szybki screening</b>
+        <span>${nCore} pytań przed decyzją: wady prawne i środowiskowe, dojazd, przeznaczenie w planie, media
+          i cena na tle rynku. Jeden prompt dla wtyczki, jedno wklejenie odpowiedzi, werdykt w kilka minut.</span>
+      </button>
+      <button class="tryb" onclick="wybierzTryb('pelny')">
+        <b>Pełny audyt</b>
+        <span>Wszystkie ${nAll} pytań. Dochodzi stan techniczny z oględzin, pełna analiza księgi wieczystej
+          i pogłębienia potrzebne do wyceny wad i negocjacji.</span>
+      </button>
     </div>
+  </div>`;
+}
+function startScreening(){
+  const nZad=zadaniaScreeningu().length;
+  const pr=promptScreening();
+  return `<div class="card pcard">
+    <h2>Szybki screening</h2>
+    <p class="lead">Jeden obieg zamiast pytania po pytaniu: kopiujesz prompt, wklejasz go do wtyczki Claude w przeglądarce,
+      a jej odpowiedź wklejasz tutaj. Aplikacja wypełni pola, zapali flagi i pokaże werdykt.</p>
+    <div class="krok"><span class="nr">1</span><h3>Zlecenie dla wtyczki</h3></div>
+    <p class="lead" style="margin-bottom:9px">${nZad} zadań: ogłoszenie, działka w ULDK, plan miejscowy albo WZ, powódź, osuwiska,
+      ochrona przyrody, droga, media i ceny transakcyjne. Wtyczka czyta ogłoszenie tak, jak ty je widzisz,
+      więc omija blokady botów na portalach.</p>
+    ${!S.meta.otodom?`<div class="msg info" style="margin:0 0 9px">Bez linku do ogłoszenia wtyczka pominie krok z ogłoszeniem
+      i część pól zostanie pusta. Wklej link wyżej, jeśli go masz.</div>`:''}
+    <button class="btn wide" onclick="copyText(promptScreening(),this)">Kopiuj prompt startowy</button>
+    <details class="hlp" style="margin-top:6px"><summary>Podejrzyj prompt</summary>
+      <div class="pbox"><pre>${esc(pr)}</pre></div></details>
+    <div class="krok"><span class="nr">2</span><h3>Wklej odpowiedź wtyczki</h3></div>
+    <textarea id="scrText" style="min-height:110px" placeholder="Wklej całą odpowiedź wtyczki, razem z blokiem „Dane z ogłoszenia”. Rozpoznam odpowiedzi, notatki i dane oferty."></textarea>
+    <button class="btn wide" onclick="importScreening()">Wczytaj i pokaż werdykt</button>
+    <div id="scrMsg">${SCRMSG}</div>
+    <div class="krok"><span class="nr">3</span><h3>Werdykt i decyzja</h3></div>
+    ${werdyktKarta()}
+  </div>`;
+}
+function startPelny(){
+  const nie=c=>c.type!=='info';
+  const adv=allChecks().filter(c=>!c.core&&nie(c)), advSpr=adv.filter(sprawdzone).length;
+  const wiz=allChecks().filter(c=>(c.mid==='m4'||c.mid==='m4b')&&nie(c)), wizSpr=wiz.filter(sprawdzone).length;
+  const kw=allChecks().filter(c=>c.mid==='m2'&&nie(c)), kwSpr=kw.filter(sprawdzone).length;
+  const zost=allChecks().filter(c=>c.task&&!sprawdzone(c)).length, wszystkie=allChecks().filter(c=>c.task).length;
+  const zeScr=S.decyzja&&S.decyzja.v==='dalej';
+  return `<div class="card pcard">
+    <h2>Pełny audyt</h2>
+    ${zeScr?`<p class="lead">Poszerzony ze screeningu ${new Date(S.decyzja.ts).toLocaleDateString('pl-PL')}. Odpowiedzi, notatki,
+      flagi i wyceny ze screeningu zostały. Doszły pytania zaawansowane: sprawdzone ${advSpr} z ${adv.length}.
+      <a href="#" style="color:#7dabf8" onclick="go('raport','screening');return false">Zobacz werdykt ze screeningu</a></p>`
+      :`<p class="lead">Wszystkie ${allChecks().filter(nie).length} punktów. Research w rejestrach zrobi wtyczka,
+      oględziny i księgę wieczystą robisz sam, z checklistą i gotowymi promptami.</p>`}
+    <div class="krok"><span class="nr">1</span><h3>Research w rejestrach</h3></div>
+    <p class="lead" style="margin-bottom:9px">Zbiera wszystkie zadania sprawdzane w rejestrach w jeden prompt,
+      od krytycznych w górę. Wariant „co zostało” pomija punkty, które masz już sprawdzone, więc nie płacisz drugi raz za to samo.
+      To długa sesja wtyczki, więc jeśli chcesz ją rozłożyć, kopiuj prompty sekcjami.</p>
+    <div class="row">
+      <button class="btn sec" onclick="copyAllPrompt(true, this)">Kopiuj prompt: co zostało (${zost})</button>
+      <button class="btn sec" onclick="copyAllPrompt(false, this)">Kopiuj prompt: wszystko (${wszystkie})</button>
+    </div>
+    <button class="btn wide" style="margin-top:9px" onclick="togglePaste(true)">Wklej odpowiedź wtyczki</button>
+    <div class="krok"><span class="nr">2</span><h3>Oględziny: Budynek i Wnętrze</h3></div>
+    <p class="lead" style="margin-bottom:9px">Checklista na wizytę z polami na to, co zobaczysz, i promptem do wyceny
+      znalezionych usterek w cenach regionu. Sprawdzone ${wizSpr} z ${wiz.length}.</p>
+    <button class="btn sec wide" onclick="go('wizyta')">Otwórz checklistę oględzin</button>
+    <div class="krok"><span class="nr">3</span><h3>Pełna księga wieczysta</h3></div>
+    <p class="lead" style="margin-bottom:9px">Przeglądarka ksiąg ma captcha, więc treść księgi wklejasz sam. Prompt każe wtyczce
+      zinterpretować działy, wyłapać służebności, hipoteki, roszczenia i niezgodności, i wypełnić sekcję Księga.
+      Sprawdzone ${kwSpr} z ${kw.length}.</p>
+    <button class="btn sec wide" onclick="go('m2')">Przejdź do księgi</button>
+    <div class="krok"><span class="nr">4</span><h3>Negocjacje i raport</h3></div>
+    <div class="row">
+      <button class="btn sec" onclick="go('neg')">Negocjacje</button>
+      <button class="btn sec" onclick="go('raport')">Raport</button>
+    </div>
+  </div>`;
+}
+function startMapa(){
+  const p=S.parcel;
+  return `<div class="card">
+    <h2>Lokalizacja na mapie</h2>
+    <p class="lead" style="margin-bottom:0">Przybliż i kliknij w budynek, jeśli wyszukiwarka nie trafiła albo ogłoszenie
+      podaje tylko ulicę. Współrzędne wystarczą, żeby ruszyć dalej, a kliknięcie w mapę nie zależy od żadnej usługi zewnętrznej.
+      Podkład to ortofotomapa GUGiK, a po przybliżeniu pokazują się granice i numery działek z ewidencji.
+      ${zDysku()?'Mapa z nazwami ulic (OpenStreetMap) działa tylko w wersji z hostingu, bo przy pliku otwartym z dysku OSM blokuje kafelki.'
+        :'Mapę z nazwami ulic i numerami domów włączysz przełącznikiem warstw w prawym górnym rogu mapy.'}</p>
+    <div id="map"></div>
   </div>
 
   ${p&&p.lat?`
@@ -2530,23 +3198,24 @@ function viewStart(){
     <h3>Otwórz w rejestrach</h3>
     ${linkList(['geoportal','powiat','gmina','isok','sopo','gdos','ekw','maps','osm'])}
   </div>`:''}
-
-  <div class="card">
+`;
+}
+function startOferta(){
+  return `  <div class="card">
     <h2>Dane oferty</h2>
-    <p class="lead">Potrzebne do sekcji Cena, do promptów i do pisma negocjacyjnego.</p>
-    <label class="f"><span>Link do ogłoszenia</span>
-      <input type="url" value="${esc(S.meta.otodom)}" placeholder="https://..." oninput="meta('otodom',this.value)"></label>
+    <p class="lead">${S.tryb==='screening'?'Wtyczka uzupełni je z ogłoszenia, a ty możesz je poprawić. ':''}Potrzebne do sekcji Cena, do promptów i do pisma negocjacyjnego.</p>
+    ${S.tryb==='pelny'?spojnoscHtml():''}
     <div class="row">
       <label class="f"><span>Cena ofertowa (zł)</span>
-        <input type="number" value="${esc(S.meta.cena)}" oninput="meta('cena',this.value)"></label>
+        <input type="number" value="${esc(S.meta.cena)}" oninput="meta('cena',this.value)">${wOgl('cena')}</label>
       <label class="f"><span>Powierzchnia domu (m²)</span>
-        <input type="number" value="${esc(S.meta.powDom)}" oninput="meta('powDom',this.value)"></label>
+        <input type="number" value="${esc(S.meta.powDom)}" oninput="meta('powDom',this.value)">${wOgl('powDom')}</label>
     </div>
     <div class="row">
       <label class="f"><span>Powierzchnia działki (m²)</span>
-        <input type="number" value="${esc(S.meta.powDzialka)}" oninput="meta('powDzialka',this.value)"></label>
+        <input type="number" value="${esc(S.meta.powDzialka)}" oninput="meta('powDzialka',this.value)">${wOgl('powDzialka')}</label>
       <label class="f"><span>Rok budowy</span>
-        <input type="number" value="${esc(S.meta.rok)}" oninput="meta('rok',this.value)"></label>
+        <input type="number" value="${esc(S.meta.rok)}" oninput="meta('rok',this.value)">${wOgl('rok')}</label>
     </div>
     <label class="f"><span>Średnia cena transakcyjna w okolicy (zł za m² pow. domu)</span>
       <input type="number" value="${esc(S.meta.rynekM2||'')}" placeholder="sprawdź w Rejestrze Cen Nieruchomości"
@@ -2554,9 +3223,10 @@ function viewStart(){
     ${S.meta.cena&&S.meta.powDom?`<div class="msg info">Cena za m² powierzchni domu: <b>${zl(S.meta.cena/S.meta.powDom)}/m²</b>.</div>`:''}
     <label class="f"><span>Notatki własne</span>
       <textarea oninput="meta('opis',this.value)" placeholder="Pierwsze wrażenie, na co zwrócić uwagę przy drugich oględzinach…">${esc(S.meta.opis)}</textarea></label>
-  </div>
-
-  <div class="card">
+  </div>`;
+}
+function startLista(){
+  return `  <div class="card">
     <h2>Lista do sprawdzenia na miejscu</h2>
     <p class="lead">Pytania, których nie ma w płatnym raporcie o terenie. Weź je na telefon,
       wypełnij podczas oględzin, po powrocie wczytaj wyniki.</p>
@@ -2572,14 +3242,6 @@ function viewStart(){
     <div class="msg info" style="margin-top:14px">Pytania, które da się sprawdzić w rejestrach online,
       mają gotowe prompty dla wtyczki Claude w Chrome. Znajdziesz je <b>na górze każdej sekcji</b>
       razem z przyciskiem kopiowania.</div>
-    <h3 style="margin-top:18px">Albo jednym zleceniem — cały audyt naraz</h3>
-    <p class="lead" style="margin-bottom:9px">Zbiera wszystkie zadania sprawdzane w rejestrach w jeden prompt,
-      od krytycznych w górę. Domyślnie pomija punkty, które masz już sprawdzone, więc nie płacisz drugi raz za to samo.
-      To długa sesja wtyczki, więc jeśli chcesz ją rozłożyć, kopiuj prompty sekcjami.</p>
-    <div class="row">
-      <button class="btn sec" onclick="copyAllPrompt(true, this)">Kopiuj prompt: co zostało (${allChecks().filter(c=>c.task&&!sprawdzone(c)).length})</button>
-      <button class="btn sec" onclick="copyAllPrompt(false, this)">Kopiuj prompt: wszystko (${allChecks().filter(c=>c.task).length})</button>
-    </div>
     <h3>Po powrocie — wczytaj wyniki</h3>
     <div class="row">
       <button class="btn" onclick="togglePaste(true)">Wklej wyniki</button>
@@ -2588,9 +3250,10 @@ function viewStart(){
     <p class="lead" style="margin:9px 0 0">Okno „Wklej wyniki” jest dostępne z każdej zakładki, przyciskiem w nagłówku.
       Przyjmuje odpowiedzi wtyczki, treść strony z Notion i wypełnioną notatkę — rozpoznaje, z której sekcji pochodzą,
       i dopisuje je bez kasowania tego, co już wypełnione.</p>
-  </div>
-
-  <div class="card tight">
+  </div>`;
+}
+function startWtyczka(){
+  return `  <div class="card tight">
     <h3>Wtyczka przerywa i pyta o zgodę? Ustaw ją raz</h3>
     <div class="help" style="margin-top:0">
       <b>1. Tryb pracy.</b> W panelu wtyczki, u dołu pola do wpisywania, jest lista rozwijana z trybem —
@@ -2603,9 +3266,10 @@ function viewStart(){
       <br><br><b>4. Bannery z cookies i regulaminem.</b> Prompt ma teraz wprost moją zgodę na zaklikanie bannera, który zasłania mapę —
       to jedyny wyjątek od reguły „tylko odczyt”. Reszta (logowanie, wysyłanie formularzy, zapis czegokolwiek) zostaje zabroniona.
     </div>
-  </div>
-
-  <div class="card tight">
+  </div>`;
+}
+function startJak(){
+  return `  <div class="card tight">
     <h3>Jak z tego korzystać</h3>
     <div class="help" style="margin-top:0">
       Pytania są oznaczone sposobem sprawdzenia:
@@ -2620,19 +3284,155 @@ function viewStart(){
       na inne urządzenie albo porównać kilka nieruchomości.
     </div>
   </div>`;
-  setTimeout(()=>drawMap(S.parcel),60);
+}
+
+/* ---------- TRYB: wybór, poszerzenie, decyzja ---------- */
+function wybierzTryb(t){
+  const p=S.parcel||{};
+  if(!S.meta.adres&&!S.meta.otodom&&!S.meta.dzialka&&!p.id&&p.lat==null){
+    alert('Wpisz najpierw adres, numer działki albo link do ogłoszenia. Bez tego wtyczka nie będzie wiedziała, co sprawdzać.');
+    return;}
+  S.tryb=t; save(); TAB='start'; window.scrollTo(0,0); render();
+}
+/* Poszerzenie niczego nie kasuje: odkrywa pytania zaawansowane, a odpowiedzi,
+   notatki, flagi i wyceny ze screeningu zostają tam, gdzie były. */
+function poszerz(){
+  S.tryb='pelny'; S.decyzja={v:'dalej',ts:new Date().toISOString()};
+  RAP_WIDOK=''; SCRMSG=''; save(); TAB='start'; window.scrollTo(0,0); render();
+}
+function odrzuc(){ S.decyzja={v:'odpada',ts:new Date().toISOString()}; save(); render(); }
+function cofnijDecyzje(){ S.decyzja=null; save(); render(); }
+
+/* ---------- WERDYKT SCREENINGU ----------
+   Liczony wyłącznie z pytań screeningu (core:true) i skanu okolicy, niezależnie
+   od tego, czy audyt jest już poszerzony. Dzięki temu po poszerzeniu można
+   wrócić do tej samej oceny, na której zapadła decyzja. */
+function werdyktScreening(){
+  const cs=allChecks().filter(c=>c.core&&c.type!=='info');
+  const f=flagsAll(true);
+  const red=f.filter(x=>x.lv==='red'), yel=f.filter(x=>x.lv==='yellow');
+  const cmin=f.reduce((s,x)=>s+(x.cmin||0),0), cmax=f.reduce((s,x)=>s+(x.cmax||0),0);
+  const spr=cs.filter(sprawdzone).length;
+  /* otwarte = bez odpowiedzi, także „sprawdzone, bez rozstrzygnięcia”:
+     to są pytania do sprzedającego albo na pierwszą rozmowę */
+  const otwarte=cs.filter(c=>!rozstrzygniete(c));
+  const krytOtw=otwarte.filter(isCrit), krytAll=cs.filter(isCrit).length;
+  const dopytac=krytOtw.concat(otwarte.filter(c=>!isCrit(c)));
+  let kolor='none',naglowek='Brak danych',opis='';
+  if(!spr){}
+  else if(red.length){kolor='red';naglowek='Czerwone flagi';
+    opis=(red.length===1?'Jedna kwestia potrafi':red.length+' '+odm(red.length,'kwestia','kwestie','kwestii')+' potrafią')
+      +' zatrzymać zakup. Wyjaśnij je, zanim pojedziesz na oględziny, albo odpuść tę ofertę.';}
+  else if(krytOtw.length>krytAll/2){naglowek='Za mało danych na werdykt';
+    opis='Ponad połowa krytycznych punktów jest otwarta. Dokończ research albo dopytaj sprzedającego, zanim zdecydujesz.';}
+  else if(krytOtw.length){kolor='yellow';naglowek='Na razie bez wad blokujących';
+    opis='W tym, co udało się sprawdzić, nie ma wad blokujących, ale '+krytOtw.length+' '
+      +odm(krytOtw.length,'krytyczny punkt zostaje otwarty','krytyczne punkty zostają otwarte','krytycznych punktów zostaje otwartych')
+      +'. Zamknij je przed oględzinami albo na pierwszej rozmowie ze sprzedającym.';}
+  else {kolor='green';naglowek='Zielone światło';
+    opis='Screening nie wykazał wad blokujących. Ta nieruchomość jest warta pełnego audytu.'
+      +(yel.length?' Uwagi do wyceny przydadzą się w negocjacjach.':'');}
+  /* rozjazd ogłoszenia z audytem: werdykt może dotyczyć innej oferty albo zawyżonych parametrów */
+  const rozb=rozbieznosci().filter(x=>x.pole!=='m2');
+  if(spr&&rozb.length){
+    if(kolor==='green'||kolor==='yellow'){kolor='yellow';naglowek='Rozbieżne dane oferty';}
+    opis='Ogłoszenie i audyt podają różne dane ('+rozb.map(x=>x.etyk.toLowerCase()).join(', ')
+      +'). Wyjaśnij to, zanim uznasz ten werdykt. '+opis;
+  }
+  let cena=zdanieOCenie();
+  const m2=rozbieznosci().find(x=>x.pole==='m2');
+  if(m2&&m2.ogl&&m2.audyt&&m2.ogl!==m2.audyt)
+    cena+=' Liczone z danych audytu ('+fmt(m2.audyt)+' zł/m²), według ogłoszenia wychodzi '+fmt(m2.ogl)+' zł/m².';
+  return {cs,f,red,yel,cmin,cmax,spr,dopytac,krytOtw,kolor,naglowek,opis,cena,rozb};
+}
+/* Jedno zdanie o cenie na tle rynku. Najpierw liczby (cena, metraż, stawka
+   transakcyjna), a gdy ich brak, odpowiedź z pytania c_rcn. */
+function zdanieOCenie(){
+  const r=rynek();
+  if(r){
+    const p=Math.round(r.proc), baza='Oferta '+fmt(r.nasza)+' zł/m² wobec '+fmt(r.stawka)+' zł/m² w transakcjach z okolicy';
+    if(p<-5)return baza+', czyli o '+Math.abs(p)+'% taniej. Ustal, skąd ta różnica: pośpiech sprzedającego albo wada, której jeszcze nie widać.';
+    if(p>10)return baza+', czyli o '+p+'% drożej. Bez uzasadnienia w standardzie to argument do negocjacji albo powód, żeby odpuścić.';
+    /* ceny ofertowe bywają o kilka procent wyższe od transakcyjnych, więc
+       niewielka nadwyżka to jeszcze nie przepłata, ale już argument */
+    if(p>0)return baza+', czyli o '+p+'% powyżej. To mieści się w zwykłej różnicy między ceną ofertową a transakcyjną, ale daje argument do negocjacji.';
+    return baza+', czyli w granicach rynku ('+p+'%).';
+  }
+  const v=S.a.c_rcn;
+  if(v==='ponizej')return 'Według researchu cena jest poniżej cen transakcyjnych w okolicy. Ustal, dlaczego.';
+  if(v==='rynek')return 'Według researchu cena mieści się w cenach transakcyjnych w okolicy.';
+  if(v==='powyzej')return 'Według researchu cena jest powyżej cen transakcyjnych w okolicy. To argument do negocjacji.';
+  if(!S.meta.cena)return 'Brak ceny ofertowej. Wpisz ją w danych oferty albo wczytaj z odpowiedzi wtyczki.';
+  return 'Cen transakcyjnych jeszcze nie sprawdzono.';
+}
+function werdyktKarta(){
+  const w=werdyktScreening();
+  if(!w.spr)return `<div class="msg info" style="margin:0">Werdykt pojawi się po wczytaniu odpowiedzi wtyczki.
+    Możesz też wypełniać sekcje ręcznie: werdykt liczy się z tego, co już jest.</div>`;
+  const dop=S.scr&&S.scr.dopasowanie;
+  return `${spojnoscHtml()}<div class="werd ${w.kolor}">
+    <h3>${esc(w.naglowek)}</h3>
+    ${w.opis?`<p>${esc(w.opis)}</p>`:''}
+    ${w.red.length?`<ul>${w.red.map(x=>`<li><b>${esc(x.t)}</b> <span class="sl">· ${esc(x.mname)}</span></li>`).join('')}</ul>`:''}
+    ${w.yel.length?`<p><b>Do wyceny i wyjaśnienia (${w.yel.length}):</b> ${w.yel.map(x=>esc(x.t)).join(' · ')}.
+      ${w.cmin?'Łącznie co najmniej '+zl(w.cmin)+' kosztów po twojej stronie.':''}</p>`:''}
+    <p><b>Cena:</b> ${esc(w.cena)}</p>
+    ${w.dopytac.length?`<p><b>Do dopytania (${w.dopytac.length}):</b> ${w.dopytac.map(c=>esc(c.q)+(isCrit(c)?' <b>(krytyczne)</b>':'')).join(' · ')}</p>`:''}
+    ${dop&&/^\s*pewne/i.test(dop)?`<p><b>Dopasowanie działki do ogłoszenia:</b> ${esc(dop)}</p>`:''}
+    ${S.scr&&S.scr.komentarz?`<p><b>Uwagi z researchu:</b> ${esc(S.scr.komentarz)}</p>`:''}
+    <p class="sl" style="font-size:12px">Sprawdzone ${w.spr} z ${w.cs.length} punktów screeningu.
+      <a href="#" style="color:inherit" onclick="go('raport');return false">Werdykt do druku</a></p>
+  </div>
+  ${S.tryb==='screening'?decyzjaHtml():''}`;
+}
+function decyzjaHtml(){
+  const d=S.decyzja;
+  if(d&&d.v==='odpada')return `<div class="msg err" style="margin-top:10px"><b>Decyzja: odpada</b>
+    (${new Date(d.ts).toLocaleDateString('pl-PL')}). Zapisz plik audytu, jeśli chcesz mieć ślad, dlaczego ta oferta odpadła.
+    <div class="row" style="margin-top:8px">
+      <button class="btn sm sec" onclick="saveFile()">Zapisz plik</button>
+      <button class="btn sm sec" onclick="cofnijDecyzje()">Cofnij decyzję</button></div></div>`;
+  return `<div class="row" style="margin-top:12px">
+      <button class="btn" onclick="poszerz()">Poszerz do pełnego audytu</button>
+      <button class="btn sec" onclick="odrzuc()">Odpada</button></div>
+    <p class="lead" style="margin:8px 0 0">Poszerzenie zachowuje odpowiedzi, notatki, flagi i wyceny ze screeningu.
+      Dochodzą pytania zaawansowane oraz sekcje Budynek i Wnętrze.</p>`;
 }
 function meta(k,v){S.meta[k]=v;save();paintBar();}
 
 /* ---------- MAPA ---------- */
 let MAP=null;
+/* Podkłady mapy. OSM blokuje kafelki pobierane bez nagłówka Referer, a tak wyglądają
+   zapytania ze strony otwartej z dysku (file://): zamiast mapy przychodzi obrazek
+   „403 Access blocked”. Ortofotomapa GUGiK (WMTS w siatce EPSG:3857) i działki z KIEG
+   działają w obu przypadkach, więc są domyślne. OSM z nazwami ulic i numerami domów
+   dochodzi do wyboru tylko na hostingu. Działki KIEG serwer rysuje dopiero przy dużym
+   przybliżeniu, stąd minZoom. */
+const Z_DZIALKI=17;
+const zDysku=()=>typeof location!=='undefined'&&location.protocol==='file:';
+function warstwyMapy(){
+  const orto=L.tileLayer('https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution'
+    +'?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTOFOTOMAPA&STYLE=default&FORMAT=image/jpeg'
+    +'&TILEMATRIXSET=EPSG:3857&TILEMATRIX=EPSG:3857:{z}&TILEROW={y}&TILECOL={x}',
+    {maxZoom:20,maxNativeZoom:19,attribution:'Ortofotomapa © GUGiK'});
+  const dzialki=L.tileLayer.wms('https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow',
+    {layers:'dzialki,numery_dzialek',format:'image/png',transparent:true,version:'1.1.1',
+     minZoom:Z_DZIALKI,maxZoom:20,attribution:'Działki © GUGiK (KIEG)'});
+  const bazowe={'Ortofotomapa (GUGiK)':orto};
+  if(!zDysku())
+    bazowe['Mapa z ulicami (OpenStreetMap)']=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {maxZoom:20,maxNativeZoom:19,attribution:'© OpenStreetMap'});
+  return {bazowe,nakladki:{['Działki z numerami (GUGiK, od zbliżenia '+Z_DZIALKI+')']:dzialki},orto,dzialki};
+}
 function drawMap(p){
   const el=document.getElementById('map'); if(!el||!window.L)return;
   if(MAP){try{MAP.remove()}catch(e){}MAP=null;}
   const has=p&&p.lat!=null;
-  MAP=L.map(el,{scrollWheelZoom:false}).setView(has?[p.lat,p.lon]:[52.1,19.4],has?16:6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAP);
+  /* ze wskazaną nieruchomością startuję od zbliżenia, przy którym widać działki z numerami */
+  MAP=L.map(el,{scrollWheelZoom:false,maxZoom:20}).setView(has?[p.lat,p.lon]:[52.1,19.4],has?18:6);
+  const W=warstwyMapy();
+  W.orto.addTo(MAP); W.dzialki.addTo(MAP);
+  L.control.layers(W.bazowe,W.nakladki,{collapsed:true}).addTo(MAP);
   MAP.on('click',e=>setLoc(e.latlng.lat,e.latlng.lng,'Punkt wskazany na mapie'));
   if(!has){setTimeout(()=>MAP.invalidateSize(),120);return;}
   L.circleMarker([p.lat,p.lon],{radius:9,color:'#3b82f6',fillColor:'#3b82f6',fillOpacity:.85,weight:2})
@@ -2786,10 +3586,12 @@ function parsePaste(){
   render();
   msg('<div class="msg ok">Wczytano dane działki.</div>');
 }
-async function findId(){
-  const el=$('#inId'); const id=el?el.value.trim():'';
-  if(!id){msg('<div class="msg err">Wpisz identyfikator działki.</div>');return;}
-  msg('<div class="msg info"><span class="spin"></span> Szukam działki…</div>');
+/* Geometria działki po identyfikatorze. Wspólne dla pola „Numer działki”
+   i dla identyfikatora, który zwróciła wtyczka w screeningu. Przy porażce
+   przywracam poprzedni stan działki, bo applyUldk potrafi wpisać komunikat
+   błędu usługi w miejsce identyfikatora. */
+async function uldkPoId(id){
+  const kopia=JSON.stringify(S.parcel||null);
   try{
     const r=await fetchT('https://uldk.gugik.gov.pl/?request=GetParcelById&id='+encodeURIComponent(id)
       +'&result=id,voivodeship,county,commune,region,parcel,geom_wkt&srid=4326',null,12000);
@@ -2802,12 +3604,22 @@ async function findId(){
         S.parcel.lon=pts.reduce((s,p)=>s+p[0],0)/pts.length;
         S.parcel.lat=pts.reduce((s,p)=>s+p[1],0)/pts.length;
         S.parcel.label='Działka '+id;
-        S.poi=null;save();render();
-        msg('<div class="msg ok">Znaleziono działkę '+esc(S.parcel.id||id)+'.</div>');
-        loadPOI();return;
+        S.poi=null;save();return true;
       }
     }
   }catch(e){}
+  S.parcel=JSON.parse(kopia);save();
+  return false;
+}
+async function findId(){
+  const el=$('#inId'); const id=el?el.value.trim():'';
+  if(!id){msg('<div class="msg err">Wpisz identyfikator działki.</div>');return;}
+  msg('<div class="msg info"><span class="spin"></span> Szukam działki…</div>');
+  if(await uldkPoId(id)){
+    render();
+    msg('<div class="msg ok">Znaleziono działkę '+esc(S.parcel.id||id)+'.</div>');
+    loadPOI();return;
+  }
   msg(`<div class="msg err"><b>Nie pobrałem danych z ULDK.</b><br>
     Usługa nie odpowiada przeglądarce. Otwórz link w nowej karcie i wklej odpowiedź, albo wskaż miejsce klikając w mapę.</div>
     <div class="copyable"><code>ULDK: działka po identyfikatorze</code>
@@ -2966,6 +3778,7 @@ function notionNaglowek(ile){
   let t='_'+APP.name+' v'+APP.ver+'_\n\n';
   t+='**Nieruchomość:** '+(S.meta.adres||'(bez adresu)')+(p.id?'  ·  działka `'+p.id+'`':'')+'\n';
   if(S.plik)t+='**Plik audytu:** `'+S.plik+'`\n';
+  if(S.tryb)t+='**Tryb:** '+TRYBY[S.tryb]+'\n';
   t+='**Eksport:** '+new Date().toLocaleDateString('pl-PL')+'  ·  '+ile+' z '+cs.length+' punktów  ·  '
     +cs.filter(sprawdzone).length+' sprawdzonych, '+cs.filter(rozstrzygniete).length+' rozstrzygniętych\n\n';
   t+='> **Jak aktualizować tę kartę.** Każde pytanie ma nagłówek z kodem w apostrofach, na przykład `g_uzytek`. '
@@ -3276,6 +4089,552 @@ function rysunekCienia(obrys, cien, dzialka, opis, alt, az, uid, rama){
   </svg>`;
 }
 
+/* ============================================================
+   CIENIE Z OTOCZENIA: NUMERYCZNY MODEL POKRYCIA TERENU (NMPT)
+   GUGiK publikuje NMPT (wysokość dachów i koron drzew, siatka 0,5 m) i NMT
+   (sam teren, 1 m) przez WCS. Usługa nie wysyła nagłówka CORS, więc strona
+   nie pobierze danych sama: daje gotowy link do wycinka wokół działki,
+   a pobrany plik wczytujesz przyciskiem. Działa to z dysku i z hostingu.
+   Cień liczę metodą promienia: punkt jest w cieniu, jeśli idąc od niego
+   w stronę słońca trafiam na coś wyższego niż promień słoneczny.
+   ============================================================ */
+
+/* ---------- PL-1992 (EPSG:2180) ----------
+   Odwzorowanie Gaussa-Krügera na elipsoidzie GRS80, południk 19°, skala 0,9993.
+   Różnica między WGS84 a ETRF2000 jest poniżej metra, czyli poniżej siatki NMPT. */
+const PL92=(()=>{const a=6378137, f=1/298.257222101, e2=2*f-f*f;
+  return {a,e2,ep2:e2/(1-e2),k0:0.9993,L0:19*D2R,FE:500000,FN:-5300000};})();
+function doPL92(lat,lon){
+  const {a,e2,ep2,k0,L0,FE,FN}=PL92, phi=lat*D2R, s=Math.sin(phi), c=Math.cos(phi);
+  const N=a/Math.sqrt(1-e2*s*s), T=Math.tan(phi)**2, C=ep2*c*c, A=(lon*D2R-L0)*c;
+  const M=a*((1-e2/4-3*e2*e2/64-5*e2**3/256)*phi-(3*e2/8+3*e2*e2/32+45*e2**3/1024)*Math.sin(2*phi)
+    +(15*e2*e2/256+45*e2**3/1024)*Math.sin(4*phi)-(35*e2**3/3072)*Math.sin(6*phi));
+  return {E:FE+k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep2)*A**5/120),
+          N:FN+k0*(M+N*Math.tan(phi)*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*ep2)*A**6/720))};
+}
+function zPL92(E,Nn){
+  const {a,e2,ep2,k0,L0,FE,FN}=PL92;
+  const mu=(Nn-FN)/k0/(a*(1-e2/4-3*e2*e2/64-5*e2**3/256));
+  const e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const p1=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1**4/32)*Math.sin(4*mu)
+    +(151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+  const s=Math.sin(p1), c=Math.cos(p1), t=Math.tan(p1);
+  const C1=ep2*c*c, T1=t*t, N1=a/Math.sqrt(1-e2*s*s), R1=a*(1-e2)/Math.pow(1-e2*s*s,1.5), D=(E-FE)/(N1*k0);
+  const lat=p1-(N1*t/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*ep2)*D**4/24+(61+90*T1+298*C1+45*T1*T1-252*ep2-3*C1*C1)*D**6/720);
+  const lon=L0+(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1*C1+8*ep2+24*T1*T1)*D**5/120)/c;
+  return {lat:lat*R2D, lon:lon*R2D};
+}
+
+/* ---------- działka: obrys i środek w WGS84 ---------- */
+function wktPunkty(w){
+  const pts=String(w||'').replace(/^[^(]*\(+/,'').replace(/\)+\s*$/,'').split(',')
+    .map(s=>s.trim().split(/\s+/).map(Number)).filter(a=>a.length>=2&&!isNaN(a[0])&&!isNaN(a[1]))
+    .map(([lo,la])=>({lat:la,lon:lo}));
+  if(pts.length>1&&pts[0].lat===pts[pts.length-1].lat&&pts[0].lon===pts[pts.length-1].lon)pts.pop();
+  return pts;
+}
+function srodekDzialki(){
+  const p=S.parcel||{};
+  const pts=p.wkt?wktPunkty(p.wkt):[];
+  if(pts.length>2)return {lat:pts.reduce((s,q)=>s+q.lat,0)/pts.length, lon:pts.reduce((s,q)=>s+q.lon,0)/pts.length};
+  return p.lat!=null?{lat:p.lat,lon:p.lon}:null;
+}
+const kluczDzialki=()=>{const p=S.parcel||{};return p.wkt||(p.lat+','+p.lon);};
+
+/* ---------- linki do wycinka wokół działki ----------
+   Kwadrat co najmniej 120 m, większy dla dużej działki, żeby zasłony z sąsiedztwa
+   miały się z czego policzyć; najwyżej 200 m, bo plik NMPT rośnie z kwadratem boku. */
+const NMPT_URL='https://mapy.geoportal.gov.pl/wss/service/PZGIK/NMPT/GRID1/WCS/DigitalSurfaceModel';
+const NMT_URL='https://mapy.geoportal.gov.pl/wss/service/PZGIK/NMT/GRID1/WCS/DigitalTerrainModel';
+function oknoModelu(){
+  const s=srodekDzialki(); if(!s)return null;
+  const c=doPL92(s.lat,s.lon), p=S.parcel||{};
+  let r=0; if(p.wkt)wktPunkty(p.wkt).forEach(q=>{const k=doPL92(q.lat,q.lon); r=Math.max(r,Math.hypot(k.E-c.E,k.N-c.N));});
+  const pol=Math.min(100,Math.max(60,Math.ceil(r+40)));
+  const E0=Math.round(c.E-pol), N0=Math.round(c.N-pol);
+  return {E0,N0,E1:E0+2*pol,N1:N0+2*pol,bok:2*pol};
+}
+function urlModelu(typ){
+  const o=oknoModelu(); if(!o)return '';
+  const pk=typ==='nmpt', r=pk?0.5:1;
+  return (pk?NMPT_URL:NMT_URL)+'?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&COVERAGE='+(pk?'DSM':'DTM')
+    +'_PL-EVRF2007-NH&CRS=EPSG:2180&BBOX='+[o.E0,o.N0,o.E1,o.N1].join(',')+'&RESX='+r+'&RESY='+r+'&FORMAT=image/x-aaigrid';
+}
+
+/* ---------- plik ASCII grid (Arc/Info) ----------
+   Odporny na kopertę multipart, którą usługa zwraca w wersji 2.0 protokołu. */
+function parseAsc(t){
+  t=String(t||''); const i=t.search(/ncols/i); if(i<0)return null;
+  let body=t.slice(i); const k=body.indexOf('--wcs'); if(k>0)body=body.slice(0,k);
+  const L=body.split(/\r?\n/), hd={}; let j=0;
+  for(;j<L.length;j++){const m=L[j].match(/^\s*([a-z_]+)\s+(-?[\d.]+(?:e[-+]?\d+)?)\s*$/i); if(!m)break; hd[m[1].toLowerCase()]=parseFloat(m[2]);}
+  const nc=hd.ncols|0, nr=hd.nrows|0, cs=hd.cellsize; if(!nc||!nr||!cs)return null;
+  const x0=hd.xllcorner!=null?hd.xllcorner:hd.xllcenter-cs/2, y0=hd.yllcorner!=null?hd.yllcorner:hd.yllcenter-cs/2;
+  const nd=hd.nodata_value!=null?hd.nodata_value:-9999;
+  const tok=L.slice(j).join(' ').trim().split(/\s+/);
+  if(tok.length<nc*nr)return null;
+  const v=new Float32Array(nc*nr);
+  for(let q=0;q<nc*nr;q++){const x=parseFloat(tok[q]); v[q]=(x===nd||isNaN(x))?NaN:x;}
+  return {nc,nr,cs,x0,y0,v};
+}
+/* zapis w audycie: wysokości w decymetrach jako Int16, base64 (ok. 150 KB na 120 × 120 m) */
+function doB64(f){
+  const a=new Int16Array(f.length); for(let i=0;i<f.length;i++)a[i]=isNaN(f[i])?-32768:Math.round(f[i]*10);
+  const b=new Uint8Array(a.buffer); let s=''; for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));
+  return btoa(s);
+}
+function zB64(s,n){
+  const bin=atob(s), b=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);
+  const a=new Int16Array(b.buffer), f=new Float32Array(n); for(let i=0;i<n;i++)f[i]=a[i]===-32768?NaN:a[i]/10;
+  return f;
+}
+
+/* ---------- model w pamięci ---------- */
+let NMPT_MEM=null, SUNMSG='';
+function nmptPamiec(){
+  const m=S.nmpt; if(!m||!m.h)return null;
+  const klucz=m.ts+'|'+((S.nmt&&S.nmt.ts)||'');
+  if(NMPT_MEM&&NMPT_MEM.klucz===klucz)return NMPT_MEM;
+  const n=m.nc*m.nr, H=zB64(m.h,n); let max=-Infinity;
+  for(let i=0;i<n;i++)if(H[i]>max)max=H[i];
+  let teren=null;
+  if(S.nmt&&S.nmt.h){
+    const t=S.nmt, tv=zB64(t.h,t.nc*t.nr); teren=new Float32Array(n);
+    for(let r=0;r<m.nr;r++)for(let c=0;c<m.nc;c++){
+      const E=m.x0+(c+.5)*m.cs, N=m.y0+(m.nr-r-.5)*m.cs;
+      const cc=Math.floor((E-t.x0)/t.cs), rr=t.nr-1-Math.floor((N-t.y0)/t.cs);
+      teren[r*m.nc+c]=(cc>=0&&cc<t.nc&&rr>=0&&rr<t.nr)?tv[rr*t.nc+cc]:NaN;
+    }
+  }
+  NMPT_MEM={klucz,nc:m.nc,nr:m.nr,cs:m.cs,x0:m.x0,y0:m.y0,h:H,max,teren,ts:m.ts,cache:{}};
+  return NMPT_MEM;
+}
+function komorka(g,E,N){
+  const c=Math.floor((E-g.x0)/g.cs), r=g.nr-1-Math.floor((N-g.y0)/g.cs);
+  return (c>=0&&c<g.nc&&r>=0&&r<g.nr)?r*g.nc+c:-1;
+}
+/* model gotowy do użycia: wczytany i obejmujący środek obecnej działki */
+function modelGotowy(){
+  const g=nmptPamiec(), s=srodekDzialki(); if(!g||!s)return null;
+  const k=doPL92(s.lat,s.lon); return komorka(g,k.E,k.N)>=0?g:null;
+}
+function wczytajModel(e){
+  const pliki=[...((e.target&&e.target.files)||[])]; if(e.target)e.target.value=''; if(!pliki.length)return;
+  let zost=pliki.length; const wyn=[];
+  pliki.forEach(f=>{const r=new FileReader(); r.onload=()=>{wyn.push({nazwa:f.name,g:parseAsc(r.result)}); if(--zost===0)przyjmijModel(wyn);}; r.readAsText(f);});
+}
+function przyjmijModel(wyn){
+  const ok=wyn.filter(w=>w.g);
+  if(!ok.length){SUNMSG=`<div class="msg err">Nie rozpoznałem pliku. Wczytaj <span class="mono">result.asc</span> pobrany linkiem powyżej
+    (tekstowy ASCII grid, zaczyna się od słowa ncols).</div>`;render();return;}
+  const s=srodekDzialki(), k=s?doPL92(s.lat,s.lon):null;
+  const zly=ok.find(w=>k&&komorka(w.g,k.E,k.N)<0);
+  if(zly){SUNMSG=`<div class="msg err">Plik ${esc(zly.nazwa)} dotyczy innego miejsca niż ta działka. Pobierz wycinek linkiem z tej karty.</div>`;render();return;}
+  const ts=new Date().toISOString();
+  const pak=g=>({nc:g.nc,nr:g.nr,cs:g.cs,x0:g.x0,y0:g.y0,h:doB64(g.v),ts});
+  let jest={nmpt:0,nmt:0};
+  /* NMPT ma oczko 0,5 m, NMT 1 m: po tym je rozróżniam, bo oba pliki nazywają się result.asc */
+  ok.forEach(w=>{ if(w.g.cs<0.75){S.nmpt=pak(w.g);jest.nmpt=1;} else {S.nmt=pak(w.g);jest.nmt=1;} });
+  if(S.sun)S.sun.punkt=null;
+  NMPT_MEM=null;
+  try{save();}catch(e){}
+  SUNMSG=jest.nmpt||S.nmpt
+    ?`<div class="msg ok">Wczytano ${jest.nmpt?'model pokrycia terenu':''}${jest.nmpt&&jest.nmt?' i ':''}${jest.nmt?'model terenu':''}.
+      Cienie liczą się teraz z budynków i drzew w okolicy.</div>`
+    :`<div class="msg info">Wczytano model terenu (NMT). Do cieni potrzebny jest jeszcze model pokrycia terenu (NMPT), z oczkiem 0,5 m.</div>`;
+  render();
+}
+function usunModel(){delete S.nmpt;delete S.nmt;NMPT_MEM=null;SUNMSG='';if(S.sun)S.sun.punkt=null;save();render();}
+
+/* ---------- cień, horyzont, godziny słońca ---------- */
+/* 1 = cień, 0 = słońce; liczę dla wskazanych komórek albo dla całej siatki */
+function maskaCienia(g,alt,az,komorki){
+  const n=g.nc*g.nr, out=new Uint8Array(n);
+  if(alt<=0.3){out.fill(1);return out;}
+  const t=Math.tan(alt*D2R)*g.cs, dx=Math.sin(az*D2R), dy=-Math.cos(az*D2R), H=g.h, nc=g.nc, nr=g.nr, mx=g.max;
+  const licz=i=>{
+    const h0=H[i]; if(isNaN(h0))return;
+    const r=(i/nc)|0, c=i-r*nc, lim=(mx-h0-0.3)/t;   // dalej nic nie jest dość wysokie, żeby zasłonić
+    for(let d=1;d<=lim;d++){
+      const cc=Math.round(c+dx*d), rr=Math.round(r+dy*d);
+      if(cc<0||cc>=nc||rr<0||rr>=nr)break;
+      if(H[rr*nc+cc]-h0>d*t+0.3){out[i]=1;break;}
+    }
+  };
+  if(komorki)for(let q=0;q<komorki.length;q++)licz(komorki[q]); else for(let i=0;i<n;i++)licz(i);
+  return out;
+}
+function wWielokacie(x,y,P){
+  let w=false; for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];
+    if(((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x))w=!w;}
+  return w;
+}
+/* obszar działki z buforem 6 m, w komórkach siatki; bez obrysu kwadrat 30 m wokół punktu */
+function obszarDzialki(g){
+  const kl='obszar|'+kluczDzialki(); if(g.cache[kl])return g.cache[kl];
+  const p=S.parcel||{}, poly=p.wkt?wktPunkty(p.wkt).map(q=>{const k=doPL92(q.lat,q.lon);
+    return {x:(k.E-g.x0)/g.cs, y:g.nr-(k.N-g.y0)/g.cs};}):null;
+  let c0,c1,r0,r1;
+  if(poly&&poly.length>2){c0=Math.min(...poly.map(q=>q.x));c1=Math.max(...poly.map(q=>q.x));r0=Math.min(...poly.map(q=>q.y));r1=Math.max(...poly.map(q=>q.y));}
+  else {const s=srodekDzialki(), k=doPL92(s.lat,s.lon), cx=(k.E-g.x0)/g.cs, cy=g.nr-(k.N-g.y0)/g.cs; c0=cx-30;c1=cx+30;r0=cy-30;r1=cy+30;}
+  const B=12; c0=Math.max(0,Math.floor(c0-B)); c1=Math.min(g.nc-1,Math.ceil(c1+B)); r0=Math.max(0,Math.floor(r0-B)); r1=Math.min(g.nr-1,Math.ceil(r1+B));
+  const komorki=[], dzialki=[];
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const i=r*g.nc+c; komorki.push(i);
+    if(poly&&poly.length>2?wWielokacie(c+.5,r+.5,poly):Math.hypot(c-(c0+c1)/2,r-(r0+r1)/2)<=30)dzialki.push(i);}
+  const v=komorki.map(i=>g.h[i]).filter(x=>!isNaN(x)).sort((a,b)=>a-b);
+  return g.cache[kl]={c0,c1,r0,r1,komorki,dzialki,poly:(poly&&poly.length>2)?poly:null,p10:v[Math.floor(v.length*0.1)]||0};
+}
+/* grunt czy obiekt (dach, korona drzewa): z NMT wprost, bez NMT po wysokości ponad najniższe punkty okolicy */
+function nieGrunt(g,i,o){
+  if(g.teren&&!isNaN(g.teren[i]))return g.h[i]-g.teren[i]>1.5;
+  return g.h[i]-o.p10>1.5;
+}
+const gruntW=(g,i,o)=>(g.teren&&!isNaN(g.teren[i]))?g.teren[i]:(nieGrunt(g,i,o)?o.p10:g.h[i]);
+const DATY3=[{k:'zima',n:'Przesilenie zimowe',m:11,d:21},{k:'rownonoc',n:'Równonoc',m:2,d:21},{k:'lato',n:'Przesilenie letnie',m:5,d:21}];
+/* suma godzin słońca w komórkach obszaru, co kwadrans od wschodu do zachodu */
+function godzinySlonca(g){
+  const kl='godz|'+kluczDzialki(); if(g.cache[kl])return g.cache[kl];
+  const o=obszarDzialki(g), s=srodekDzialki(), y=new Date().getFullYear(), krok=0.25;
+  const grunt=o.dzialki.filter(i=>!nieGrunt(g,i,o));
+  return g.cache[kl]=DATY3.map(dt=>{
+    const godz=new Float32Array(g.nc*g.nr), dz=sunDay(y,dt.m,dt.d,s.lat,s.lon);
+    for(let hh=Math.ceil(dz.wsch/krok)*krok;hh<=dz.zach;hh+=krok){
+      const p=sunAt(y,dt.m,dt.d,hh,s.lat,s.lon); if(p.alt<=0.3)continue;
+      const mk=maskaCienia(g,p.alt,p.az,o.komorki);
+      for(const i of o.komorki)if(!mk[i])godz[i]+=krok;
+    }
+    const pol=(dz.dlugosc||0)/2;
+    return {...dt,dz,godz,ile:grunt.length,
+      srednia:grunt.reduce((a,i)=>a+godz[i],0)/(grunt.length||1),
+      ponad:grunt.filter(i=>godz[i]>=pol).length/(grunt.length||1)};
+  });
+}
+/* sylwetka zasłon wokół punktu: co 2° kąt wzniesienia najwyższej przeszkody */
+function horyzont(g,i0,hObs){
+  const nc=g.nc,nr=g.nr,H=g.h, r0=(i0/nc)|0, c0=i0-r0*nc, out=[];
+  for(let a=0;a<360;a+=2){
+    const dx=Math.sin(a*D2R), dy=-Math.cos(a*D2R); let b={kat:0,d:0,wys:0,az:a};
+    for(let d=2;;d++){
+      const cc=Math.round(c0+dx*d), rr=Math.round(r0+dy*d); if(cc<0||cc>=nc||rr<0||rr>=nr)break;
+      const hh=H[rr*nc+cc]; if(isNaN(hh))continue;
+      const dist=d*g.cs, k=Math.atan2(hh-hObs,dist)*R2D;
+      if(k>b.kat)b={kat:k,d:dist,wys:hh-hObs,az:a};
+    }
+    out.push(b);
+  }
+  return out;
+}
+function katHoryzontu(hz,az){
+  const x=(((az%360)+360)%360)/2, a=Math.floor(x)%180, b=(a+1)%180, t=x-Math.floor(x);
+  return hz[a].kat*(1-t)+hz[b].kat*t;
+}
+/* słońce w punkcie przez dzień: ile godzin i kiedy zasłonięte, przez co */
+function slonceWPunkcie(hz,y,dt,s){
+  const dz=sunDay(y,dt.m,dt.d,s.lat,s.lon), krok=5/60; let jest=0, cur=null; const okna=[];
+  for(let hh=dz.wsch;hh<=dz.zach;hh+=krok){
+    const p=sunAt(y,dt.m,dt.d,hh,s.lat,s.lon); if(p.alt<=0)continue;
+    if(p.alt>katHoryzontu(hz,p.az)){jest+=krok; if(cur){okna.push(cur);cur=null;}}
+    else {if(!cur)cur={od:hh,do:hh}; cur.do=hh;}
+  }
+  if(cur)okna.push(cur);
+  okna.forEach(w=>{const p=sunAt(y,dt.m,dt.d,(w.od+w.do)/2,s.lat,s.lon); w.prz=hz[Math.round((((p.az%360)+360)%360)/2)%180];});
+  return {dz,jest,okna:okna.filter(w=>w.do-w.od>=0.15)};
+}
+const opisPrzeszkody=b=>`${stronaPL(b.az)}: obiekt ok. ${Math.max(1,Math.round(b.wys+1.6))} m wysokości, ${Math.round(b.d)} m od punktu`;
+/* punkt obserwacji: wskazany na mapie albo najbardziej nasłonecznione miejsce na gruncie działki
+   w równonoc, a przy remisie to dalej od przeszkód. Wcześniejsze wybory (grunt najbliżej środka,
+   miejsce najdalej od przeszkód) trafiały pod ścianę albo na front zacieniony przez własny dom. */
+function punktIndeks(g,o){
+  const s=sunInit();
+  if(s.punkt){const i=komorka(g,s.punkt.E,s.punkt.N); if(i>=0)return i;}
+  if(o.domyslny!=null)return o.domyslny;
+  const w=o.c1-o.c0+1, hh=o.r1-o.r0+1, dist=new Int32Array(w*hh).fill(-1), kol=[];
+  for(let r=o.r0;r<=o.r1;r++)for(let c=o.c0;c<=o.c1;c++){
+    const j=(r-o.r0)*w+(c-o.c0); if(nieGrunt(g,r*g.nc+c,o)){dist[j]=0;kol.push(j);}}
+  for(let q=0;q<kol.length;q++){const j=kol[q], r=(j/w)|0, c=j-r*w;
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{const rr=r+dr, cc=c+dc;
+      if(rr<0||rr>=hh||cc<0||cc>=w)return; const k=rr*w+cc; if(dist[k]<0){dist[k]=dist[j]+1;kol.push(k);}});}
+  const sd=srodekDzialki(), k0=doPL92(sd.lat,sd.lon), i0=komorka(g,k0.E,k0.N), r0=(i0/g.nc)|0, c0=i0-r0*g.nc;
+  const rown=godzinySlonca(g)[1].godz;
+  let best=i0, bd=-1, bc=Infinity;
+  (o.dzialki.length?o.dzialki:o.komorki).forEach(i=>{
+    if(nieGrunt(g,i,o))return;
+    const r=(i/g.nc)|0, c=i-r*g.nc, j=(r-o.r0)*w+(c-o.c0), d=rown[i]*100+Math.min(dist[j]<0?20:dist[j],20), dc=(r-r0)**2+(c-c0)**2;
+    if(d>bd||(d===bd&&dc<bc)){bd=d;bc=dc;best=i;}
+  });
+  return o.domyslny=best;
+}
+
+/* ---------- obrazy ---------- */
+const SKALA_GODZ=[[0,'#13213a'],[2,'#22406a'],[4,'#2c6c8c'],[6,'#3f9a85'],[8,'#9cc15a'],[10,'#efd24a'],[13,'#fff1a8']];
+function kolorGodz(v){
+  for(let i=1;i<SKALA_GODZ.length;i++)if(v<=SKALA_GODZ[i][0]){const [a,ca]=SKALA_GODZ[i-1],[b,cb]=SKALA_GODZ[i];return mixHex(ca,cb,(v-a)/(b-a));}
+  return SKALA_GODZ[SKALA_GODZ.length-1][1];
+}
+/* raster obszaru działki z obrysem i punktem; bez canvas (np. w teście) zwraca '' */
+function obrazObszaru(g,o,kolor,punkt){
+  try{
+    const w=o.c1-o.c0+1, hh=o.r1-o.r0+1, px=Math.max(2,Math.min(6,Math.round(240/Math.max(w,hh))));
+    const cv=document.createElement('canvas'); if(!cv||!cv.getContext)return '';
+    cv.width=w*px; cv.height=hh*px; const x=cv.getContext('2d'); if(!x)return '';
+    for(let r=o.r0;r<=o.r1;r++)for(let c=o.c0;c<=o.c1;c++){x.fillStyle=kolor(r*g.nc+c); x.fillRect((c-o.c0)*px,(r-o.r0)*px,px,px);}
+    if(o.poly){x.strokeStyle='#f59e0b';x.lineWidth=2;x.setLineDash([5,3]);x.beginPath();
+      o.poly.forEach((q,k)=>{const X=(q.x-o.c0)*px, Y=(q.y-o.r0)*px; if(k)x.lineTo(X,Y); else x.moveTo(X,Y);});x.closePath();x.stroke();}
+    if(punkt!=null&&punkt>=0){const r=(punkt/g.nc)|0, c=punkt-r*g.nc; x.setLineDash([]);x.fillStyle='#3b82f6';x.strokeStyle='#fff';x.lineWidth=1.5;
+      x.beginPath();x.arc((c-o.c0+.5)*px,(r-o.r0+.5)*px,Math.max(4,px*1.5),0,Math.PI*2);x.fill();x.stroke();}
+    return cv.toDataURL('image/png');
+  }catch(e){return '';}
+}
+/* dwanaście sytuacji z modelu: udział gruntu działki w słońcu i raster cienia */
+function kafleModelu(g,o){
+  const kl='kafle|'+kluczDzialki(); if(g.cache[kl])return g.cache[kl];
+  const s=srodekDzialki(), y=new Date().getFullYear(), grunt=o.dzialki.filter(i=>!nieGrunt(g,i,o)), out=[];
+  DATY.forEach(dt=>PORY.forEach(po=>{
+    const p=sunAt(y,dt.m,dt.d,po.h,s.lat,s.lon);
+    if(p.alt<=0.5){out.push({dt,po,alt:p.alt});return;}
+    const mk=maskaCienia(g,p.alt,p.az,o.komorki);
+    const url=obrazObszaru(g,o,i=>{const ng=nieGrunt(g,i,o); return mk[i]?(ng?'#1a2232':'#2a3550'):(ng?'#b9a878':'#e7d49b');});
+    out.push({dt,po,alt:p.alt,az:p.az,url,slonce:grunt.filter(i=>!mk[i]).length/(grunt.length||1)});
+  }));
+  return g.cache[kl]=out;
+}
+/* diagram: azymut od NE do NW na osi poziomej, wysokość słońca na pionowej */
+function diagramHoryzontu(hz,sd,y,teraz){
+  const W=640,H=258,L=34,R=8,T=30,B=26,a0=40,a1=320,am=70;
+  const X=a=>L+(a-a0)/(a1-a0)*(W-L-R), Y=al=>T+(1-Math.max(0,Math.min(am,al))/am)*(H-T-B), f=v=>v.toFixed(1);
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="sunhz" role="img" aria-label="Diagram horyzontu i drogi słońca">`;
+  for(let al=10;al<=60;al+=10)s+=`<line x1="${L}" x2="${W-R}" y1="${f(Y(al))}" y2="${f(Y(al))}" stroke="#1f2838"/><text x="${L-4}" y="${f(Y(al)+3)}" text-anchor="end" font-size="9" fill="#64748b">${al}°</text>`;
+  [[90,'wschód'],[135,'SE'],[180,'południe'],[225,'SW'],[270,'zachód']].forEach(([a,n])=>{
+    s+=`<line x1="${f(X(a))}" x2="${f(X(a))}" y1="${T}" y2="${H-B}" stroke="#1f2838"/><text x="${f(X(a))}" y="${H-B+15}" text-anchor="middle" font-size="10" fill="#94a3b8">${n}</text>`;});
+  const pts=[]; for(let a=a0;a<=a1;a+=2)pts.push(f(X(a))+','+f(Y(katHoryzontu(hz,a))));
+  s+=`<polygon points="${f(X(a0))},${f(Y(0))} ${pts.join(' ')} ${f(X(a1))},${f(Y(0))}" fill="#3a4357" stroke="#8a94a8" stroke-width="1"/>`;
+  const KOL={zima:'#7dabf8',rownonoc:'#86efac',lato:'#fbbf24'};
+  DATY3.forEach(dt=>{
+    const dz=sunDay(y,dt.m,dt.d,sd.lat,sd.lon); let seg=[], zas=null;
+    const zrzuc=()=>{if(seg.length>1)s+=`<polyline points="${seg.join(' ')}" fill="none" stroke="${KOL[dt.k]}" stroke-width="2.2"${zas?' stroke-opacity=".35" stroke-dasharray="4 3"':''}/>`;};
+    for(let hh=dz.wsch;hh<=dz.zach;hh+=1/6){
+      const p=sunAt(y,dt.m,dt.d,hh,sd.lat,sd.lon); if(p.alt<0||p.az<a0||p.az>a1)continue;
+      const z=p.alt<=katHoryzontu(hz,p.az), pt=f(X(p.az))+','+f(Y(p.alt));
+      if(zas!==null&&z!==zas){seg.push(pt);zrzuc();seg=[pt];} else seg.push(pt);
+      zas=z;
+    }
+    zrzuc();
+    for(let g2=Math.ceil(dz.wsch);g2<=dz.zach;g2++){
+      const p=sunAt(y,dt.m,dt.d,g2,sd.lat,sd.lon); if(p.alt<=0||p.az<a0||p.az>a1)continue;
+      s+=`<circle cx="${f(X(p.az))}" cy="${f(Y(p.alt))}" r="2.2" fill="${KOL[dt.k]}"/>`;
+      if(dt.k==='lato'&&g2%2===0)s+=`<text x="${f(X(p.az))}" y="${f(Y(p.alt)-6)}" text-anchor="middle" font-size="9" fill="#cbd5e1">${g2}:00</text>`;
+    }
+  });
+  if(teraz&&teraz.alt>0&&teraz.az>=a0&&teraz.az<=a1)
+    s+=`<circle cx="${f(X(teraz.az))}" cy="${f(Y(teraz.alt))}" r="6" fill="#ffd166" stroke="#fff" stroke-width="1.5"/>`;
+  [['lato','21 czerwca',0],['rownonoc','21 marca i 23 września',110],['zima','21 grudnia',272]].forEach(([k,n,dx])=>
+    s+=`<line x1="${L+dx}" x2="${L+dx+18}" y1="14" y2="14" stroke="${KOL[k]}" stroke-width="2.5"/><text x="${L+dx+24}" y="17.5" font-size="10" fill="#cbd5e1">${n}</text>`);
+  s+=`<rect x="${L+372}" y="8" width="14" height="10" fill="#3a4357" stroke="#8a94a8"/><text x="${L+392}" y="17.5" font-size="10" fill="#cbd5e1">zasłony: budynki i drzewa</text>`;
+  return s+'</svg>';
+}
+function horyzontHtml(g){
+  const o=obszarDzialki(g), i0=punktIndeks(g,o), sd=srodekDzialki(), y=new Date().getFullYear();
+  const kl='hz|'+i0; const hz=g.cache[kl]||(g.cache[kl]=horyzont(g,i0,gruntW(g,i0,o)+1.6));
+  const dni=DATY3.map(dt=>({...dt,...slonceWPunkcie(hz,y,dt,sd)}));
+  const ds=dataSlonca(), teraz=sunAt(ds.y,ds.m,ds.d,sunInit().godz,sd.lat,sd.lon);
+  return `<p class="lead" style="margin:0">${sunInit().punkt?'Punkt wskazany na mapie.':'Punkt domyślny: najbardziej nasłonecznione miejsce na gruncie działki w równonoc. Kliknij na mapie wyżej, żeby wybrać np. taras albo okno salonu.'}
+      Wysokość oczu 1,6 m nad gruntem. Szara sylwetka to zasłony z modelu (budynki i drzewa), linie to droga słońca:
+      tam, gdzie linia jest przerywana, słońce jest za przeszkodą. Żółta kropka to chwila ustawiona suwakiem.</p>
+    ${diagramHoryzontu(hz,sd,y,teraz)}
+    <table class="suntab"><tr><th>Dzień</th><th>Słońce nad horyzontem</th><th>Słońce w tym punkcie</th><th>Kiedy zasłonięte i przez co</th></tr>
+    ${dni.map(x=>`<tr><td>${esc(x.n)}</td><td>${x.dz.dlugosc?x.dz.dlugosc.toFixed(1)+' h':'—'}</td><td><b>${x.jest.toFixed(1)} h</b></td>
+      <td>${x.okna.length?x.okna.map(w=>hhmm(w.od)+'–'+hhmm(w.do)+' · '+esc(opisPrzeszkody(w.prz))).join('<br>'):'nic nie zasłania'}</td></tr>`).join('')}
+    </table>`;
+}
+function paintHoryzont(){
+  const el=document.getElementById('sunHoryzont'), g=modelGotowy(); if(!el||!g)return;
+  el.innerHTML=horyzontHtml(g);
+}
+
+/* ---------- mapa cieni z suwakiem ---------- */
+function dataSlonca(){
+  const s=sunInit(); const d0=new Date();
+  const t=s.data||(d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0')+'-'+String(d0.getDate()).padStart(2,'0'));
+  const [y,m,d]=t.split('-').map(Number); return {y,m:m-1,d,t};
+}
+function opisChwili(p,godz){
+  return 'Godzina <b>'+hhmm(godz)+'</b> · '+(p.alt>0?'słońce '+p.alt.toFixed(0)+'° nad horyzontem, kierunek: '+stronaPL(p.az):'słońce pod horyzontem');
+}
+function zakresGodzin(){
+  const {y,m,d}=dataSlonca(), sd=srodekDzialki(), dz=sunDay(y,m,d,sd.lat,sd.lon);
+  return {min:Math.ceil((dz.wsch||5)*4)/4, max:Math.floor((dz.zach||20)*4)/4};
+}
+function godzinaSuwaka(){
+  const s=sunInit(), z=zakresGodzin(); return Math.min(Math.max(s.godz!=null?s.godz:13,z.min),z.max);
+}
+let MAPS=null, MAPS_OV=null, MAPS_PKT=null, SUN_RAF=0;
+const PUSTY_PNG='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+function granicaModelu(g){
+  const r=[zPL92(g.x0,g.y0),zPL92(g.x0+g.nc*g.cs,g.y0),zPL92(g.x0,g.y0+g.nr*g.cs),zPL92(g.x0+g.nc*g.cs,g.y0+g.nr*g.cs)];
+  return {s:Math.min(...r.map(q=>q.lat)),n:Math.max(...r.map(q=>q.lat)),w:Math.min(...r.map(q=>q.lon)),e:Math.max(...r.map(q=>q.lon))};
+}
+/* piksel obrazu na mapie → komórka siatki. Na 200 m odwzorowanie jest liniowe z dokładnością
+   do milimetrów, więc interpoluję z czterech narożników zamiast przeliczać każdy piksel. */
+function lutModelu(g,b,W,Hh){
+  if(g.cache.lut&&g.cache.lut.W===W)return g.cache.lut.a;
+  const nw=doPL92(b.n,b.w), ne=doPL92(b.n,b.e), sw=doPL92(b.s,b.w), se=doPL92(b.s,b.e), a=new Int32Array(W*Hh);
+  for(let py=0;py<Hh;py++){const v=(py+.5)/Hh;
+    for(let px=0;px<W;px++){const u=(px+.5)/W;
+      const E=(nw.E*(1-u)+ne.E*u)*(1-v)+(sw.E*(1-u)+se.E*u)*v, N=(nw.N*(1-u)+ne.N*u)*(1-v)+(sw.N*(1-u)+se.N*u)*v;
+      a[py*W+px]=komorka(g,E,N);}}
+  g.cache.lut={W,a}; return a;
+}
+function drawSunMap(){
+  const el=document.getElementById('mapSun'); if(!el||!window.L)return;
+  const g=modelGotowy(); if(!g)return;
+  if(MAPS){try{MAPS.remove()}catch(e){}MAPS=null;}
+  const b=granicaModelu(g), sd=srodekDzialki();
+  MAPS=L.map(el,{scrollWheelZoom:false,maxZoom:21}).setView([sd.lat,sd.lon],19);
+  const W=warstwyMapy(); W.orto.addTo(MAPS);
+  L.control.layers(W.bazowe,W.nakladki,{collapsed:true}).addTo(MAPS);
+  MAPS_OV=L.imageOverlay(PUSTY_PNG,[[b.s,b.w],[b.n,b.e]],{interactive:false}).addTo(MAPS);
+  L.rectangle([[b.s,b.w],[b.n,b.e]],{color:'#7dabf8',weight:1,fill:false,dashArray:'3 4',interactive:false}).addTo(MAPS);
+  if(S.parcel&&S.parcel.wkt)L.polygon(wktPunkty(S.parcel.wkt).map(q=>[q.lat,q.lon]),
+    {color:'#f59e0b',weight:2,fill:false,dashArray:'5 3',interactive:false}).addTo(MAPS);
+  MAPS_PKT=null;
+  MAPS.on('click',e=>ustawPunkt(e.latlng.lat,e.latlng.lng));
+  sunMapPaint(); znacznikPunktu();
+  setTimeout(()=>{if(MAPS)MAPS.invalidateSize();},120);
+}
+function znacznikPunktu(){
+  const g=modelGotowy(); if(!g||!MAPS)return;
+  const o=obszarDzialki(g), i=punktIndeks(g,o), r=(i/g.nc)|0, c=i-r*g.nc;
+  const q=zPL92(g.x0+(c+.5)*g.cs, g.y0+(g.nr-r-.5)*g.cs);
+  if(MAPS_PKT)MAPS_PKT.setLatLng([q.lat,q.lon]);
+  else MAPS_PKT=L.circleMarker([q.lat,q.lon],{radius:7,color:'#fff',weight:2,fillColor:'#3b82f6',fillOpacity:1,interactive:false}).addTo(MAPS);
+}
+function sunMapPaint(){
+  const g=modelGotowy(); if(!g)return;
+  const s=sunInit(), sd=srodekDzialki(), {y,m,d}=dataSlonca(), godz=godzinaSuwaka(), p=sunAt(y,m,d,godz,sd.lat,sd.lon);
+  const lab=document.getElementById('sunGodzLab'); if(lab)lab.innerHTML=opisChwili(p,godz);
+  if(!MAPS_OV)return;
+  try{
+    const b=granicaModelu(g), W=g.nc*2, Hh=g.nr*2, lut=lutModelu(g,b,W,Hh), mk=maskaCienia(g,p.alt,p.az);
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=Hh;
+    const x=cv.getContext('2d'), im=x.createImageData(W,Hh), D=im.data;
+    for(let q=0;q<W*Hh;q++){const i=lut[q]; if(i>=0&&mk[i]){D[q*4]=10;D[q*4+1]=16;D[q*4+2]=34;D[q*4+3]=150;}}
+    x.putImageData(im,0,0); MAPS_OV.setUrl(cv.toDataURL());
+  }catch(e){}
+}
+function sunUstawDate(v){
+  if(!v)return;
+  const s=sunInit(); s.data=v; s.godz=godzinaSuwaka(); save();
+  const z=zakresGodzin(), sl=document.getElementById('sunGodz');
+  if(sl){sl.min=z.min;sl.max=z.max;sl.value=s.godz;}
+  const di=document.getElementById('sunData'); if(di)di.value=v;
+  document.querySelectorAll('.sundzien').forEach(b=>b.classList.toggle('on',b.getAttribute('data-d')===v));
+  sunMapPaint(); paintHoryzont();
+}
+function sunUstawGodz(v){
+  sunInit().godz=parseFloat(v);
+  if(typeof requestAnimationFrame==='undefined'){sunMapPaint();paintHoryzont();return;}
+  if(SUN_RAF)return;
+  SUN_RAF=requestAnimationFrame(()=>{SUN_RAF=0;sunMapPaint();paintHoryzont();save();});
+}
+function ustawPunkt(lat,lon){
+  const g=modelGotowy(); if(!g)return;
+  const k=doPL92(lat,lon); if(komorka(g,k.E,k.N)<0)return;
+  sunInit().punkt={E:k.E,N:k.N}; save(); znacznikPunktu(); paintHoryzont();
+}
+
+/* ---------- karta ---------- */
+function modelBlok(){
+  const o=oknoModelu(); if(!o)return '';
+  const mbP=(o.bok*o.bok*4*19/1e6).toFixed(1), mbT=(o.bok*o.bok*19/1e6).toFixed(1);
+  const inny=S.nmpt&&!modelGotowy();
+  return `<div class="msg info" style="margin:10px 0">
+    <b>Cienie od sąsiednich budynków i drzew.</b> GUGiK udostępnia model pokrycia terenu (NMPT): wysokość dachów i koron drzew
+    co 0,5 m, także na działkach obok. Usługa nie pozwala stronie pobrać danych samodzielnie, więc zrób to w dwóch krokach:
+    <ol style="margin:6px 0 0;padding-left:18px">
+      <li>Pobierz wycinek ${o.bok} × ${o.bok} m wokół działki:
+        <a href="${urlModelu('nmpt')}" target="_blank" rel="noopener" style="color:#93c5fd">model pokrycia terenu (NMPT, ok. ${mbP} MB)</a>,
+        a dla dokładniejszego rozróżnienia gruntu od dachów i koron także
+        <a href="${urlModelu('nmt')}" target="_blank" rel="noopener" style="color:#93c5fd">model terenu (NMT, ok. ${mbT} MB)</a>.
+        Serwer odpowiada po kilku sekundach, a przeglądarka zapisuje plik <span class="mono">result.asc</span>.</li>
+      <li>Wczytaj pobrane pliki, jeden albo oba naraz:
+        <button class="btn sm" style="margin-left:4px" onclick="document.getElementById('nmptF').click()">Wczytaj pliki</button></li>
+    </ol>
+    ${inny?'<div style="margin-top:8px"><b>Wczytany wcześniej model dotyczy innego miejsca niż obecna działka.</b> Pobierz nowy wycinek.</div>':''}
+    <input type="file" id="nmptF" accept=".asc,.txt" multiple class="hidden" onchange="wczytajModel(event)">
+  </div>${SUNMSG}`;
+}
+function sunCard(){
+  const p=S.parcel;
+  if(!p||p.lat==null)return sunCardProsta();
+  const g=modelGotowy();
+  return g?sunCardModel(g):sunCardProsta();
+}
+function sunCardModel(g){
+  const s=sunInit(), sd=srodekDzialki(), o=obszarDzialki(g), ds=dataSlonca(), y=new Date().getFullYear();
+  const z=zakresGodzin(), godz=godzinaSuwaka(), p=sunAt(ds.y,ds.m,ds.d,godz,sd.lat,sd.lon);
+  const gs=godzinySlonca(g), kafle=kafleModelu(g,o), i0=punktIndeks(g,o);
+  const bok=Math.round(g.nc*g.cs), dzis=dataSlonca().t;
+  const d0=new Date(), dzisISO=d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0')+'-'+String(d0.getDate()).padStart(2,'0');
+  const dni=[['21 grudnia',y+'-12-21'],['21 marca',y+'-03-21'],['21 czerwca',y+'-06-21'],['23 września',y+'-09-23'],['dziś',dzisISO]];
+  const ogrod=o.poly?'gruntu działki':'gruntu w promieniu 15 m';
+  return `<div class="card">
+    <h2>Nasłonecznienie i cienie <span class="pill">model GUGiK · obliczenia lokalne</span></h2>
+    <p class="lead">Cienie z budynków i drzew w wycinku ${bok} × ${bok} m wokół działki, policzone z modelu pokrycia terenu
+      (siatka 0,5 m)${g.teren?' i modelu terenu':''}. Pozycja słońca z algorytmu astronomicznego dla tych współrzędnych.</p>
+    <div class="msg ok" style="margin:0 0 10px">Model wczytany ${new Date(g.ts).toLocaleDateString('pl-PL')}${g.teren?', z modelem terenu':', bez modelu terenu'}.
+      <button class="btn sm sec" style="margin-left:6px" onclick="document.getElementById('nmptF').click()">${g.teren?'Wczytaj ponownie':'Dołóż model terenu'}</button>
+      <button class="btn sm sec" style="margin-left:4px" onclick="usunModel()">Usuń model</button>
+      ${g.teren?'':`<div style="margin-top:6px">Model terenu pobierzesz <a href="${urlModelu('nmt')}" target="_blank" rel="noopener" style="color:#86efac">tutaj</a>.
+        Bez niego dachy i korony rozpoznaję po wysokości ponad najniższe punkty okolicy, co na pochyłym terenie bywa nieprecyzyjne.</div>`}
+      <input type="file" id="nmptF" accept=".asc,.txt" multiple class="hidden" onchange="wczytajModel(event)"></div>
+    ${SUNMSG}
+
+    <h3>1. Cienie na mapie</h3>
+    <div class="sundni">${dni.map(([n,v])=>`<button class="chip sundzien${v===dzis?' on':''}" data-d="${v}" onclick="sunUstawDate('${v}')">${n}</button>`).join('')}
+      <input type="date" id="sunData" value="${dzis}" onchange="sunUstawDate(this.value)" style="width:auto;padding:5px 8px;font-size:13px"></div>
+    <label class="f" style="margin-top:6px"><span id="sunGodzLab">${opisChwili(p,godz)}</span>
+      <input type="range" id="sunGodz" min="${z.min}" max="${z.max}" step="0.25" value="${godz}" oninput="sunUstawGodz(this.value)"></label>
+    <div id="mapSun"></div>
+    <p class="lead" style="margin-top:8px">Ciemne plamy to cień w ustawionej chwili, pomarańczowa linia to granica działki,
+      niebieska ramka to zasięg modelu. Kliknij na mapie punkt, np. taras albo okno salonu, a niżej zobaczysz jego horyzont.</p>
+
+    <h3>2. Godziny słońca na działce</h3>
+    <div class="sungodz">${gs.map(x=>{const url=obrazObszaru(g,o,i=>nieGrunt(g,i,o)?'#59606e':kolorGodz(x.godz[i]),i0);
+      return `<figure>${url?`<img src="${url}" alt="Godziny słońca: ${esc(x.n)}">`:'<div class="sunnoc">podgląd niedostępny</div>'}
+        <figcaption><b>${esc(x.n)}</b><br>średnio <b>${x.srednia.toFixed(1)} h</b> słońca na ${ogrod},
+        ${Math.round(x.ponad*100)}% ma słońce przez co najmniej połowę dnia (${((x.dz.dlugosc||0)/2).toFixed(1)} h)</figcaption></figure>`;}).join('')}</div>
+    <div class="skalagodz" style="background:linear-gradient(90deg,${SKALA_GODZ.map(([v,c])=>c+' '+Math.round(v/13*100)+'%').join(',')})"></div>
+    <div class="skalaopis"><span>0 h</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>13 h</span></div>
+    <p class="lead" style="margin-top:6px">Szare pola to dachy i korony drzew, liczę tylko grunt. Niebieska kropka to punkt z diagramu poniżej.</p>
+
+    <h3>3. Horyzont w wybranym punkcie</h3>
+    <div id="sunHoryzont">${horyzontHtml(g)}</div>
+
+    <h3>Dwanaście sytuacji</h3>
+    <div class="sungrid">${kafle.map(k=>`<div class="sunkafel">
+      <div class="sunhd">${esc(k.dt.n.split(' ')[0])} · ${esc(k.po.n.toLowerCase())}</div>
+      ${k.alt>0.5?(k.url?`<img src="${k.url}" alt="">`:'<div class="sunnoc">podgląd niedostępny</div>'):'<div class="sunnoc">słońce pod horyzontem</div>'}
+      <div class="sunmeta">${k.alt>0.5?`wysokość <b>${k.alt.toFixed(0)}°</b> · w słońcu <b>${Math.round(k.slonce*100)}%</b> ${ogrod}`:`o ${k.po.h}:00 jest już ciemno`}</div>
+    </div>`).join('')}</div>
+
+    <h3>Długość dnia i wysokość słońca</h3>
+    <table class="suntab">
+      <tr><th>Data</th><th>Wschód</th><th>Zachód</th><th>Długość dnia</th><th>Słońce w południe</th></tr>
+      ${DATY.map(dt=>{const dz=sunDay(y,dt.m,dt.d,sd.lat,sd.lon);return `<tr><td>${esc(dt.n)}</td><td>${hhmm(dz.wsch)}</td><td>${hhmm(dz.zach)}</td>
+        <td>${dz.dlugosc?dz.dlugosc.toFixed(1)+' h':'—'}</td><td>${dz.max.alt.toFixed(0)}°</td></tr>`;}).join('')}
+    </table>
+
+    <div class="help" style="margin-top:12px">
+      <b>Jak to czytać.</b> Mapa pokazuje cień w wybranej chwili ze wszystkich budynków i drzew w modelu, także sąsiednich.
+      Kolory na działce to suma godzin słońca w danym dniu: im jaśniej, tym dłużej. Diagram horyzontu pokazuje, jak wysoko
+      sięgają zasłony wokół wskazanego punktu i o której słońce chowa się za domem sąsiada albo drzewem.
+      <br><br><b>Czego model nie wie.</b> Korony drzew traktuje jak bryłę, więc drzewa liściaste zimą, kiedy przepuszczają część światła,
+      wychodzą jako pełny cień. Usługa nie podaje daty nalotu: nowsza zabudowa obok może jeszcze nie być widoczna, a drzewa od tego czasu
+      podrosły. Zasłony liczę tylko w obrębie wycinka, czyli do ok. ${Math.round(bok/2)} m od działki, a godziny są przybliżone do kwadransa.
+    </div>
+  </div>`;
+}
+
 /* ---------- KARTA NASŁONECZNIENIA ---------- */
 function sunInit(){
   S.sun=S.sun||{};
@@ -3290,7 +4649,7 @@ function sunSet(k,v){
   s[k] = k==='wys' ? Math.max(2,Math.min(30, parseFloat(String(v).replace(',','.'))||8)) : v;
   save();render();
 }
-function sunCard(){
+function sunCardProsta(){
   const p=S.parcel;
   if(!p||p.lat==null)return `<div class="card tight"><div class="msg info">
     Wskaż nieruchomość w sekcji Start, a policzę nasłonecznienie i cienie dla tej lokalizacji.</div></div>`;
@@ -3331,6 +4690,7 @@ function sunCard(){
       Pozycja słońca liczona z algorytmu astronomicznego dla twoich współrzędnych.
       Kolor nieba i żółty punkt pokazują porę dnia i wysokość słońca, jaśniejsza strona
       budynku to ta, na którą w danej chwili pada światło.</p>
+    ${modelBlok()}
 
     <div class="row" style="align-items:flex-end">
       <label class="f" style="max-width:190px"><span>Wysokość budynku (m)</span>
@@ -3367,8 +4727,8 @@ function sunCard(){
         więc od listopada do lutego znaczna część terenu pozostaje w cieniu przez cały dzień.`:''}
       ${pokrywa===false?`<br><br>Zimowy cień mieści się w granicach działki, co przy tej wysokości zabudowy jest dobrym wynikiem.`:''}
       <br><br><b>Czego ten rysunek nie pokazuje:</b> cienia rzucanego przez drzewa i sąsiednie budynki.
-      Wysokie drzewo od południa potrafi zacienić ogród skuteczniej niż sam dom, a tego nie odczytam z żadnego rejestru —
-      obejrzyj to na miejscu. Godziny wschodu i zachodu są przybliżone o kilka minut, bo nie uwzględniam ukształtowania horyzontu.
+      Wysokie drzewo od południa potrafi zacienić ogród skuteczniej niż sam dom. Żeby to policzyć, pobierz model pokrycia
+      terenu według instrukcji na górze karty. Godziny wschodu i zachodu są przybliżone o kilka minut, bo nie uwzględniam ukształtowania horyzontu.
     </div>
   </div>`;
 }
@@ -3463,7 +4823,7 @@ function negRows(){
   const rows=[];
   flagsAll().forEach(f=>{
     if(f.lv==='green')return;
-    rows.push({key:'f:'+f.cid, typ:'wada', lv:f.lv, mname:f.mname,
+    rows.push({key:'f:'+f.cid, typ:'wada', lv:f.lv, mid:f.mid, mname:f.mname,
       tytul:f.t, opis:String(f.w).replace(/<[^>]+>/g,''),
       arg:f.arg||f.t, sugestia:f.cmin||0, max:f.cmax||0,
       skad:f.cmin?'dolna granica widełek z audytu':''});
@@ -3472,7 +4832,7 @@ function negRows(){
     const c=allChecks().find(x=>x.id===k); if(!c)return;
     const m=M.find(x=>x.checks.some(y=>y.id===k));
     const w=wycenNotatke(S.n[k]);
-    rows.push({key:'n:'+k, typ:'notatka', lv:'note', mname:m?m.name:'',
+    rows.push({key:'n:'+k, typ:'notatka', lv:'note', mid:m?m.id:'', mname:m?m.name:'',
       tytul:w?w.kategoria:c.q, opis:S.n[k], arg:S.n[k],
       sugestia:w?w.min:0, max:w?w.max:0,
       skad:w?w.uzasadnienie:'Nie rozpoznałem typowego problemu — wpisz kwotę sam, jeśli ta uwaga ma wpływ na cenę.',
@@ -3550,6 +4910,8 @@ function negField(k,v){negInit()[k]=v;save();negPaint();}
 function wycPozycje(zakres){
   return negRows().filter(r=> zakres==='wlasne'
     ? (r.typ==='wlasna' && (r.tytul&&r.tytul!=='(bez nazwy)'))
+    : zakres==='ogledziny'
+    ? ((r.typ==='wada'||r.typ==='notatka') && (r.mid==='m4'||r.mid==='m4b'))
     : (r.typ==='wada'||r.typ==='notatka'));
 }
 function promptWyceny(zakres){
@@ -3562,6 +4924,8 @@ function promptWyceny(zakres){
   if(p.lat&&p.lon)lok.push('Współrzędne: '+p.lat.toFixed(5)+', '+p.lon.toFixed(5));
   const naglowek = zakres==='wlasne'
     ? 'Wycena kosztów w cenach regionu — pozycje dodane ręcznie'
+    : zakres==='ogledziny'
+    ? 'Wycena usterek znalezionych podczas oględzin w cenach regionu'
     : 'Wycena kosztów usunięcia wad w cenach regionu';
   let out='[Audyt Nieruchomości v'+APP.ver+'] '+naglowek+'\n\n';
   out += (lok.length?lok.join('\n'):'(brak danych lokalizacji — ustal region z opisu poniżej)')+'\n\n';
@@ -3576,7 +4940,8 @@ function promptWyceny(zakres){
     + '- Nie zgaduj bez oparcia. Gdy brak danych regionalnych dla pozycji, napisz to wprost i podaj widełki krajowe z adnotacją.\n\n'
     + 'POZYCJE DO WYCENY\n';
   if(!rows.length){
-    out += (zakres==='wlasne'?'(nie dodałeś jeszcze własnych pozycji)':'(audyt nie wykazał wad do wyceny)')+'\n';
+    out += (zakres==='wlasne'?'(nie dodałeś jeszcze własnych pozycji)'
+      :zakres==='ogledziny'?'(oględziny nie wykazały jeszcze usterek)':'(audyt nie wykazał wad do wyceny)')+'\n';
   } else {
     rows.forEach(r=>{
       out += '──────────\n'+ (r.tytul||'(bez nazwy)') +'  `'+r.key+'`\n';
@@ -3868,7 +5233,70 @@ function viewNeg(){
 /* ============================================================
    RAPORT
    ============================================================ */
+/* Raport screeningowy: krótki, na jeden ekran. Zielone światło albo czerwone
+   flagi, jedno zdanie o cenie, lista rzeczy do dopytania. W pełnym audycie
+   dostępny jako podgląd werdyktu, na którym zapadła decyzja o poszerzeniu. */
+function viewReportScreening(){
+  const w=werdyktScreening();
+  const p=S.parcel||{};
+  const cena=+S.meta.cena||0;
+  const d=new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});
+  const vcls=w.kolor==='red'?'rr':w.kolor==='green'?'rg':'ry';
+  const dec=S.decyzja;
+  $('#view').innerHTML=`
+  <div class="row noprint" style="margin:13px 0">
+    ${S.tryb==='pelny'?`<button class="btn sec" onclick="RAP_WIDOK='';render()">← Raport pełny</button>`
+      :`<button class="btn" onclick="poszerz()">Poszerz do pełnego audytu</button>`}
+    <button class="btn sec" onclick="window.print()">Drukuj / zapisz PDF</button>
+    <button class="btn sec" onclick="saveFile()">Zapisz audyt</button>
+  </div>
+  <div class="report">
+    <h1>Screening nieruchomości</h1>
+    <div class="sub">${esc(APP.name)} v${esc(APP.ver)} &middot; ${esc(S.meta.adres||'—')}${p.id?' &middot; działka '+esc(p.id):''} &middot; ${d}</div>
+
+    <h2>Werdykt wstępny</h2>
+    <p style="font-size:16px"><span class="${vcls}">${esc(w.naglowek.toUpperCase())}</span></p>
+    ${w.opis?`<p style="font-size:13px">${esc(w.opis)}</p>`:''}
+    ${spojnoscRaport()}
+
+    <div style="background:#faf9f7;border-left:3px solid ${w.red.length?'#b91c1c':w.yel.length?'#b45309':'#15803d'};padding:12px 14px;margin:12px 0">
+      <b style="font-size:13px">W skrócie</b>
+      ${w.red.length?`<p style="margin:8px 0 0;font-size:13px"><span class="rr">Wady blokujące (${w.red.length}):</span>
+        ${w.red.map(x=>esc(x.t)).join(' &middot; ')}.</p>`
+        :`<p style="margin:8px 0 0;font-size:13px">W zakresie screeningu nie znalazłem wad blokujących.</p>`}
+      ${w.yel.length?`<p style="margin:8px 0 0;font-size:13px"><span class="ry">Do wyceny (${w.yel.length}):</span>
+        ${w.yel.map(x=>esc(x.t)).join(' &middot; ')}.${w.cmin?' Łącznie co najmniej '+fmt(w.cmin)+' zł kosztów po twojej stronie.':''}</p>`:''}
+      <p style="margin:8px 0 0;font-size:13px"><b>Cena:</b> ${esc(w.cena)}</p>
+    </div>
+
+    <table>
+      <tr><th>Wady blokujące</th><th>Do wyceny</th><th>Sprawdzone</th><th>Cena ofertowa</th></tr>
+      <tr><td class="rr">${w.red.length}</td><td class="ry">${w.yel.length}</td><td>${w.spr}/${w.cs.length}</td>
+        <td>${cena?fmt(cena)+' zł'+(S.meta.powDom?' &middot; '+fmt(cena/S.meta.powDom)+' zł/m²':''):'—'}</td></tr>
+    </table>
+
+    ${w.red.length?`<h2>Czerwone flagi</h2>
+      <table><tr><th>Sekcja</th><th>Ustalenie</th></tr>${w.red.map(x=>`<tr><td>${esc(x.mname)}</td>
+        <td><b>${esc(x.t)}</b><br><span style="color:#555;font-size:12px">${esc(strip(x.w)).slice(0,300)}</span></td></tr>`).join('')}</table>`:''}
+
+    ${w.dopytac.length?`<h2>Do dopytania (${w.dopytac.length})</h2>
+      <ul style="font-size:13px">${w.dopytac.map(c=>`<li>${esc(c.q)}${isCrit(c)?' <b>(krytyczne)</b>':''}${S.n[c.id]
+        ?'<br><span style="color:#666;font-size:12px">'+esc(notatkaCzysta(c.id).slice(0,220))+'</span>':''}</li>`).join('')}</ul>`:''}
+
+    ${(uwagiSpojnosci().length||!S.scr||!S.scr.dopasowanie)?''
+      :`<h2>Dopasowanie działki</h2><p style="font-size:13px">${esc(S.scr.dopasowanie)}</p>`}
+    ${S.scr&&S.scr.komentarz?`<h2>Uwagi z researchu</h2><p style="font-size:13px">${esc(S.scr.komentarz)}</p>`:''}
+    ${dec?`<p style="font-size:13px;margin-top:14px"><b>Decyzja:</b> ${dec.v==='odpada'?'odpada':'poszerzony do pełnego audytu'}
+      (${new Date(dec.ts).toLocaleDateString('pl-PL')}).</p>`:''}
+
+    <h2>Zastrzeżenie</h2>
+    <p style="font-size:11.5px;color:#666">Screening sprawdza wyłącznie punkty, które potrafią zatrzymać zakup, na podstawie ogłoszenia
+    i rejestrów publicznych. Nie obejmuje stanu technicznego budynku ani pełnej treści księgi wieczystej.
+    Nie zastępuje opinii prawnej, wyceny rzeczoznawcy majątkowego ani ekspertyzy technicznej.</p>
+  </div>`;
+}
 function viewReport(){
+  if(S.tryb==='screening'||RAP_WIDOK==='screening')return viewReportScreening();
   const f=flagsAll();
   const red=f.filter(x=>x.lv==='red'), yel=f.filter(x=>x.lv==='yellow'), grn=f.filter(x=>x.lv==='green');
   const cmin=f.reduce((s,x)=>s+(x.cmin||0),0), cmax=f.reduce((s,x)=>s+(x.cmax||0),0);
@@ -3973,6 +5401,7 @@ Z poważaniem`;
   <div class="row noprint" style="margin:13px 0">
     <button class="btn" onclick="window.print()">Drukuj / zapisz PDF</button>
     <button class="btn sec" onclick="copyLetter()">Kopiuj pismo</button>
+    <button class="btn sec" onclick="RAP_WIDOK='screening';render()">Werdykt ze screeningu</button>
     <button class="btn sec" onclick="go('neg')">Wróć do negocjacji</button>
     <button class="btn sec" onclick="saveFile()">Zapisz audyt</button>
   </div>
@@ -3994,6 +5423,7 @@ Z poważaniem`;
 
     <h2>Werdykt</h2>
     <p style="font-size:16px"><span class="${vcls}">${verdict}</span></p>
+    ${spojnoscRaport()}
 
     ${(red.length||yel.length)?`<div style="background:#faf9f7;border-left:3px solid ${red.length?'#b91c1c':'#b45309'};padding:12px 14px;margin:12px 0">
       <b style="font-size:13px">W skrócie, zanim przeczytasz resztę</b>
