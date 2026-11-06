@@ -186,6 +186,16 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 .sungodz figcaption b{color:var(--tx)}
 .skalagodz{height:10px;border-radius:99px;margin-top:4px}
 .skalaopis{display:flex;justify-content:space-between;font-size:10.5px;color:var(--tx3);margin-top:2px}
+.modelcta{border:1px solid #2f5d9a;background:linear-gradient(180deg,#13233a,#111a28);border-radius:12px;padding:14px;margin:12px 0}
+.modelcta .mhd{font-size:15.5px;font-weight:700;color:#bfdbfe;letter-spacing:-.2px}
+.modelcta p{font-size:13px;color:var(--tx2);margin:6px 0;line-height:1.5}
+.mkroki{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.mkrok{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--tx2);line-height:1.5}
+.mkrok b{color:var(--tx)}
+.mkrok .nr{flex:none;width:24px;height:24px;border-radius:99px;background:var(--blue);color:#fff;font-size:12.5px;
+  font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}
+.mkrok .row{margin-top:8px}
+.mkrok .row > *{flex:0 1 auto;min-width:0}
 svg.sunhz{width:100%;height:auto;display:block;background:#0d1520;border:1px solid var(--line);border-radius:10px;margin-top:8px}
 @media (max-width:640px){.sungodz{grid-template-columns:1fr}}
 
@@ -434,7 +444,7 @@ function note(k,v){ S.n[k]=v; if(v&&v.trim())mark(k,'reczne'); save(); paintBar(
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'3.5', data:'październik 2026',
+const APP={name:'Audyt Nieruchomości', ver:'3.8', data:'listopad 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -482,7 +492,11 @@ function knownFacts(c){
 /* Kody odpowiedzi zawsze z opisem. Same nazwy kodów wtyczka interpretuje
    po swojemu: „zabudowa” przy g_historia czytała jako „teraz jest zabudowane”,
    a kod znaczy „wcześniej stała tu zabudowa”. */
-const opisKodow=opts=>opts.map(o=>o[0]+' = '+o[1]).join(' | ');
+/* Opis kodu w prompcie. Przy pytaniach tak/nie opis był równy kodowi („tak = Tak”), a wtyczka
+   uznała to za brak opisu i odmówiła wyboru (u_przez w Rybojedzku). Dlatego tak/nie dostają
+   zdanie o tym, co znaczą. Etykiety w aplikacji zostają krótkie. */
+const OPIS_YN={tak:'Tak, odpowiedź twierdząca na pytanie z nagłówka',nie:'Nie, odpowiedź przecząca na pytanie z nagłówka'};
+const opisKodow=opts=>opts.map(o=>o[0]+' = '+((OPIS_YN[o[0]]&&String(o[1]).toLowerCase()===o[0])?OPIS_YN[o[0]]:o[1])).join(' | ');
 const TRYB_PRACY=`TRYB PRACY
 - Wykonaj wszystkie kroki jednym ciągiem. Nie zatrzymuj się między nimi po potwierdzenie.
 - Nie przedstawiaj planu do akceptacji — plan masz poniżej, po prostu go zrealizuj.
@@ -746,14 +760,17 @@ function importModuleAnswers(mid, elId){
   if(!t){alert('Wklej najpierw odpowiedź, którą zwróciła wtyczka.');return;}
   const acc=parseNotion(t);
   const A=(!acc.n&&!acc.notes)?parseTxt(t):acc;
+  if(acc.koncowka)S.imp={ts:new Date().toISOString(),tekst:acc.koncowka};
   if(!A.n&&!A.notes){
     alert('Nie rozpoznałem żadnej odpowiedzi.\n\nSzukam nagłówka pytania: kodu w apostrofach (np. `g_geo`) albo dokładnej treści pytania po znakach ###.\n\nNajczęstsza przyczyna to wklejony fragment bez nagłówka. Skopiuj całą odpowiedź wtyczki, razem z wierszem zaczynającym się od ###.');
     return;
   }
   save(); render();
+  const uw=importUwagi(A,false);
   alert('Wczytano '+A.n+' '+(A.n===1?'odpowiedź':'odpowiedzi')
     +(A.notes?' i '+A.notes+' notatek':'')
-    +(A.skipped?'\n\nPominięto '+A.skipped+' nierozpoznanych wartości.':''));
+    +(A.skipped?'\n\nPominięto '+A.skipped+' nierozpoznanych wartości.':'')
+    +(uw?'\n\n'+uw:''));
 }
 /* ============================================================
    JEDNO POLE NA WYNIKI
@@ -793,9 +810,11 @@ function importGlobal(){
   el.value='';save();render();
   const lista=Object.keys(zm).map(k=>k+': '+zm[k].a+(zm[k].n?' (+'+zm[k].n+' notatek)':'')).join(' · ');
   const bezRoz=allChecks().filter(c=>c.type!=='info'&&bezRozstrzygniecia(c)).length;
+  const uw=importUwagi(A,true);
   setPasteMsg(`<div class="msg ok"><b>Wczytano ${A.n} ${A.n===1?'odpowiedź':'odpowiedzi'}${A.notes?' i '+A.notes+' notatek':''}.</b>
     ${lista?'<br>'+esc(lista):''}
     ${A.skipped?'<br>Pominięto '+A.skipped+' nierozpoznanych wartości.':''}
+    ${uw?'<br>'+uw:''}
     ${ogloszenieMsg(og)}
     ${bezRoz?'<br>'+bezRoz+' '+(bezRoz===1?'punkt ma znacznik':'punktów ma znacznik')+' „sprawdzone, bez rozstrzygnięcia” — sprawdzenie się odbyło, ale rejestr nie dał odpowiedzi.':''}
     <br><br>Odznaczenia są już widoczne w sekcjach i w podsumowaniu na dole ekranu.
@@ -808,6 +827,7 @@ function wczytajOdpowiedz(t){
   const og=parseOgloszenie(t);
   const acc=parseNotion(t);
   const A=(!acc.n&&!acc.notes)?parseTxt(t):acc;
+  if(acc.koncowka)S.imp={ts:new Date().toISOString(),tekst:acc.koncowka};
   if(!S.scr)S.scr={};
   if(og.komentarz){S.scr.komentarz=og.komentarz;S.scr.ts=new Date().toISOString();}
   if(og.dopasowanie)S.scr.dopasowanie=og.dopasowanie;
@@ -919,9 +939,11 @@ function importScreening(){
       zamiast całej odpowiedzi wtyczki.</div>`;
     render();return;}
   save();
+  const uw=importUwagi(A,true);
   SCRMSG=`<div class="msg ok"><b>Wczytano ${A.n} ${odm(A.n,'odpowiedź','odpowiedzi','odpowiedzi')}${A.notes?' i '+A.notes+' '+odm(A.notes,'notatkę','notatki','notatek'):''}.</b>
     ${ogloszenieMsg(og)}
     ${A.skipped?'<br>Pominięto '+A.skipped+' nierozpoznanych wartości.':''}
+    ${uw?'<br>'+uw:''}
     <br>Werdykt jest niżej. Możesz wkleić kolejną porcję, poprzednie odpowiedzi zostaną zachowane.</div>`;
   el.value='';
   render();
@@ -1050,32 +1072,138 @@ function parseOgloszenie(t){
   if(kom.length)out.komentarz=kom.join(' ').slice(0,2500);
   return out;
 }
+/* Jawna odmowa wyboru kodu w notatce wtyczki: „Kodu nie wybieram”, „żadnego nie wybieram”,
+   „nie wybieram kodu”, „nie wybrałem żadnego”, „bez kodu”. Odmowa jednego konkretnego kodu
+   („Kodu „studnia” nie wybieram z samego braku przyłącza”, „Nie wybieram kodu „ok”, bo…”)
+   nie liczy się jako odmowa całości, bo wtedy wtyczka zwykle wskazuje inny kod.
+   Granice słów sprawdzam przez \p{L}, bo \b nie zna polskich liter. */
+function odmowaKodu(txt){
+  const t=String(txt||'').toLowerCase().replace(/\s+/g,' ');
+  if(t.indexOf('wyb')<0&&t.indexOf('wskaz')<0&&t.indexOf('zaznacz')<0&&t.indexOf('bez ')<0)return false;
+  const QS='„"\'‘“`”’', Q='['+QS+']';
+  const W='(?:kodu|żadnego(?: kodu)?|żadnej opcji)';
+  const V='(?:wybieram|wybrałem|wybrałam|wybrano|wskazuję|wskazałem|wskazałam|zaznaczam|zaznaczyłem|zaznaczyłam)';
+  /* Bez lookbehind, żeby import działał też w starszym Safari na telefonie. Samo „nie wybieram”
+     na końcu zdania liczy się tylko wtedy, gdy nie stoi tuż za cudzysłowem zamykającym nazwę kodu. */
+  const re=new RegExp('(?:^|[^\\p{L}])(?:'
+    +W+' nie '+V+'(?! ?'+Q+')'
+    +'|nie '+V+' '+W+'(?! ?'+Q+')'
+    +'|bez (?:wyboru )?kodu(?! ?'+Q+'))'
+    +'|(?:^|[^\\p{L}'+QS+'\\s] ?|\\p{L} )nie '+V+'(?= ?(?:[.,;:!?)]|$))','u');
+  return re.test(t);
+}
+/* Odpowiedź tekstowa, która mówi tylko, że danych nie ma: „brak w ogłoszeniu”, „nie podano”,
+   „nie wykonałem”, „n/d”, „-”, „?” albo nietknięty szablon z promptu („wartość”). Taki tekst
+   nie jest odpowiedzią i nie może dawać statusu „rozstrzygnięte”: trafia do notatki. */
+const ZASLEPKA_RE=/^(?:brak(?!\p{L})|nie(?!\p{L})|n\/?d(?!\p{L})|b\.?d\.?(?!\p{L})|nieznan|nieustal|niedostęp|pomini[ęe]|tego kroku|[-—–?]+$|wartość(?!\p{L})|kod(?!\p{L})|\(?puste\)?$)/iu;
+/* Zaślepki z pól tekstowych: po wczytaniu notatek dopisuję je na początek notatki,
+   żeby informacja „wtyczka nie znalazła numeru” nie zginęła. Wcześniejszą zaślepkę
+   w polu usuwam, bo to ten sam brak danych, tylko w złym miejscu. Wspólne dla
+   wklejki, pliku .txt i .csv, bo wszystkie przechodzą przez applyAnswer(). */
+function scalZaslepki(acc){
+  (acc.zaslepki||[]).forEach(z=>{
+    const stare=S.a[z.id];
+    if(stare!=null&&String(stare).trim()!==''&&ZASLEPKA_RE.test(String(stare).trim())){
+      delete S.a[z.id];(acc.usuniete=acc.usuniete||[]).push({id:z.id,kod:String(stare),zaslepka:true});
+    }
+    const n=String(S.n[z.id]||'');
+    if(n.toLowerCase().indexOf(z.val.toLowerCase())<0){
+      S.n[z.id]=('Odpowiedź wtyczki: '+z.val.replace(/[.\s]+$/,'')+'.'+(n?' '+n:'')).trim();
+      if(!n)acc.notes++;
+    }
+    mark(z.id,'import');
+  });
+  return acc;
+}
+/* Dopiski do komunikatu po imporcie: wiersze [x] pominięte przez odmowę w notatce,
+   odpowiedzi usunięte z wcześniejszej wklejki, odpowiedzi ręczne zostawione mimo odmowy,
+   zaślepki z pól tekstowych. */
+function importUwagi(A,html){
+  const q=html?esc:(s=>s);
+  const kodLab=(id,k)=>{const c=allChecks().find(x=>x.id===id);const o=c&&c.opts&&c.opts.find(x=>x[0]===k);return id+': „'+k+'”'+(o?' ('+o[1]+')':'');};
+  const u=[];
+  if(A.odmowy&&A.odmowy.length)u.push('Pominięte wiersze [x], bo w notatce wtyczka pisze, że kodu nie wybiera: '+A.odmowy.map(x=>kodLab(x.id,x.kod)).join(', ')+'.');
+  const us=(A.usuniete||[]).filter(x=>!x.zaslepka), za=(A.usuniete||[]).filter(x=>x.zaslepka);
+  if(us.length)u.push('Usunięte odpowiedzi z wcześniejszej wklejki, bo nowa notatka odmawia wyboru kodu: '+us.map(x=>kodLab(x.id,x.kod)).join(', ')+'.');
+  if(A.zostawione&&A.zostawione.length)u.push('Notatka odmawia wyboru kodu, ale odpowiedź wpisana ręcznie została: '+A.zostawione.map(x=>kodLab(x.id,x.kod)).join(', ')+'. Sprawdź, czy ją zostawić.');
+  if(A.zaslepki&&A.zaslepki.length)u.push('Pole tekstowe bez wartości ('+A.zaslepki.map(x=>x.id+': „'+x.val+'”').join(', ')+'): to brak danych, nie odpowiedź, więc trafia do notatki'+(za.length?', a poprzednia zaślepka zniknęła z pola':'')+'.');
+  if(A.koncowka){const k=A.koncowka.replace(/\s+/g,' ');u.push('Tekst wtyczki poza blokami odpowiedzi (nie trafił do notatek, jest na karcie Start): „'+(k.length>280?k.slice(0,280).replace(/\s+\S*$/,'')+'…':k)+'”');}
+  return u.map(q).join(html?'<br>':'\n');
+}
+/* Końcówka, którą wtyczka dopisuje po blokach odpowiedzi: zadania niedokończone, pytania
+   do mnie, podsumowanie sesji. Taki nagłówek kończy notatkę ostatniego punktu, a reszta idzie
+   do S.imp (karta Start) i do komunikatu po imporcie, nie do notatki. W 3.6 i 3.7 doklejała się
+   do notatki ostatniego pytania (s_smog, b_samowola, c_rcn w Rybojedzku). „Podsumowanie:”
+   liczy się tylko jako osobny nagłówek, bo w środku notatki może zaczynać zwykły akapit. */
+function naglowekKoncowki(l){
+  const t=String(l||'').trim().replace(/^>\s?/,'').replace(/^#{1,6}\s*/,'').replace(/\*\*/g,'').trim();
+  if(!t)return false;
+  if(/^(?:do dokończenia|do zrobienia|zadania (?:niedokończone|niewykonane|nie wykonane|wykonane częściowo|pozostałe|do dokończenia|do zrobienia)|niedokończone zadania|pozostałe zadania|pytania (?:na koniec|do ciebie|otwarte|końcowe)|uwagi końcowe|co dalej|podsumowanie (?:sesji|zadań|pracy))\s*(?:\(|:|$)/i.test(t))return true;
+  return /^(?:podsumowanie|pytania|uwagi|niedokończone)\s*:?$/i.test(t);
+}
 function parseNotion(t){
   const acc={n:0,notes:0,skipped:0};
   const linie=t.split(/\r?\n/);
-  let cur=null, notatka=null;
-  const zapiszNotatke=()=>{
-    if(cur&&notatka!==null){
-      const v=notatka.join(' ').replace(/\s{2,}/g,' ').trim();
-      if(v){S.n[cur]=v.replace(/^\s*\[(?:z promptu|ręcznie|z wklejki|ze starszego zapisu|dopisane w Notion)[^\]]*\]\s*/i,'');acc.notes++;mark(cur,'import');}
-    }
+  let cur=null, notatka=null, nota='', odp=null, aPrzed=null, srcPrzed=null, poKody=false;
+  let koncowka=[], zbieraj=false;
+  const czysc=v=>v.replace(/\s{2,}/g,' ').trim().replace(/^\s*\[(?:z promptu|ręcznie|z wklejki|ze starszego zapisu|dopisane w Notion)[^\]]*\]\s*/i,'');
+  const zamknijNotatke=()=>{
+    if(notatka!==null){const v=czysc(notatka.join(' '));if(v)nota=v;}
     notatka=null;
+  };
+  const doKoncowki=l=>{zbieraj=true;koncowka.push(String(l).replace(/^\s*>\s?/,'').replace(/^\s*#{1,6}\s*/,'').replace(/\*\*/g,'').trim());};
+  /* Decyzja o kodzie zapada na końcu bloku, gdy znam już notatkę. Wtyczka potrafi
+     wstawić wiersz [x] i w tej samej notatce napisać, że kodu nie wybiera; taki kod
+     nie wchodzi. Jawna odmowa unieważnia też kod z wcześniejszej wklejki: w 3.6 zostawał
+     i wyglądał na potwierdzony przez notatkę, która mówiła co innego. Kod kliknięty
+     ręcznie zostaje z ostrzeżeniem, bo rejestr nie może skasować pomiaru z terenu. */
+  const zakonczBlok=()=>{
+    zamknijNotatke();
+    if(cur){
+      const c=allChecks().find(x=>x.id===cur);
+      if(odmowaKodu(nota)){
+        if(odp)(acc.odmowy=acc.odmowy||[]).push({id:cur,kod:odp.kandydat!=null?odp.kandydat:odp.wolna});
+        if(c&&c.opts&&aPrzed!=null&&aPrzed!==''&&aPrzed!=='?'){
+          if(srcPrzed==='import'||srcPrzed==='prompt'){delete S.a[cur];(acc.usuniete=acc.usuniete||[]).push({id:cur,kod:aPrzed});}
+          else (acc.zostawione=acc.zostawione||[]).push({id:cur,kod:aPrzed});
+        }
+        mark(cur,'import');
+      } else if(odp){
+        if(odp.kandydat!=null){
+          if(applyAnswer(cur,odp.kandydat,acc))acc.n++;
+          else if(applyAnswer(cur,odp.reszta,acc))acc.n++;
+        } else if(applyAnswer(cur,odp.wolna,acc))acc.n++;
+      }
+      if(nota){S.n[cur]=nota;acc.notes++;mark(cur,'import');}
+    }
+    cur=null;nota='';odp=null;aPrzed=null;srcPrzed=null;poKody=false;
   };
   linie.forEach(l=>{
     /* blok `ogl` albo `werdykt` kończy bieżące pytanie, inaczej podsumowanie
        wtyczki nadpisałoby notatkę ostatniego punktu */
-    if(kodSpecjalny(l)){zapiszNotatke();cur=null;return;}
+    if(kodSpecjalny(l)){zakonczBlok();zbieraj=false;return;}
     const kod=znajdzKod(l);
-    if(kod){zapiszNotatke();cur=kod;return;}
-    if(!cur)return;
-    /* zaznaczona opcja: [x] [X] [✓] ☑ ☒ ✔ — z myślnikiem po kodzie albo bez */
+    if(kod){
+      zakonczBlok();zbieraj=false;cur=kod;
+      /* stan sprzed wklejki: wiersz Status z eksportu nadpisze źródło znacznika, a przy
+         odmowie muszę wiedzieć, czy poprzedni kod przyszedł z wtyczki, czy z ręki */
+      aPrzed=S.a[kod];srcPrzed=S.s&&S.s[kod]?S.s[kod].src:null;
+      return;
+    }
+    /* nagłówek, który nie jest pytaniem: „## Sekcja” z eksportu Notion tylko kończy blok;
+       nagłówek trzeciego stopnia bez rozpoznanego kodu albo nagłówek końcówki zaczyna tekst
+       poza blokami. Wcześniej taki nagłówek zostawiał poprzednie pytanie otwarte i kolejny
+       wiersz [x] nadpisywał jego odpowiedź. */
+    const nag=l.match(/^\s*(#{1,6})\s/);
+    if(nag){zakonczBlok();if(nag[1].length>=3||naglowekKoncowki(l))doKoncowki(l);else zbieraj=false;return;}
+    if(!cur){if(zbieraj&&!/^\s*(?:-{3,}|={3,}|_{3,})\s*$/.test(l))doKoncowki(l);return;}
+    /* zaznaczona opcja: [x] [X] [✓] ☑ ☒ ✔ — z myślnikiem po kodzie albo bez.
+       Czeka do końca bloku, aż przeczytam notatkę. */
     const zazn=l.match(/^\s*(?:[-*•]\s*)?(?:\[\s*[xX✓✔]\s*\]|[☑☒✅✔])\s*(.+)$/);
     if(zazn){
-      zapiszNotatke();
+      zamknijNotatke();
       const reszta=zazn[1].trim();
-      const kandydat=reszta.split(/\s*[—–-]\s*|\s{2,}/)[0].trim();
-      if(applyAnswer(cur,kandydat,acc))acc.n++;
-      else if(applyAnswer(cur,reszta,acc))acc.n++;
+      odp={kandydat:reszta.split(/\s*[—–-]\s*|\s{2,}/)[0].trim(),reszta};
       return;
     }
     /* wiersz statusu z eksportu — odtwarza znacznik sprawdzenia razem z datą */
@@ -1089,29 +1217,36 @@ function parseNotion(t){
       }
       return;
     }
-    /* odpowiedź tekstowa */
+    /* lista kodów przepisana z promptu („kody: ok = …”) zamyka notatkę: blok jest kompletny */
+    if(/^\s*kody:\s*[a-z][a-z_0-9]*\s*(?:=|,|\||$)/i.test(l)){zamknijNotatke();poKody=true;return;}
+    /* odpowiedź tekstowa: też czeka do końca bloku */
     const wolna=l.match(/^\s*(?:[-*•]\s*)?(?:\[[^\]]*\]\s*)?odpowied[zź]:\s*(.+)$/i);
-    if(wolna){zapiszNotatke();if(applyAnswer(cur,wolna[1],acc))acc.n++;return;}
+    if(wolna){zamknijNotatke();odp={wolna:wolna[1]};return;}
     /* początek notatki */
-    const nota=l.match(/^\s*>?\s*notatka:\s*(.*)$/i);
-    if(nota){zapiszNotatke();notatka=[nota[1]];return;}
+    const pocz=l.match(/^\s*>?\s*notatka:\s*(.*)$/i);
+    if(pocz){zamknijNotatke();notatka=[pocz[1]];poKody=false;return;}
     /* kontynuacja notatki: kolejny wiersz cytatu albo zwykły tekst pod notatką */
     if(notatka!==null){
       const dalej=l.match(/^\s*>\s?(.*)$/);
-      if(dalej){notatka.push(dalej[1]);return;}
-      /* Notatka trwa aż do nowego pytania, wiersza opcji albo linii poziomej.
-         Wcześniej kończyła ją pusta linia i każdy wiersz zaczynający się od
+      if(dalej){if(naglowekKoncowki(dalej[1])){zakonczBlok();doKoncowki(dalej[1]);return;}notatka.push(dalej[1]);return;}
+      /* Notatka trwa aż do nowego pytania, wiersza opcji, linii poziomej albo nagłówka
+         końcówki. Wcześniej kończyła ją pusta linia i każdy wiersz zaczynający się od
          gwiazdki albo myślnika — czyli akapit „**Ustalenia:**” i zwykła lista
          wypunktowana ucinały odpowiedź wtyczki w pół zdania. */
       if(!l.trim()){notatka.push('');return;}
+      if(naglowekKoncowki(l)){zakonczBlok();doKoncowki(l);return;}
       if(!/^\s*(?:#{1,6}\s|={3,}|-{3,}|(?:[-*•]\s*)?\[)/.test(l)){notatka.push(l.trim().replace(/\*\*/g,''));return;}
-      zapiszNotatke();
+      zamknijNotatke();
     }
     /* niezaznaczona opcja kończy zbieranie notatki */
-    if(/^\s*(?:[-*•]\s*)?\[\s*\]/.test(l))zapiszNotatke();
+    if(/^\s*(?:[-*•]\s*)?\[\s*\]/.test(l))zamknijNotatke();
+    /* po wierszu „kody:” dalszy tekst to dopisek wtyczki, nie notatka */
+    else if(poKody&&l.trim()){zakonczBlok();doKoncowki(l);}
   });
-  zapiszNotatke();
-  return acc;
+  zakonczBlok();
+  const k=koncowka.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  if(k)acc.koncowka=k.slice(0,3000);
+  return scalZaslepki(acc);
 }
 
 function importField(e){
@@ -1123,9 +1258,11 @@ function importField(e){
     e.target.value='';
     if(!res.n){alert('Nie znalazłem żadnych odpowiedzi w tym pliku.\n\nSprawdź, czy zaznaczyłeś odpowiedzi znakiem x w nawiasie, albo czy w arkuszu wypełniona jest kolumna "Odpowiedz".');return;}
     save();render();
+    const uw=importUwagi(res,false);
     alert('Wczytano '+res.n+' '+(res.n===1?'odpowiedź':'odpowiedzi')
       +(res.notes?' i '+res.notes+' notatek':'')
-      +(res.skipped?'\n\nPominięto '+res.skipped+' nierozpoznanych wartości.':''));
+      +(res.skipped?'\n\nPominięto '+res.skipped+' nierozpoznanych wartości.':'')
+      +(uw?'\n\n'+uw:''));
   };
   r.readAsText(f,'utf-8');
 }
@@ -1137,7 +1274,12 @@ function applyAnswer(id,val,acc){
     if(!hit)hit=c.opts.find(o=>o[1].toLowerCase()===val.toLowerCase());
     if(!hit){acc.skipped++;return false;}
     S.a[id]=hit[0];
-  } else S.a[id]=val;
+  } else {
+    /* pole tekstowe: zaślepka („brak w ogłoszeniu”) nie jest odpowiedzią,
+       trafia do notatki w scalZaslepki() na końcu importu */
+    if(ZASLEPKA_RE.test(val)){(acc.zaslepki=acc.zaslepki||[]).push({id,val});return false;}
+    S.a[id]=val;
+  }
   mark(id,'import');
   return true;
 }
@@ -1155,7 +1297,7 @@ function parseTxt(t){
     const mN=l.match(/^\s*(?:#\s*)?notatka:\s*(.*)$/i);
     if(mN&&mN[1].trim()){S.n[cur]=mN[1].trim();acc.notes++;mark(cur,'import');}
   });
-  return acc;
+  return scalZaslepki(acc);
 }
 function splitCsvLine(l,sep){
   const out=[];let cur='',q=false;
@@ -1183,7 +1325,7 @@ function parseCsv(t){
     if(c[3]&&applyAnswer(c[0],c[3],acc))acc.n++;
     if(c[5]){const ch=allChecks().find(x=>x.id===c[0]); if(ch){S.n[c[0]]=c[5];acc.notes++;mark(c[0],'import');}}
   });
-  return acc;
+  return scalZaslepki(acc);
 }
 
 /* ============================================================
@@ -3055,7 +3197,7 @@ function viewStart(){
   h+=startMapa();
   if(S.tryb)h+=startOferta();
   if(S.tryb==='pelny')h+=startLista();
-  h+=startWtyczka();
+  h+=dopisekWtyczki()+startWtyczka();
   if(S.tryb!=='screening')h+=startJak();
   $('#view').innerHTML=h;
   setTimeout(()=>drawMap(S.parcel),60);
@@ -3252,6 +3394,20 @@ function startLista(){
       i dopisuje je bez kasowania tego, co już wypełnione.</p>
   </div>`;
 }
+/* Tekst, który wtyczka dopisała poza blokami odpowiedzi przy ostatniej wklejce (S.imp):
+   zadania niedokończone, pytania do mnie. Zostaje tu, nie w notatkach pytań. */
+function dopisekWtyczki(){
+  const d=S.imp; if(!d||!d.tekst)return '';
+  const dt=d.ts?new Date(d.ts).toLocaleDateString('pl-PL'):'';
+  return `  <div class="card tight">
+    <h3>Co wtyczka dopisała poza blokami odpowiedzi${dt?' ('+dt+')':''}</h3>
+    <div class="help" style="margin-top:0">Zadania niedokończone, pytania do Ciebie, uwagi po sesji. Do notatek pytań to nie trafia.
+      Kolejna wklejka z takim dopiskiem zastąpi ten tekst.</div>
+    <div class="help" style="margin-top:8px;white-space:pre-wrap">${esc(d.tekst)}</div>
+    <p style="margin:10px 0 0"><button class="btn sm sec" onclick="usunDopisek()">Usuń</button></p>
+  </div>`;
+}
+function usunDopisek(){delete S.imp;save();render();}
 function startWtyczka(){
   return `  <div class="card tight">
     <h3>Wtyczka przerywa i pyta o zgodę? Ustaw ją raz</h3>
@@ -4547,19 +4703,26 @@ function modelBlok(){
   const o=oknoModelu(); if(!o)return '';
   const mbP=(o.bok*o.bok*4*19/1e6).toFixed(1), mbT=(o.bok*o.bok*19/1e6).toFixed(1);
   const inny=S.nmpt&&!modelGotowy();
-  return `<div class="msg info" style="margin:10px 0">
-    <b>Cienie od sąsiednich budynków i drzew.</b> GUGiK udostępnia model pokrycia terenu (NMPT): wysokość dachów i koron drzew
-    co 0,5 m, także na działkach obok. Usługa nie pozwala stronie pobrać danych samodzielnie, więc zrób to w dwóch krokach:
-    <ol style="margin:6px 0 0;padding-left:18px">
-      <li>Pobierz wycinek ${o.bok} × ${o.bok} m wokół działki:
-        <a href="${urlModelu('nmpt')}" target="_blank" rel="noopener" style="color:#93c5fd">model pokrycia terenu (NMPT, ok. ${mbP} MB)</a>,
-        a dla dokładniejszego rozróżnienia gruntu od dachów i koron także
-        <a href="${urlModelu('nmt')}" target="_blank" rel="noopener" style="color:#93c5fd">model terenu (NMT, ok. ${mbT} MB)</a>.
-        Serwer odpowiada po kilku sekundach, a przeglądarka zapisuje plik <span class="mono">result.asc</span>.</li>
-      <li>Wczytaj pobrane pliki, jeden albo oba naraz:
-        <button class="btn sm" style="margin-left:4px" onclick="document.getElementById('nmptF').click()">Wczytaj pliki</button></li>
-    </ol>
-    ${inny?'<div style="margin-top:8px"><b>Wczytany wcześniej model dotyczy innego miejsca niż obecna działka.</b> Pobierz nowy wycinek.</div>':''}
+  /* osobna, wyraźna ramka na górze karty: w 3.5 zwykła ramka informacyjna ginęła między opisem
+     a kafelkami i karta wyglądała jak przed zmianą */
+  return `<div class="modelcta">
+    <div class="mhd">Włącz cienie od sąsiednich budynków i drzew</div>
+    <p>Dokładniejsza wersja tej karty: mapa cieni z suwakiem godziny, godziny słońca na działce i diagram horyzontu
+      dla wybranego miejsca, np. tarasu. Liczę je z modelu pokrycia terenu GUGiK (NMPT), czyli wysokości dachów i koron drzew
+      co 0,5 m, także na działkach obok. Strona nie może pobrać tych danych sama, więc wystarczą dwa kliknięcia:</p>
+    <div class="mkroki">
+      <div class="mkrok"><span class="nr">1</span><div><b>Pobierz wycinek ${o.bok} × ${o.bok} m wokół działki.</b>
+        Serwer odpowiada po kilku sekundach, a przeglądarka zapisuje plik <span class="mono">result.asc</span>.
+        <div class="row">
+          <a class="btn" href="${urlModelu('nmpt')}" target="_blank" rel="noopener">Pobierz model pokrycia terenu NMPT (ok. ${mbP.replace('.',',')} MB)</a>
+          <a class="btn sec" href="${urlModelu('nmt')}" target="_blank" rel="noopener">Model terenu NMT, opcjonalnie (ok. ${mbT.replace('.',',')} MB)</a>
+        </div></div></div>
+      <div class="mkrok"><span class="nr">2</span><div><b>Wczytaj pobrane pliki</b>, jeden albo oba naraz.
+        <div class="row"><button class="btn" onclick="document.getElementById('nmptF').click()">Wczytaj pliki</button></div></div></div>
+    </div>
+    ${inny?'<p><b style="color:#fca5a5">Wczytany wcześniej model dotyczy innego miejsca niż obecna działka.</b> Pobierz nowy wycinek.</p>':''}
+    <p style="margin-top:10px">Model terenu pozwala dokładniej odróżnić grunt od dachów i koron drzew. Model obejmuje jedną działkę
+      z otoczeniem, więc dla każdej nieruchomości pobierasz go osobno.</p>
     <input type="file" id="nmptF" accept=".asc,.txt" multiple class="hidden" onchange="wczytajModel(event)">
   </div>${SUNMSG}`;
 }
@@ -4684,13 +4847,14 @@ function sunCardProsta(){
   };
 
   return `<div class="card">
-    <h2>Nasłonecznienie i cienie <span class="pill">obliczenia lokalne</span></h2>
+    <h2>Nasłonecznienie i cienie <span class="pill">wersja uproszczona</span></h2>
+    ${modelBlok()}
+    <h3>Wersja uproszczona: cień tylko z tego budynku</h3>
     <p class="lead">Rzut z góry na dwanaście sytuacji: cztery pory roku i trzy pory dnia.
       Ciemny obszar to cień rzucany przez budynek, przerywana linia to granica działki.
       Pozycja słońca liczona z algorytmu astronomicznego dla twoich współrzędnych.
       Kolor nieba i żółty punkt pokazują porę dnia i wysokość słońca, jaśniejsza strona
       budynku to ta, na którą w danej chwili pada światło.</p>
-    ${modelBlok()}
 
     <div class="row" style="align-items:flex-end">
       <label class="f" style="max-width:190px"><span>Wysokość budynku (m)</span>

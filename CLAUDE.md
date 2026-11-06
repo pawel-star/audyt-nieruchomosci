@@ -12,7 +12,7 @@ Ten plik ma pozwolić wejść w projekt bez czytania historii rozmów. Przeczyta
 
 **Nigdy nie wycinaj po `h.index(A)` do `h.index(B)`**, jeśli nie masz pewności, że między A i B nie ma niczego więcej. Bezpieczna metoda: `assert` na dokładnym starym fragmencie i `replace`, nigdy wycinanie po zakresie.
 
-**Po każdej zmianie sprawdź składnię:** wyciągnij blok `<script>` do pliku i uruchom `node --check`. Potem uruchom test funkcjonalny — wyeksportuj skrypt, podstaw atrapy `document`, `localStorage`, `window` i wywołaj `viewModule` dla każdej sekcji, `viewStart`, `viewReport`. Ten test wielokrotnie wyłapał realne błędy przed oddaniem pliku.
+**Po każdej zmianie sprawdź składnię:** wyciągnij blok `<script>` do pliku i uruchom `node --check`. Potem uruchom test funkcjonalny — wyeksportuj skrypt, podstaw atrapy `document`, `localStorage`, `window` i wywołaj `viewModule` dla każdej sekcji, `viewStart`, `viewReport`. Ten test wielokrotnie wyłapał realne błędy przed oddaniem pliku. Gotowe skrypty leżą w `test/`: `harness.js` (atrapy DOM i `fresh(ścieżka)`, które zwraca kontekst z `run(kod)`), `funk.js` (wszystkie widoki w kilku stanach), `regresja.js` (import z okna „Wklej wyniki”, z kolumnami „przed” po podaniu poprzedniej wersji jako drugiego argumentu) i `roundtrip.js` (eksport → import dla Notion, .txt, .csv). Zapisany audyt z prawdziwymi danymi podajesz w zmiennej `AUDYT_JSON`; trzymaj go poza repozytorium, bo repozytorium jest publiczne.
 
 **Nie skracaj treści merytorycznej.** Opisy wad, instrukcje i kwoty są wynikiem researchu i weryfikacji. Jeśli coś wygląda na zbyt rozbudowane, zapytaj, zanim usuniesz.
 
@@ -29,7 +29,7 @@ Kolejność w `index.html`:
    - `zadaniaScreeningu()`, `promptScreening()` — prompt startowy screeningu
    - `togglePaste()`, `importGlobal()` — wspólne okno wklejania wyników
    - `wczytajOdpowiedz()`, `importScreening()` — jedno wklejenie odpowiedzi screeningu (wspólne z oknem „Wklej wyniki”)
-   - `kodSpecjalny()`, `parseOgloszenie()`, `parseNotion()`, `parseTxt()`, `parseCsv()`, `applyAnswer()` — parsery odpowiedzi
+   - `kodSpecjalny()`, `parseOgloszenie()`, `odmowaKodu()`, `ZASLEPKA_RE`, `scalZaslepki()`, `importUwagi()`, `naglowekKoncowki()`, `parseNotion()`, `applyAnswer()`, `parseTxt()`, `parseCsv()` — parsery odpowiedzi i komunikat po imporcie
    - `saveFile()`, `loadFile()`, `resetAll()`, `clearModule()` — zapis i czyszczenie
    - `R()`, `Y()`, `G()` — konstruktory flag; `$`, `esc`, `fmt`, `zl`, `dist` — narzędzia
    - `TRYBY`, `wTrybie()`, `checksTrybu()`, `modulyTrybu()` — zakres pytań w trybie
@@ -39,7 +39,7 @@ Kolejność w `index.html`:
    - `LK()`, `linkChips()`, `linkList()`, `MODLINKS`, `toolbar()` — linki zewnętrzne
    - `tabItems()`, `render()`, `viewModule()`, `renderCheck()` — renderowanie
    - `viewWizyta()` (checklista oględzin), `kwCard()`, `promptKsiega()` (pełna księga), `poiCard()`
-   - `viewStart()` złożony z `startDane()`, `startWybor()`, `startScreening()`, `startPelny()`, `startMapa()`, `startOferta()`, `startLista()`, `startWtyczka()`, `startJak()`; `drawMap()`
+   - `viewStart()` złożony z `startDane()`, `startWybor()`, `startScreening()`, `startPelny()`, `startMapa()`, `startOferta()`, `startLista()`, `dopisekWtyczki()` (tekst wtyczki poza blokami, `S.imp`), `startWtyczka()`, `startJak()`; `drawMap()`
    - tryb i decyzja: `wybierzTryb()`, `poszerz()`, `odrzuc()`; werdykt wstępny: `werdyktScreening()`, `zdanieOCenie()`, `werdyktKarta()`
    - wyszukiwanie działki: `findAddr()`, `geocode()`, `uldk()`, `uldkPoId()`, `findId()`, `setLoc()`, `loadPOI()`
    - eksporty: `fieldChecks()`, `exportTxt()`, `exportCsv()`, `notionMd()`
@@ -84,6 +84,10 @@ flagsAll()  →  paintBar() i viewReport()  →  wycena + pismo negocjacyjne
 
 `importGlobal()` **dopisuje**, nie nadpisuje całości: pytania nieobecne w tekście zostają nietknięte. To celowe.
 
+`parseNotion()` decyduje o kodzie dopiero na końcu bloku, po przeczytaniu notatki (od 3.7). Jeśli notatka jawnie odmawia wyboru (`odmowaKodu()`: „kodu nie wybieram”, „żadnego nie wybieram”, „bez kodu”), wiersz `[x]` z tego bloku nie wchodzi, a kod z wcześniejszej wklejki jest usuwany i wypisany w komunikacie; kod kliknięty ręcznie albo bez znacznika zostaje z ostrzeżeniem. Odmowa jednego konkretnego kodu („Kodu „studnia” nie wybieram”) nie liczy się jako odmowa całości. Pola tekstowe nie przyjmują zaślepek („brak w ogłoszeniu”, „n/d”, „wartość”): `applyAnswer()` odkłada je do `acc.zaslepki`, a `scalZaslepki()` dopisuje je na początek notatki. Nie wracaj do zaznaczania kodu od razu przy wierszu `[x]`: tak w 3.6 powstawały odpowiedzi sprzeczne z notatką, które wyglądały na rozstrzygnięte.
+
+Tekst, który wtyczka dopisuje poza blokami odpowiedzi (zadania niedokończone, pytania do Pawła, podsumowanie sesji), nie trafia do notatek (od 3.8). Blok kończy się na wierszu `kody: …`, na nagłówku końcówki (`naglowekKoncowki()`: „Do dokończenia”, „Zadania niedokończone”, „Pytania na koniec”, samo „Podsumowanie:” w osobnym wierszu) albo na nagłówku `###` bez rozpoznanego kodu. Reszta idzie do `acc.koncowka` → `S.imp` i jest widoczna w komunikacie po imporcie oraz na karcie Start (`dopisekWtyczki()`), do usunięcia przyciskiem. Nagłówek `##` z eksportu Notion (nazwa sekcji) tylko zamyka blok. Nierozpoznany nagłówek `###` musi zamykać blok: w 3.7 zostawiał poprzednie pytanie otwarte i kolejny wiersz `[x]` nadpisywał jego odpowiedź.
+
 Screening ma skróconą drogę: `promptScreening()` → wtyczka → jedno wklejenie → `wczytajOdpowiedz()` → blok `ogl` do `S.ogl` (odczyt ogłoszenia; do `S.meta` tylko w puste pola albo gdy pole też pochodziło z ogłoszenia), odpowiedzi do `S.a`/`S.n`, blok `werdykt` do `S.scr.komentarz` → `werdyktScreening()`.
 
 ## Tryby
@@ -96,7 +100,7 @@ Screening ma skróconą drogę: `promptScreening()` → wtyczka → jedno wkleje
 - Zakładka Oględziny i Negocjacje istnieją tylko w trybie pełnym. Pełna treść księgi siedzi w `S.kw` i trafia do `promptKsiega()`.
 - **Ogłoszenie i audyt to dwa źródła, nie scalaj ich.** `S.ogl` trzyma odczyt ogłoszenia, `S.meta` twoje dane (z nich idą obliczenia). `rozbieznosci()` zestawia je obok siebie, z ewidencją dla działki, a `uwagiSpojnosci()` dokłada niepewne dopasowanie i inną działkę wskazaną przez wtyczkę. Rozjazd jest ustaleniem (pomyłka, inna oferta, zawyżone parametry), więc pokazuj go nad werdyktem i nie pozwalaj mu dać zielonego światła. W 3.1 ogłoszenie nadpisywało wpis i ta informacja ginęła.
 
-**Kody odpowiedzi w promptach zawsze z opisem** (`opisKodow()`, format `kod = opis`). Same nazwy kodów wtyczka interpretuje po swojemu i wybiera źle.
+**Kody odpowiedzi w promptach zawsze z opisem** (`opisKodow()`, format `kod = opis`). Same nazwy kodów wtyczka interpretuje po swojemu i wybiera źle. Przy tak/nie opis w aplikacji jest równy kodowi („tak = Tak”), a wtyczka uznała to za brak opisu i odmówiła wyboru; dlatego `OPIS_YN` daje w prompcie „Tak, odpowiedź twierdząca na pytanie z nagłówka”, a etykiety przycisków zostają krótkie.
 
 ## Decyzje projektowe i ich powody
 
@@ -129,7 +133,9 @@ pobierać tego `fetch`-em ani przez wtyczkę (za dużo liczb do przepisania). Mo
 Współrzędne: `doPL92()` / `zPL92()` (Gauss-Krüger, GRS80). Sprawdzian: narożniki działki 302104_2.0010.259/26
 muszą wyjść w PL-1992 z dokładnością do 0,5 m wobec geoportalu (np. N 517765,99 / E 362723,37).
 Cień: `maskaCienia()` idzie od komórki w stronę słońca i sprawdza, czy coś wystaje ponad promień (próg 0,3 m).
-Bez wczytanego modelu karta wraca do wersji z jednym budynkiem (`sunCardProsta()`) i wysokością z ręki.
+Bez wczytanego modelu karta wraca do wersji z jednym budynkiem (`sunCardProsta()`) i wysokością z ręki, a na jej górze
+stoi wyróżniona ramka pobierania (`modelBlok()`, klasa `modelcta`). Nie chowaj jej niżej: w 3.5 zwykła ramka ginęła
+i karta wyglądała, jakby nowej wersji nie było.
 Google Photorealistic 3D Tiles odpada: płatne, ograniczone do dużych miast, a klucz API w publicznym repozytorium to wyciek.
 
 ## Ograniczenia techniczne — nie próbuj ich obchodzić
@@ -150,5 +156,5 @@ Polszczyzna naturalna, nie kalka z angielskiego. Strona czynna zamiast biernej, 
 1. Kopia pliku przed edycją.
 2. Zmiana.
 3. `node --check` na wyciągniętym skrypcie.
-4. Test funkcjonalny wszystkich widoków.
+4. Test funkcjonalny wszystkich widoków: `node test/funk.js`. Po zmianach w parserach i eksportach także `node test/regresja.js index.html <kopia poprzedniej wersji>` i `node test/roundtrip.js`. Nowy przypadek z życia dopisz do `CASES` w `regresja.js`, zanim naprawisz błąd.
 5. Podbicie `APP.ver` i wpis w `CHANGELOG.md`.
