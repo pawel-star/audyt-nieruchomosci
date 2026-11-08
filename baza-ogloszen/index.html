@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Baza ogłoszeń</title>
+<style>
+:root{
+  --bg:#0f1218; --panel:#161b26; --panel2:#1d2432; --line:#2a3243;
+  --tx:#e8ecf4; --tx2:#94a3b8; --tx3:#64748b;
+  --red:#ef4444; --yellow:#f59e0b; --green:#22c55e; --blue:#3b82f6; --violet:#a78bfa; --orange:#fb923c; --teal:#2dd4bf;
+  --r:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5}
+a{color:var(--blue)}
+button,input,select{font-family:inherit;font-size:14px}
+header{position:sticky;top:0;z-index:10;background:rgba(15,18,24,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.hd{max-width:900px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:10px}
+.hd h1{font-size:16px;margin:0;flex:1;font-weight:650}
+.hd .sub{display:block;font-size:11px;color:var(--tx3);font-weight:400}
+.btn{background:var(--panel2);color:var(--tx2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;font-weight:600;font-size:12px}
+.wrap{max-width:900px;margin:0 auto;padding:14px 16px 60px}
+.pipe{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.pipe button{background:var(--panel);color:var(--tx2);border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.pipe button b{color:var(--tx);font-weight:650}
+.pipe button.on{border-color:var(--blue);color:var(--tx);background:#132133}
+.pipe i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.tools{display:flex;gap:8px;margin-bottom:14px}
+.tools input{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:8px 10px;font-size:16px}
+.tools select{background:var(--panel);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,var(--tx3));border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nr{font-weight:700;color:var(--tx2)}
+.chip{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--panel2);color:var(--c,var(--tx2))}
+.cena{margin-left:auto;font-weight:700;font-size:16px;white-space:nowrap}
+.zm{font-size:12px;font-weight:700;margin-left:6px;padding:1px 6px;border-radius:6px}
+.zm.dol{color:var(--green);background:#122619}.zm.gora{color:var(--red);background:#2a1618}
+.loc{margin-top:4px}
+.par,.meta{color:var(--tx2);font-size:13px}
+.meta{color:var(--tx3)}
+.links{margin:4px 0;display:flex;gap:8px;flex-wrap:wrap;font-size:13px}
+.powod{font-size:13px;margin-top:4px;color:var(--yellow)}
+.nota{font-size:13px;margin-top:4px;color:var(--tx2);border-left:2px solid var(--line);padding-left:8px}
+details{margin-top:6px;font-size:13px;color:var(--tx2)}
+summary{cursor:pointer;color:var(--tx3)}
+details ul{margin:6px 0 0;padding-left:18px}
+details li{overflow-wrap:anywhere}
+.empty{background:var(--panel);border:1px dashed var(--line);border-radius:var(--r);padding:20px;color:var(--tx2)}
+.hint{color:var(--tx3);font-size:13px;margin-top:18px}
+code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
+@media (max-width:560px){.cena{margin-left:0;width:100%}.tools{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="hd"><h1>Baza ogłoszeń<span class="sub" id="stan">wczytuję…</span></h1><button class="btn" type="button" onclick="location.reload()">Odśwież</button></div></header>
+<div class="wrap">
+  <div class="pipe" id="pipe"></div>
+  <div class="tools">
+    <input id="q" type="search" placeholder="Szukaj: miejscowość, ulica, notatka, portal">
+    <select id="sort" aria-label="Sortowanie">
+      <option value="ruch">Ostatnia aktywność</option>
+      <option value="dodano">Ostatnio dodane</option>
+      <option value="cena">Cena rosnąco</option>
+      <option value="miejscowosc">Miejscowość</option>
+    </select>
+  </div>
+  <div id="lista"></div>
+  <p class="hint">Status, notatkę albo nowy link zmieniasz, pisząc do Claude, np. „#3 na wizję lokalną”, „#5 odpada, za mała działka”. Po zmianie kliknij „Odśwież”.</p>
+</div>
+<script src="dane/baza-widok.js"></script>
+<script>
+(function () {
+  const STATUSY = window.BAZA_STATUSY || [['nowe', 'Nowe'], ['analiza', 'Analiza wstępna'], ['kontakt', 'Do kontaktu'], ['wizja', 'Wizja lokalna'], ['zainteresowany', 'Zainteresowany'], ['niezainteresowany', 'Niezainteresowany']];
+  const KOLOR = { nowe: 'var(--blue)', analiza: 'var(--teal)', kontakt: 'var(--orange)', wizja: 'var(--violet)', zainteresowany: 'var(--green)', niezainteresowany: 'var(--tx3)' };
+  const B = window.BAZA || null;
+  const lista = B ? B.ogloszenia : [];
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const zl = n => n == null ? 'cena nieznana' : new Intl.NumberFormat('pl-PL').format(n) + ' zł';
+  const etyk = k => (STATUSY.find(s => s[0] === k) || [k, k])[1];
+  const ostatni = a => a && a.length ? a[a.length - 1] : null;
+  const ruch = o => [ostatni(o.widziane), (ostatni(o.historiaStatusow) || {}).data, (ostatni(o.historiaCen) || {}).data, (ostatni(o.notatki) || {}).data].filter(Boolean).sort().pop() || o.dodano;
+  const pamiec = { get(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* bez pamięci */ } } };
+  let filtr = pamiec.get('baza.filtr', 'aktywne');
+  $('#sort').value = pamiec.get('baza.sort', 'ruch');
+
+  if (!B) {
+    $('#stan').textContent = 'brak danych';
+    $('#lista').innerHTML = '<div class="empty">Baza jest jeszcze pusta albo nie ma pliku <code>dane/baza-widok.js</code>. Wklej Claude link do ogłoszenia, a wpis pojawi się tutaj po odświeżeniu.</div>';
+    return;
+  }
+  $('#stan').textContent = lista.length + ' ogłoszeń · zmiana ' + (B._zmiana ? new Date(B._zmiana).toLocaleString('pl-PL', { dateStyle: 'medium', timeStyle: 'short' }) : '–');
+
+  function pasek() {
+    const p = $('#pipe');
+    p.innerHTML = '';
+    const mk = (k, l, n, kolor) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = filtr === k ? 'on' : '';
+      b.innerHTML = (kolor ? '<i style="background:' + kolor + '"></i>' : '') + esc(l) + ' <b>' + n + '</b>';
+      b.onclick = () => { filtr = k; pamiec.set('baza.filtr', k); pasek(); rysuj(); };
+      p.appendChild(b);
+    };
+    mk('aktywne', 'Aktywne', lista.filter(o => o.status !== 'niezainteresowany').length);
+    mk('wszystkie', 'Wszystkie', lista.length);
+    STATUSY.forEach(([k, l]) => mk(k, l, lista.filter(o => o.status === k).length, KOLOR[k]));
+  }
+
+  function karta(o) {
+    const h = o.historiaCen || [];
+    let zm = '';
+    if (h.length > 1 && h[0].cena && o.cena) {
+      const p = 100 * (o.cena - h[0].cena) / h[0].cena;
+      zm = '<span class="zm ' + (p < 0 ? 'dol' : 'gora') + '" title="od pierwszej ceny ' + esc(zl(h[0].cena)) + '">' + (p > 0 ? '+' : p < 0 ? '−' : '') + Math.abs(p).toFixed(1).replace('.', ',') + '%</span>';
+    }
+    const gm = o.gmina && o.gmina !== o.miejscowosc ? ' <span class="par">gm. ' + esc(o.gmina) + '</span>' : '';
+    const par = [[o.typ, o.rodzaj].filter(Boolean).join(' '), o.metraz && o.metraz + ' m²', o.dzialka && 'działka ' + o.dzialka + ' m²',
+      o.pokoje && o.pokoje + ' pok.', o.rok && 'rok ' + o.rok, o.cena && o.metraz && zl(Math.round(o.cena / o.metraz)) + '/m²'].filter(Boolean).map(esc).join(' · ');
+    const linki = (o.linki || []).map(l => /^https?:\/\//.test(l.url) ? '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.zrodlo || 'link') + '</a>' : esc(l.url)).join('');
+    const st = (o.historiaStatusow || []).filter(x => x.status === o.status).pop();
+    const nota = ostatni(o.notatki);
+    const hist = '<details><summary>Historia i szczegóły</summary><ul>' +
+      (o.tytul ? '<li>Tytuł: ' + esc(o.tytul) + '</li>' : '') +
+      (o.ogloszeniodawca ? '<li>Ogłoszeniodawca: ' + esc(o.ogloszeniodawca) + '</li>' : '') +
+      '<li>Ceny: ' + (h.length ? h.map(x => esc(x.data + ' ' + zl(x.cena))).join(' → ') : 'brak') + '</li>' +
+      '<li>Statusy: ' + (o.historiaStatusow || []).map(x => esc(x.data + ' ' + etyk(x.status) + (x.powod ? ' (' + x.powod + ')' : ''))).join(' → ') + '</li>' +
+      (o.notatki || []).map(n => '<li>Notatka ' + esc(n.data) + ': ' + esc(n.tekst) + '</li>').join('') +
+      (o.linki || []).map(l => '<li>' + esc(l.zrodlo) + ', dodany ' + esc(l.dodano) + ': ' + esc(l.url) + '</li>').join('') +
+      '</ul></details>';
+    return '<article class="card" style="--c:' + (KOLOR[o.status] || 'var(--tx3)') + '">' +
+      '<div class="top"><span class="nr">#' + o.nr + '</span><span class="chip">' + esc(etyk(o.status)) + '</span><span class="cena">' + esc(zl(o.cena)) + zm + '</span></div>' +
+      '<div class="loc"><b>' + esc(o.miejscowosc || 'miejscowość nieznana') + '</b>' + gm + (o.ulica ? ' · ul. ' + esc(o.ulica.replace(/^ul\.?\s*/i, '')) : '') + '</div>' +
+      (par ? '<div class="par">' + par + '</div>' : '') +
+      '<div class="links">' + linki + '</div>' +
+      '<div class="meta">dodane ' + esc(o.dodano) + ' · zgłaszane ' + (o.widziane || []).length + '× · ostatnio ' + esc(ostatni(o.widziane) || o.dodano) + '</div>' +
+      (st && st.powod ? '<div class="powod">' + (o.status === 'niezainteresowany' ? 'Powód: ' : 'Uwaga: ') + esc(st.powod) + '</div>' : '') +
+      (nota ? '<div class="nota">' + esc(nota.data) + ': ' + esc(nota.tekst) + '</div>' : '') +
+      hist + '</article>';
+  }
+
+  function rysuj() {
+    const q = $('#q').value.trim().toLowerCase();
+    const s = $('#sort').value;
+    let w = lista.filter(o => filtr === 'wszystkie' || (filtr === 'aktywne' ? o.status !== 'niezainteresowany' : o.status === filtr));
+    if (q) w = w.filter(o => [o.miejscowosc, o.gmina, o.ulica, o.tytul, o.ogloszeniodawca, '#' + o.nr,
+      (o.notatki || []).map(n => n.tekst).join(' '), (o.linki || []).map(l => l.zrodlo + ' ' + l.url).join(' ')].join(' ').toLowerCase().includes(q));
+    const por = {
+      ruch: (a, b) => ruch(b).localeCompare(ruch(a)) || b.nr - a.nr,
+      dodano: (a, b) => b.dodano.localeCompare(a.dodano) || b.nr - a.nr,
+      cena: (a, b) => (a.cena || Infinity) - (b.cena || Infinity),
+      miejscowosc: (a, b) => (a.miejscowosc || '').localeCompare(b.miejscowosc || '', 'pl') || a.nr - b.nr,
+    }[s];
+    w.sort(por);
+    $('#lista').innerHTML = w.length ? w.map(karta).join('') : '<div class="empty">' + (lista.length ? 'Nic nie pasuje do filtra.' : 'Baza jest pusta. Wklej Claude link do ogłoszenia.') + '</div>';
+  }
+  $('#q').oninput = rysuj;
+  $('#sort').onchange = () => { pamiec.set('baza.sort', $('#sort').value); rysuj(); };
+  pasek();
+  rysuj();
+})();
+</script>
+</body>
+</html>
