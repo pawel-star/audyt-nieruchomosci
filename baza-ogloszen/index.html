@@ -20,7 +20,10 @@ header{position:sticky;top:0;z-index:10;background:rgba(15,18,24,.94);backdrop-f
 .hd{max-width:900px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:10px}
 .hd h1{font-size:16px;margin:0;flex:1;font-weight:650}
 .hd .sub{display:block;font-size:11px;color:var(--tx3);font-weight:400}
-.btn{background:var(--panel2);color:var(--tx2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;font-weight:600;font-size:12px}
+.btn{background:var(--panel2);color:var(--tx2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;font-weight:600;font-size:12px;text-decoration:none;white-space:nowrap}
+.btn.glowny{background:var(--blue);border-color:var(--blue);color:#fff}
+.zmien{font-size:12px;font-weight:600;color:var(--tx2);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.zmien:hover{color:var(--tx);border-color:var(--tx3)}
 .wrap{max-width:900px;margin:0 auto;padding:14px 16px 60px}
 .pipe{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .pipe button{background:var(--panel);color:var(--tx2);border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;display:flex;gap:6px;align-items:center}
@@ -54,7 +57,7 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
 </style>
 </head>
 <body>
-<header><div class="hd"><h1>Baza ogłoszeń<span class="sub" id="stan">wczytuję…</span></h1><button class="btn" type="button" onclick="location.reload()">Odśwież</button></div></header>
+<header><div class="hd"><h1>Baza ogłoszeń<span class="sub" id="stan">wczytuję…</span></h1><a class="btn glowny" id="dodaj" href="#">+ Dodaj ogłoszenie</a><button class="btn" type="button" onclick="location.reload()">Odśwież</button></div></header>
 <div class="wrap">
   <div class="pipe" id="pipe"></div>
   <div class="tools">
@@ -67,7 +70,7 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
     </select>
   </div>
   <div id="lista"></div>
-  <p class="hint">Status, notatkę albo nowy link zmieniasz, pisząc do Claude, np. „#3 na wizję lokalną”, „#5 odpada, za mała działka”. Po zmianie kliknij „Odśwież”.</p>
+  <p class="hint">„+ Dodaj ogłoszenie” i „Zmień status” otwierają nową rozmowę w aplikacji Claude, w zakładce Code, w folderze audyt-nieruchomosci, z gotowym początkiem polecenia. Wklejasz link albo dopisujesz status (np. „wizja lokalna”, „odpada, za mała działka”) i naciskasz Enter. Za pierwszym razem przeglądarka zapyta, czy otworzyć aplikację Claude. Po zmianie kliknij tu „Odśwież”.</p>
 </div>
 <script src="dane/baza-widok.js"></script>
 <script>
@@ -83,6 +86,10 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
   const ostatni = a => a && a.length ? a[a.length - 1] : null;
   const ruch = o => [ostatni(o.widziane), (ostatni(o.historiaStatusow) || {}).data, (ostatni(o.historiaCen) || {}).data, (ostatni(o.notatki) || {}).data].filter(Boolean).sort().pop() || o.dodano;
   const pamiec = { get(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* bez pamięci */ } } };
+  // Link aplikacji Claude: nowa rozmowa w zakładce Code, w folderze projektu, z gotowym początkiem polecenia
+  const folder = window.BAZA_FOLDER || (location.protocol === 'file:' ? decodeURIComponent(new URL('..', location.href).pathname).replace(/\/$/, '') : '');
+  const doClaude = q => 'claude://code/new?' + (folder ? 'folder=' + encodeURIComponent(folder) + '&' : '') + 'q=' + encodeURIComponent(q);
+  $('#dodaj').href = doClaude('Dodaj do bazy ogłoszeń: ');
   let filtr = pamiec.get('baza.filtr', 'aktywne');
   $('#sort').value = pamiec.get('baza.sort', 'ruch');
 
@@ -117,7 +124,8 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
       zm = '<span class="zm ' + (p < 0 ? 'dol' : 'gora') + '" title="od pierwszej ceny ' + esc(zl(h[0].cena)) + '">' + (p > 0 ? '+' : p < 0 ? '−' : '') + Math.abs(p).toFixed(1).replace('.', ',') + '%</span>';
     }
     const gm = o.gmina && o.gmina !== o.miejscowosc ? ' <span class="par">gm. ' + esc(o.gmina) + '</span>' : '';
-    const par = [[o.typ, o.rodzaj].filter(Boolean).join(' '), o.metraz && o.metraz + ' m²', o.dzialka && 'działka ' + o.dzialka + ' m²',
+    const m2 = n => String(n).replace('.', ',') + ' m²';
+    const par = [[o.typ, o.rodzaj].filter(Boolean).join(' '), o.metraz && m2(o.metraz), o.dzialka && 'działka ' + m2(o.dzialka),
       o.pokoje && o.pokoje + ' pok.', o.rok && 'rok ' + o.rok, o.cena && o.metraz && zl(Math.round(o.cena / o.metraz)) + '/m²'].filter(Boolean).map(esc).join(' · ');
     const linki = (o.linki || []).map(l => /^https?:\/\//.test(l.url) ? '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.zrodlo || 'link') + '</a>' : esc(l.url)).join('');
     const st = (o.historiaStatusow || []).filter(x => x.status === o.status).pop();
@@ -131,7 +139,9 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
       (o.linki || []).map(l => '<li>' + esc(l.zrodlo) + ', dodany ' + esc(l.dodano) + ': ' + esc(l.url) + '</li>').join('') +
       '</ul></details>';
     return '<article class="card" style="--c:' + (KOLOR[o.status] || 'var(--tx3)') + '">' +
-      '<div class="top"><span class="nr">#' + o.nr + '</span><span class="chip">' + esc(etyk(o.status)) + '</span><span class="cena">' + esc(zl(o.cena)) + zm + '</span></div>' +
+      '<div class="top"><span class="nr">#' + o.nr + '</span><span class="chip">' + esc(etyk(o.status)) + '</span>' +
+      '<a class="zmien" href="' + esc(doClaude('Baza ogłoszeń, #' + o.nr + ' (' + (o.miejscowosc || 'bez miejscowości') + ', ' + zl(o.cena) + '): zmień status na ')) + '">Zmień status</a>' +
+      '<span class="cena">' + esc(zl(o.cena)) + zm + '</span></div>' +
       '<div class="loc"><b>' + esc(o.miejscowosc || 'miejscowość nieznana') + '</b>' + gm + (o.ulica ? ' · ul. ' + esc(o.ulica.replace(/^ul\.?\s*/i, '')) : '') + '</div>' +
       (par ? '<div class="par">' + par + '</div>' : '') +
       '<div class="links">' + linki + '</div>' +

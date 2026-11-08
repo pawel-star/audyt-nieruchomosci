@@ -168,4 +168,6 @@ Osobne narzędzie obok aplikacji: lista domów, które Paweł już widział, ze 
 3. Przekaż wynik zwykłym zdaniem. MOŻLIWY DUPLIKAT (kod wyjścia 2) niczego nie zapisuje: porównaj zdjęcia albo opis obu ogłoszeń i zapytaj, czy to ten sam dom (`--do N`), czy inny (`--nowy`).
 4. Status: `status N <status> [powód]`. Przy odrzuceniu dopytaj o powód, jeśli go nie podał, bo powód jest tym, co oszczędza mu czas przy kolejnym trafieniu.
 
+Przyciski na stronie bazy („+ Dodaj ogłoszenie”, „Zmień status”) otwierają nową rozmowę w zakładce Code linkiem `claude://code/new?folder=…&q=…` z gotowym początkiem polecenia: „Dodaj do bazy ogłoszeń: …” albo „Baza ogłoszeń, #N (miejscowość, cena): zmień status na …”. Traktuj je jak wklejony link albo polecenie zmiany statusu. Folder projektu strona bierze z `window.BAZA_FOLDER`, który `baza.js` zapisuje w `dane/baza-widok.js`.
+
 Dane leżą w `baza-ogloszen/dane/` (w `.gitignore`, repozytorium jest publiczne). Nie commituj ich, nie publikuj jako Artifact i nie wysyłaj nigdzie. Zmieniaj je tylko przez `baza.js`: skrypt robi kopię przed każdym zapisem i odświeża plik dla `index.html`. Kody statusów (`nowe`, `analiza`, `kontakt`, `wizja`, `zainteresowany`, `niezainteresowany`) są kontraktem z widokiem i plikiem danych. Po zmianie w `baza.js` uruchom `node baza-ogloszen/test/test.js`.

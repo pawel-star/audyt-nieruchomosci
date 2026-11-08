@@ -13,6 +13,8 @@ Wklejasz Claude link do ogłoszenia (możesz kilka naraz). Claude odczytuje dane
 
 Status zmieniasz zdaniem: „#3 na wizję lokalną”, „#5 odpada, za mała działka”. Przy odrzuceniu podawaj powód, bo właśnie on oszczędza czas przy kolejnym trafieniu na to samo ogłoszenie.
 
+Ze strony bazy możesz też zacząć od przycisku. „+ Dodaj ogłoszenie” i „Zmień status” przy każdym wpisie otwierają nową rozmowę w aplikacji Claude, w zakładce Code, w folderze audyt-nieruchomosci, z gotowym początkiem polecenia. Wklejasz link albo dopisujesz status i naciskasz Enter. Aplikacja Claude za każdym razem prosi o potwierdzenie folderu, a przeglądarka za pierwszym razem pyta, czy otworzyć aplikację.
+
 Przegląd całej bazy: otwórz `index.html` dwuklikiem (działa z dysku, bez internetu). Masz tam filtry po statusie, wyszukiwanie, zmianę ceny w procentach i rozwijaną historię cen, statusów i notatek. Po zmianie w bazie kliknij „Odśwież”.
 
 ## Statusy

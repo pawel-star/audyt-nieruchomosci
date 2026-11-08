@@ -32,6 +32,8 @@ sprawdz(B.idOgloszenia('https://www.otodom.pl/pl/oferta/inny-tytul-ID4Dlb7') ===
 sprawdz(B.idOgloszenia('https://www.olx.pl/d/oferta/dom-kornik-CID3-IDabc123.html') === 'olx:abc123', 'id OLX');
 sprawdz(B.idOgloszenia('https://www.facebook.com/groups/111/posts/222/') === 'fb:222', 'id posta w grupie FB');
 sprawdz(B.zrodloZUrl('https://poznan.nieruchomosci-online.pl/dom,123.html') === 'nieruchomosci-online', 'źródło z subdomeny');
+sprawdz(B.idOgloszenia('https://www.nieruchomosci-online.pl/dom,na-sprzedaz/12345678.html?i&wFav') === 'no:12345678' &&
+  B.idOgloszenia('https://przykladowo.nieruchomosci-online.pl/dom,na-sprzedaz/12345678.html') === 'no:12345678', 'id nieruchomosci-online pod www i pod subdomeną');
 sprawdz(B.kodStatusu('zainteresowanie') === 'nowe' && B.kodStatusu('Wizja lokalna') === 'wizja' && B.kodStatusu('skontaktować się z klientem') === 'kontakt' && B.kodStatusu('odpada') === 'niezainteresowany', 'aliasy statusów');
 
 /* --- odczyt Otodom na sztucznej stronie o tej samej budowie --- */
@@ -50,6 +52,7 @@ const L1 = 'https://www.otodom.pl/pl/oferta/dom-koninko-ID4Aaaa';
 let r = cli(['dodaj', L1, 'cena=1 129 000', 'miejscowosc=Koninko', 'gmina=Kórnik', 'metraz=118', 'dzialka=150', 'pokoje=5', 'typ=dom', '--bez-pobierania']);
 sprawdz(r.kod === 0 && /DODANO: #1 Koninko/.test(r.out), '1. nowe ogłoszenie dodane jako #1', r.out);
 sprawdz(fs.existsSync(path.join(DANE, 'baza-widok.js')) && /window\.BAZA=/.test(fs.readFileSync(path.join(DANE, 'baza-widok.js'), 'utf8')), '1. plik widoku wygenerowany');
+sprawdz(fs.readFileSync(path.join(DANE, 'baza-widok.js'), 'utf8').includes('window.BAZA_FOLDER=' + JSON.stringify(path.dirname(path.dirname(SKRYPT)))), '1. plik widoku zna folder projektu dla przycisków');
 
 r = cli(['dodaj', L1, 'cena=1129000', '--bez-pobierania'], '2026-11-03');
 sprawdz(/JUŻ W BAZIE: #1/.test(r.out) && /ten sam link/.test(r.out) && baza().ogloszenia.length === 1, '2. ten sam link i cena: już w bazie, bez nowego wpisu', r.out);

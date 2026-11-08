@@ -63,6 +63,7 @@ function dzis() {
 }
 const zl = n => n == null ? 'cena nieznana' : new Intl.NumberFormat('pl-PL').format(n).replace(/ /g, ' ') + ' zł';
 const proc = x => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(1).replace('.', ',') + '%';
+const m2 = n => String(n).replace('.', ',') + ' m²';
 const roznica = n => (n > 0 ? '+' : '−') + zl(Math.abs(n));
 const etykieta = k => (STATUSY.find(s => s[0] === k) || [k, k])[1];
 
@@ -113,7 +114,8 @@ function idOgloszenia(u) {
     if (x.searchParams.get('story_fbid')) return 'fb:' + x.searchParams.get('story_fbid');
     if ((m = p.match(/\/marketplace\/item\/(\d+)/))) return 'fbm:' + m[1];
   }
-  if (/nieruchomosci-online\.pl$/.test(h) && (m = p.match(/,(\d{5,})\.html$/))) return 'no:' + m[1];
+  // ten sam numer bywa pod www. i pod subdomeną miejscowości, raz po przecinku, raz po ukośniku
+  if (/nieruchomosci-online\.pl$/.test(h) && (m = p.match(/[,/](\d{6,})\.html$/))) return 'no:' + m[1];
   if (/gratka\.pl$/.test(h) && (m = p.match(/\/ob\/(\d+)/))) return 'gratka:' + m[1];
   if (/morizon\.pl$/.test(h) && (m = p.match(/(mzn\d+)/))) return 'morizon:' + m[1];
   return null;
@@ -157,7 +159,9 @@ function zapisz(b) {
 function zapiszWidok(b) {
   fs.mkdirSync(KATALOG, { recursive: true });
   fs.writeFileSync(WIDOK, '/* Generuje baza.js po każdej zmianie. Nie edytuj ręcznie. */\n' +
-    'window.BAZA=' + JSON.stringify(b) + ';\nwindow.BAZA_STATUSY=' + JSON.stringify(STATUSY) + ';\n');
+    'window.BAZA=' + JSON.stringify(b) + ';\nwindow.BAZA_STATUSY=' + JSON.stringify(STATUSY) + ';\n' +
+    // folder projektu dla przycisków, które otwierają nową rozmowę w aplikacji Claude (zakładka Code)
+    'window.BAZA_FOLDER=' + JSON.stringify(path.dirname(__dirname)) + ';\n');
 }
 function znajdzNr(b, nr) {
   const n = parseInt(String(nr).replace(/^#/, ''), 10);
@@ -197,8 +201,8 @@ function opis(r) {
     loc + (r.ulica ? ', ul. ' + r.ulica.replace(/^ul\.?\s*/i, '') : ''),
     [r.typ, r.rodzaj].filter(Boolean).join(' '),
     zl(r.cena),
-    r.metraz ? r.metraz + ' m²' : '',
-    r.dzialka ? 'działka ' + r.dzialka + ' m²' : '',
+    r.metraz ? m2(r.metraz) : '',
+    r.dzialka ? 'działka ' + m2(r.dzialka) : '',
     r.pokoje ? r.pokoje + ' pok.' : '',
     r.rok ? 'rok ' + r.rok : '',
   ].filter(Boolean);
@@ -301,7 +305,7 @@ function dodajDoBazy(b, dane, opcje) {
   const L = ['DODANO: ' + opis(r), '  status: ' + etykieta(r.status)];
   const podobne = traf.filter(x => x.w.poziom !== 'pewne');
   if (podobne.length) L.push('  podobne w bazie (dodane na Twoje polecenie jako osobny dom): ' + podobne.slice(0, 3).map(x => '#' + x.s.nr).join(', '));
-  const brak = ['miejscowosc', 'metraz', 'dzialka'].filter(k => r[k] == null).concat(r.cena == null ? ['cena'] : []);
+  const brak = ['miejscowosc', 'metraz'].concat(r.typ === 'mieszkanie' ? [] : ['dzialka']).filter(k => r[k] == null).concat(r.cena == null ? ['cena'] : []);
   if (brak.length) L.push('  brakuje: ' + brak.join(', ') + ' (bez tego słabiej wyłapię duplikaty z innych portali)');
   return { wynik: 'dodano', nr: r.nr, tekst: L.join('\n') };
 }
