@@ -30,6 +30,19 @@ Przegląd całej bazy: otwórz `index.html` dwuklikiem (działa z dysku, bez int
 
 Działają też słowa potoczne: „zainteresowanie” to „Nowe”, „skontaktować się” to „Do kontaktu”, „odpada” to „Niezainteresowany”, „wizja” to „Wizja lokalna”.
 
+## Notatki
+
+Notatki widać na karcie ogłoszenia, pod parametrami, w czterech kolorowych ramkach. W nagłówku karty małe znaczki pokazują, ile jest otwartych wątpliwości (⚠) i rzeczy do sprawdzenia (☐) oraz czy jest raport (📄), więc widać to też przy przeglądaniu całej listy.
+
+| Rodzaj | Do czego | Przykład |
+|---|---|---|
+| Wątpliwości (żółte) | dlaczego się wahasz | „waham się, bo blisko torów” |
+| Do sprawdzenia (niebieskie) | co sprawdzić przed decyzją; po sprawdzeniu punkt zostaje przekreślony, z wynikiem i datą | „sprawdzić księgę wieczystą”, potem „księga sprawdzona: czysta” |
+| Raporty i pliki (zielone) | klikalny link do raportu na dysku albo w internecie | „raport: /Users/…/Audyt domu.pdf”, link do Dysku Google |
+| Notatki (szare) | inne uwagi | „właściciel elastyczny co do terminu” |
+
+Notatkę dodajesz zwykłym zdaniem w rozmowie albo przyciskiem „Dodaj notatkę” przy ogłoszeniu. Claude sam przypisze ją do właściwego rodzaju. Link do pliku na dysku otwiera się ze strony otwartej dwuklikiem z dysku.
+
 ## Jak rozpoznaje ten sam dom
 
 1. **Pewne:** ten sam link (bez dopisków w rodzaju `?utm_source=`) albo ten sam numer ogłoszenia na portalu, nawet gdy portal zmienił tytuł w adresie. Numer rozpoznaje dla Otodom, OLX, Facebooka, Gratki, Morizonu i nieruchomosci-online.
@@ -52,7 +65,12 @@ Zwykle wydaje je Claude, ale działają też w terminalu (z katalogu `audyt-nier
 ```bash
 node baza-ogloszen/baza.js dodaj <link> [pole=wartość ...] [--nowy | --do N] [--sprawdz]
 node baza-ogloszen/baza.js status N <status> [powód]
+node baza-ogloszen/baza.js waham N <tekst>
+node baza-ogloszen/baza.js sprawdzic N <tekst>
+node baza-ogloszen/baza.js zamknij N <nr notatki> [wynik]
+node baza-ogloszen/baza.js raport N <ścieżka albo link> [opis]
 node baza-ogloszen/baza.js notatka N <tekst>
+node baza-ogloszen/baza.js usun-notatke N <nr notatki>
 node baza-ogloszen/baza.js cena N <kwota>
 node baza-ogloszen/baza.js popraw N miejscowosc=Koninko dzialka=800
 node baza-ogloszen/baza.js lista [status|wszystkie]

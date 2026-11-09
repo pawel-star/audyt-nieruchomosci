@@ -111,6 +111,43 @@ sprawdz(/#2/.test(r.out) && !/#1 /.test(r.out), '20. szukanie po ulicy', r.out);
 r = cli(['pokaz', '1']);
 sprawdz(/historia cen: 2026-11-01 1 129 000 zł → 2026-11-05 1 079 000 zł → 2026-11-08 999 000 zł/.test(r.out), '21. pokaz z pełną historią cen', r.out);
 
+/* --- notatki: rodzaje, zamykanie, raporty --- */
+r = cli(['waham', '2', 'Blisko', 'torów,', 'nie', 'wiem,', 'jak', 'głośno'], '2026-11-09');
+sprawdz(/dopisane \(wątpliwości, nr 2\): Blisko torów/.test(r.out), '28. wątpliwość z numerem kolejnym po starej notatce', r.out);
+r = cli(['sprawdzić', '2', 'Księga', 'wieczysta:', 'hipoteka?'], '2026-11-09');
+sprawdz(/dopisane \(do sprawdzenia, nr 3\)/.test(r.out), '29. polecenie z polską literą rozpoznane', r.out);
+const plikRaportu = path.join(DANE, 'raport Przykładowo.pdf');
+fs.writeFileSync(plikRaportu, 'x');
+r = cli(['raport', '2', plikRaportu, 'Audyt', 'działki'], '2026-11-09');
+sprawdz(/dopisane \(raporty i pliki, nr 4\): Audyt działki → .*raport Przykładowo\.pdf/.test(r.out) && !/uwaga/.test(r.out), '30. raport z opisem, plik istnieje', r.out);
+r = cli(['raport', '2', '/nie/ma/takiego.pdf'], '2026-11-09');
+sprawdz(/nie widzę pliku \/nie\/ma\/takiego\.pdf/.test(r.out) && /takiego\.pdf/.test(r.out), '31. raport bez pliku: zapis z ostrzeżeniem', r.out);
+r = cli(['raport', '2', 'cokolwiek'], '2026-11-09');
+sprawdz(r.kod === 1 && /ścieżkę do pliku/.test(r.out), '32. raport bez ścieżki i linku: błąd', r.out);
+r = cli(['zamknij', '2', '3', 'czysta,', 'bez', 'hipoteki'], '2026-11-10');
+const n2 = baza().ogloszenia[1].notatki;
+sprawdz(n2.find(n => n.nr === 3).zamkniete.wynik === 'czysta, bez hipoteki' && n2.find(n => n.nr === 3).zamkniete.data === '2026-11-10', '33. zamknięcie punktu z wynikiem', r.out);
+r = cli(['zamknij', '2', '3']);
+sprawdz(r.kod === 1 && /już zamknięta/.test(r.out), '34. podwójne zamknięcie: błąd', r.out);
+r = cli(['usun-notatke', '2', '5']);
+sprawdz(!baza().ogloszenia[1].notatki.some(n => n.nr === 5), '35. usunięcie notatki', r.out);
+r = cli(['pokaz', '2']);
+sprawdz(/WĄTPLIWOŚCI:\n    • \[2\] Blisko torów/.test(r.out) && /DO SPRAWDZENIA:\n    ✓ \[3\].*zamknięte 2026-11-10: czysta, bez hipoteki/.test(r.out) && /NOTATKI:\n    • \[1\] Właściciel/.test(r.out), '36. pokaz grupuje notatki', r.out);
+r = cli(['lista']);
+sprawdz(/#2 .*\[wątpliwości 1, raport\]/.test(r.out), '37. lista pokazuje otwarte wątpliwości i raport', r.out);
+r = cli(['dodaj', 'https://example.com/n', 'miejscowosc=Kórnik', 'metraz=300', 'waham=Za drogi', 'sprawdzic=Plan miejscowy', '--bez-pobierania'], '2026-11-09');
+sprawdz(/notatki: wątpliwości: Za drogi; do sprawdzenia: Plan miejscowy/.test(r.out), '38. notatki przy dodawaniu', r.out);
+r = cli(['dodaj', 'https://example.com/n', 'waham=Za drogi', 'sprawdzic=Dojazd zimą', '--bez-pobierania'], '2026-11-09');
+sprawdz(/dopisane notatki: 1/.test(r.out), '39. powtórzona notatka nie dubluje się, nowa dochodzi', r.out);
+sprawdz(B.linkRaportu('~/x.pdf').cel === path.join(os.homedir(), 'x.pdf') && B.linkRaportu('file:///tmp/a%20b.pdf').cel === '/tmp/a b.pdf', '40. ścieżki ~/ i file:// w raporcie');
+// stary zapis notatek (bez numeru i rodzaju) wczytuje się jako zwykłe notatki
+const sur = baza();
+sur.ogloszenia[0].notatki = [{ data: '2026-11-01', tekst: 'stara' }, { data: '2026-11-02', tekst: 'starsza' }];
+fs.writeFileSync(path.join(DANE, 'baza.json'), JSON.stringify(sur));
+r = cli(['pokaz', '1']);
+sprawdz(/NOTATKI:\n    • \[1\] stara.*\n    • \[2\] starsza/.test(r.out), '41. stare notatki dostają numery i rodzaj', r.out);
+const ileOgl = baza().ogloszenia.length;
+
 /* --- import ze Szukacza --- */
 const kopia = { _app: 'szukacz-nieruchomosci', _typ: 'kopia', oferty: [
   { id: 'OF-1', link: 'https://www.morizon.pl/oferta/dom-mzn999', miejscowosc: 'Koninko', cena: 950000, pow: 118, status: 'odpada', notatki: 'z Szukacza' },
@@ -121,7 +158,7 @@ const plik = path.join(DANE, 'kopia.json');
 fs.writeFileSync(plik, JSON.stringify(kopia));
 r = cli(['import', plik], '2026-11-08');
 const po = baza();
-sprawdz(/Dodane: 2, już były: 1/.test(r.out) && po.ogloszenia.length === 6, '22. import: nowe dodane, duplikat rozpoznany', r.out);
+sprawdz(/Dodane: 2, już były: 1/.test(r.out) && po.ogloszenia.length === ileOgl + 2, '22. import: nowe dodane, duplikat rozpoznany', r.out);
 sprawdz(po.ogloszenia[1].status === 'wizja', '22. import nie nadpisuje statusu istniejącego wpisu');
 sprawdz(po.ogloszenia.find(x => x.linki[0].url.includes('posts/42')).status === 'kontakt', '22. status Szukacza przemapowany');
 r = cli(['import', plik], '2026-11-08');

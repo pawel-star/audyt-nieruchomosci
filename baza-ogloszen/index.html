@@ -45,7 +45,20 @@ header{position:sticky;top:0;z-index:10;background:rgba(15,18,24,.94);backdrop-f
 .meta{color:var(--tx3)}
 .links{margin:4px 0;display:flex;gap:8px;flex-wrap:wrap;font-size:13px}
 .powod{font-size:13px;margin-top:4px;color:var(--yellow)}
-.nota{font-size:13px;margin-top:4px;color:var(--tx2);border-left:2px solid var(--line);padding-left:8px}
+.notes{margin-top:8px;display:grid;gap:6px}
+.nb{border-radius:8px;padding:7px 10px 7px 11px;font-size:14px;background:var(--panel2);border-left:3px solid var(--line)}
+.nb .nt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tx2);margin-bottom:3px}
+.nb ul{margin:0;padding-left:18px}
+.nb li{margin:2px 0;overflow-wrap:anywhere}
+.nb.waham{border-left-color:var(--yellow);background:#2a2110}.nb.waham .nt{color:var(--yellow)}
+.nb.sprawdzic{border-left-color:var(--blue);background:#132133}.nb.sprawdzic .nt{color:var(--blue)}
+.nb.sprawdzic ul{list-style:none;padding-left:0}.nb.sprawdzic li::before{content:"☐ ";color:var(--blue)}.nb.sprawdzic li.zamk::before{content:"✓ ";color:var(--green)}
+.nb.raport{border-left-color:var(--teal);background:#10302b}.nb.raport .nt{color:var(--teal)}.nb.raport a{color:var(--teal);font-weight:600}
+.nb li.zamk .tr{text-decoration:line-through;color:var(--tx3)}
+.nb .nd{color:var(--tx3);font-size:11.5px}
+.nb .wynik{display:block;color:var(--green);font-size:13px}
+.ozn{font-size:12px;font-weight:700;padding:1px 7px;border-radius:6px}
+.ozn.w{color:var(--yellow);background:#2a2110}.ozn.s{color:var(--blue);background:#132133}.ozn.r{color:var(--teal);background:#10302b}
 details{margin-top:6px;font-size:13px;color:var(--tx2)}
 summary{cursor:pointer;color:var(--tx3)}
 details ul{margin:6px 0 0;padding-left:18px}
@@ -70,12 +83,14 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
     </select>
   </div>
   <div id="lista"></div>
-  <p class="hint">„+ Dodaj ogłoszenie” i „Zmień status” otwierają nową rozmowę w aplikacji Claude, w zakładce Code, w folderze audyt-nieruchomosci, z gotowym początkiem polecenia. Wklejasz link albo dopisujesz status (np. „wizja lokalna”, „odpada, za mała działka”) i naciskasz Enter. Za pierwszym razem przeglądarka zapyta, czy otworzyć aplikację Claude. Po zmianie kliknij tu „Odśwież”.</p>
+  <p class="hint">Notatki przy ogłoszeniu dzielą się na wątpliwości (żółte), rzeczy do sprawdzenia (niebieskie, po sprawdzeniu przekreślone z wynikiem), raporty i pliki (klikalne) oraz inne. Wystarczy napisać zwykłym zdaniem, np. „waham się, bo blisko torów”, „sprawdzić księgę wieczystą”, „raport: ścieżka do pliku”.</p>
+  <p class="hint">„+ Dodaj ogłoszenie”, „Zmień status” i „Dodaj notatkę” otwierają nową rozmowę w aplikacji Claude, w zakładce Code, w folderze audyt-nieruchomosci, z gotowym początkiem polecenia. Wklejasz link albo dopisujesz status (np. „wizja lokalna”, „odpada, za mała działka”) i naciskasz Enter. Za pierwszym razem przeglądarka zapyta, czy otworzyć aplikację Claude. Po zmianie kliknij tu „Odśwież”.</p>
 </div>
 <script src="dane/baza-widok.js"></script>
 <script>
 (function () {
   const STATUSY = window.BAZA_STATUSY || [['nowe', 'Nowe'], ['analiza', 'Analiza wstępna'], ['kontakt', 'Do kontaktu'], ['wizja', 'Wizja lokalna'], ['zainteresowany', 'Zainteresowany'], ['niezainteresowany', 'Niezainteresowany']];
+  const RODZAJE = window.BAZA_RODZAJE || [['waham', 'Wątpliwości'], ['sprawdzic', 'Do sprawdzenia'], ['raport', 'Raporty i pliki'], ['notatka', 'Notatki']];
   const KOLOR = { nowe: 'var(--blue)', analiza: 'var(--teal)', kontakt: 'var(--orange)', wizja: 'var(--violet)', zainteresowany: 'var(--green)', niezainteresowany: 'var(--tx3)' };
   const B = window.BAZA || null;
   const lista = B ? B.ogloszenia : [];
@@ -129,25 +144,42 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
       o.pokoje && o.pokoje + ' pok.', o.rok && 'rok ' + o.rok, o.cena && o.metraz && zl(Math.round(o.cena / o.metraz)) + '/m²'].filter(Boolean).map(esc).join(' · ');
     const linki = (o.linki || []).map(l => /^https?:\/\//.test(l.url) ? '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.zrodlo || 'link') + '</a>' : esc(l.url)).join('');
     const st = (o.historiaStatusow || []).filter(x => x.status === o.status).pop();
-    const nota = ostatni(o.notatki);
+    // notatki na wierzchu karty: wątpliwości, do sprawdzenia, raporty, inne; zamknięte na końcu grupy, przekreślone
+    const N = (o.notatki || []).map((n, i) => Object.assign({ nr: i + 1, rodzaj: 'notatka' }, n));
+    const otwarte = k => N.filter(n => n.rodzaj === k && !n.zamkniete).length;
+    const hrefPliku = l => /^https?:\/\//i.test(l) ? l : /^\//.test(l) ? 'file://' + l.split('/').map(encodeURIComponent).join('/') : '';
+    const pozycja = n => {
+      const href = n.rodzaj === 'raport' ? hrefPliku(n.link || '') : '';
+      const tresc = href ? '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(n.tekst) + '</a>' : esc(n.tekst);
+      const wynik = n.zamkniete ? '<span class="wynik">' + ({ sprawdzic: 'sprawdzone', waham: 'rozwiane' }[n.rodzaj] || 'zamknięte') + ' ' + esc(n.zamkniete.data) + (n.zamkniete.wynik ? ': ' + esc(n.zamkniete.wynik) : '') + '</span>' : '';
+      return '<li class="' + (n.zamkniete ? 'zamk' : '') + '"><span class="tr">' + tresc + '</span> <span class="nd">' + esc(n.data) + '</span>' + wynik + '</li>';
+    };
+    const notatki = RODZAJE.map(([k, tytul]) => {
+      const g = N.filter(n => n.rodzaj === k).sort((a, b) => (!!a.zamkniete - !!b.zamkniete) || a.nr - b.nr);
+      return g.length ? '<div class="nb ' + esc(k) + '"><div class="nt">' + esc(tytul) + '</div><ul>' + g.map(pozycja).join('') + '</ul></div>' : '';
+    }).join('');
+    const ozn = (otwarte('waham') ? '<span class="ozn w" title="otwarte wątpliwości">⚠ ' + otwarte('waham') + '</span>' : '') +
+      (otwarte('sprawdzic') ? '<span class="ozn s" title="do sprawdzenia">☐ ' + otwarte('sprawdzic') + '</span>' : '') +
+      (N.some(n => n.rodzaj === 'raport') ? '<span class="ozn r" title="jest raport">📄</span>' : '');
+    const kto = 'Baza ogłoszeń, #' + o.nr + ' (' + (o.miejscowosc || 'bez miejscowości') + ', ' + zl(o.cena) + '): ';
     const hist = '<details><summary>Historia i szczegóły</summary><ul>' +
       (o.tytul ? '<li>Tytuł: ' + esc(o.tytul) + '</li>' : '') +
       (o.ogloszeniodawca ? '<li>Ogłoszeniodawca: ' + esc(o.ogloszeniodawca) + '</li>' : '') +
       '<li>Ceny: ' + (h.length ? h.map(x => esc(x.data + ' ' + zl(x.cena))).join(' → ') : 'brak') + '</li>' +
       '<li>Statusy: ' + (o.historiaStatusow || []).map(x => esc(x.data + ' ' + etyk(x.status) + (x.powod ? ' (' + x.powod + ')' : ''))).join(' → ') + '</li>' +
-      (o.notatki || []).map(n => '<li>Notatka ' + esc(n.data) + ': ' + esc(n.tekst) + '</li>').join('') +
       (o.linki || []).map(l => '<li>' + esc(l.zrodlo) + ', dodany ' + esc(l.dodano) + ': ' + esc(l.url) + '</li>').join('') +
       '</ul></details>';
     return '<article class="card" style="--c:' + (KOLOR[o.status] || 'var(--tx3)') + '">' +
-      '<div class="top"><span class="nr">#' + o.nr + '</span><span class="chip">' + esc(etyk(o.status)) + '</span>' +
-      '<a class="zmien" href="' + esc(doClaude('Baza ogłoszeń, #' + o.nr + ' (' + (o.miejscowosc || 'bez miejscowości') + ', ' + zl(o.cena) + '): zmień status na ')) + '">Zmień status</a>' +
+      '<div class="top"><span class="nr">#' + o.nr + '</span><span class="chip">' + esc(etyk(o.status)) + '</span>' + ozn +
+      '<a class="zmien" href="' + esc(doClaude(kto + 'zmień status na ')) + '">Zmień status</a>' +
+      '<a class="zmien" href="' + esc(doClaude(kto + 'dodaj notatkę: ')) + '">Dodaj notatkę</a>' +
       '<span class="cena">' + esc(zl(o.cena)) + zm + '</span></div>' +
-      '<div class="loc"><b>' + esc(o.miejscowosc || 'miejscowość nieznana') + '</b>' + gm + (o.ulica ? ' · ul. ' + esc(o.ulica.replace(/^ul\.?\s*/i, '')) : '') + '</div>' +
+      '<div class="loc"><b>' + esc(o.miejscowosc || 'miejscowość nieznana') + '</b>' + gm + (o.ulica ? ' · ' + (/^(os|al|pl)\.?\s/i.test(o.ulica) ? '' : 'ul. ') + esc(o.ulica.replace(/^ul\.?\s*/i, '')) : '') + '</div>' +
       (par ? '<div class="par">' + par + '</div>' : '') +
+      (st && st.powod ? '<div class="powod">' + (o.status === 'niezainteresowany' ? 'Powód: ' : 'Uwaga: ') + esc(st.powod) + '</div>' : '') +
+      (notatki ? '<div class="notes">' + notatki + '</div>' : '') +
       '<div class="links">' + linki + '</div>' +
       '<div class="meta">dodane ' + esc(o.dodano) + ' · zgłaszane ' + (o.widziane || []).length + '× · ostatnio ' + esc(ostatni(o.widziane) || o.dodano) + '</div>' +
-      (st && st.powod ? '<div class="powod">' + (o.status === 'niezainteresowany' ? 'Powód: ' : 'Uwaga: ') + esc(st.powod) + '</div>' : '') +
-      (nota ? '<div class="nota">' + esc(nota.data) + ': ' + esc(nota.tekst) + '</div>' : '') +
       hist + '</article>';
   }
 

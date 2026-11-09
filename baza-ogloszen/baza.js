@@ -17,8 +17,9 @@
  */
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const WERSJA = '1.0';
+const WERSJA = '1.1';
 const KATALOG = process.env.BAZA_DANE || path.join(__dirname, 'dane');
 const PLIK = path.join(KATALOG, 'baza.json');
 const WIDOK = path.join(KATALOG, 'baza-widok.js');
@@ -34,6 +35,13 @@ const STATUSY = [
   ['wizja', 'Wizja lokalna', 'oględziny umówione albo odbyte'],
   ['zainteresowany', 'Zainteresowany', 'krótka lista'],
   ['niezainteresowany', 'Niezainteresowany', 'odpada; zapisz powód, żeby nie wracać'],
+];
+/* rodzaje notatek: strona pokazuje je na wierzchu karty, w tej kolejności */
+const RODZAJE = [
+  ['waham', 'Wątpliwości', 'dlaczego się waham'],
+  ['sprawdzic', 'Do sprawdzenia', 'co sprawdzić przed decyzją; po sprawdzeniu zamknij z wynikiem'],
+  ['raport', 'Raporty i pliki', 'link do raportu na dysku albo w internecie'],
+  ['notatka', 'Notatki', 'inne uwagi'],
 ];
 const ALIASY = {
   'nowe': 'nowe', 'nowy': 'nowe', 'nowa': 'nowe', 'zainteresowanie': 'nowe',
@@ -138,6 +146,12 @@ function wczytaj() {
     throw new Error('Plik ' + PLIK + ' jest uszkodzony (' + e.message + '). Nic nie zapisałem. Ostatnie dobre wersje leżą w ' + KOPIE);
   }
   if (!b || !Array.isArray(b.ogloszenia)) throw new Error('Plik ' + PLIK + ' nie wygląda na bazę ogłoszeń. Nic nie zapisałem.');
+  // notatki sprzed wersji 1.1 nie mają numeru ani rodzaju
+  b.ogloszenia.forEach(o => {
+    o.notatki = o.notatki || [];
+    let max = o.notatki.reduce((m, n) => Math.max(m, n.nr || 0), 0);
+    o.notatki.forEach(n => { if (!n.nr) n.nr = ++max; if (!n.rodzaj) n.rodzaj = 'notatka'; });
+  });
   return b;
 }
 function zapisz(b) {
@@ -160,6 +174,7 @@ function zapiszWidok(b) {
   fs.mkdirSync(KATALOG, { recursive: true });
   fs.writeFileSync(WIDOK, '/* Generuje baza.js po każdej zmianie. Nie edytuj ręcznie. */\n' +
     'window.BAZA=' + JSON.stringify(b) + ';\nwindow.BAZA_STATUSY=' + JSON.stringify(STATUSY) + ';\n' +
+    'window.BAZA_RODZAJE=' + JSON.stringify(RODZAJE) + ';\n' +
     // folder projektu dla przycisków, które otwierają nową rozmowę w aplikacji Claude (zakładka Code)
     'window.BAZA_FOLDER=' + JSON.stringify(path.dirname(__dirname)) + ';\n');
 }
@@ -185,7 +200,8 @@ function oczysc(dane) {
   });
   r.linki = url ? [{ url: String(url).trim(), zrodlo: dane.zrodlo || zrodloZUrl(url), id: idOgloszenia(url) }] : [];
   if (dane.status) r.status = kodStatusu(dane.status);
-  if (dane.notatka) r.notatka = String(dane.notatka).trim();
+  r.noweNotatki = [['notatka', dane.notatka], ['waham', dane.waham], ['sprawdzic', dane.sprawdzic], ['raport', dane.raport]]
+    .filter(([, t]) => t != null && String(t).trim()).map(([k, t]) => [k, String(t).trim()]);
   if (dane.powod) r.powod = String(dane.powod).trim();
   return r;
 }
@@ -195,10 +211,48 @@ function kodStatusu(s) {
   if (STATUSY.some(x => x[0] === k)) return k;
   throw new Error('Nie znam statusu „' + s + '”. Dostępne: ' + STATUSY.map(x => x[1].toLowerCase()).join(', ') + '.');
 }
+/* ---------- notatki ---------- */
+const etykietaRodzaju = k => (RODZAJE.find(x => x[0] === k) || [k, k])[1];
+function linkRaportu(s) {
+  let t = String(s).trim();
+  if (/^~\//.test(t)) t = path.join(os.homedir(), t.slice(2));
+  if (/^file:\/\//i.test(t)) { try { t = decodeURIComponent(new URL(t).pathname); } catch (e) { /* zostaje jak jest */ } }
+  const lokalny = t.startsWith('/');
+  return { cel: t, lokalny, istnieje: lokalny ? fs.existsSync(t) : null };
+}
+function dodajNotatke(r, rodzaj, tekst, opisPliku) {
+  r.notatki = r.notatki || [];
+  const nr = r.notatki.reduce((m, n) => Math.max(m, n.nr || 0), 0) + 1;
+  const n = { nr, data: dzis(), rodzaj, tekst: String(tekst).trim() };
+  let uwaga = '';
+  if (rodzaj === 'raport') {
+    const l = linkRaportu(tekst);
+    if (!l.lokalny && !/^https?:\/\//i.test(l.cel)) throw new Error('Raport podaj jako ścieżkę do pliku (zaczyna się od /) albo link (https://…).');
+    n.link = l.cel;
+    n.tekst = (opisPliku && String(opisPliku).trim()) || (l.lokalny ? path.basename(l.cel) : l.cel);
+    if (l.lokalny && !l.istnieje) uwaga = 'nie widzę pliku ' + l.cel + ' na dysku; zapisałem, ale sprawdź ścieżkę';
+  }
+  r.notatki.push(n);
+  return { n, uwaga };
+}
+function znajdzNotatke(r, nr) {
+  const n = r.notatki.find(x => x.nr === parseInt(String(nr || '').replace(/^#/, ''), 10));
+  if (!n) throw new Error('Przy #' + r.nr + ' nie ma notatki nr ' + nr + '. Numery notatek pokazuje polecenie: pokaz ' + r.nr + '.');
+  return n;
+}
+function znaczniki(o) {
+  const otw = k => o.notatki.filter(n => n.rodzaj === k && !n.zamkniete).length;
+  const cz = [];
+  if (otw('waham')) cz.push('wątpliwości ' + otw('waham'));
+  if (otw('sprawdzic')) cz.push('do sprawdzenia ' + otw('sprawdzic'));
+  if (o.notatki.some(n => n.rodzaj === 'raport')) cz.push('raport');
+  return cz.length ? ' [' + cz.join(', ') + ']' : '';
+}
+
 function opis(r) {
   const loc = [r.miejscowosc, r.gmina && klucz(r.gmina) !== klucz(r.miejscowosc) ? '(gm. ' + r.gmina + ')' : ''].filter(Boolean).join(' ') || 'miejscowość nieznana';
   const cz = [
-    loc + (r.ulica ? ', ul. ' + r.ulica.replace(/^ul\.?\s*/i, '') : ''),
+    loc + (r.ulica ? ', ' + (/^(os|al|pl)\.?\s/i.test(r.ulica) ? '' : 'ul. ') + r.ulica.replace(/^ul\.?\s*/i, '') : ''),
     [r.typ, r.rodzaj].filter(Boolean).join(' '),
     zl(r.cena),
     r.metraz ? m2(r.metraz) : '',
@@ -299,10 +353,13 @@ function dodajDoBazy(b, dane, opcje) {
   r.linki = rek.linki.map(l => Object.assign({}, l, { dodano: d }));
   r.historiaCen = rek.cena ? [{ data: d, cena: rek.cena, url: rek.linki[0] ? rek.linki[0].url : '' }] : [];
   r.historiaStatusow = [{ data: d, status: r.status, powod: rek.powod || undefined }];
-  r.notatki = rek.notatka ? [{ data: d, tekst: rek.notatka }] : [];
+  r.notatki = [];
+  const uwagi = rek.noweNotatki.map(([k, t]) => dodajNotatke(r, k, t).uwaga).filter(Boolean);
   r.widziane = [d];
   b.ogloszenia.push(r);
   const L = ['DODANO: ' + opis(r), '  status: ' + etykieta(r.status)];
+  if (r.notatki.length) L.push('  notatki: ' + r.notatki.map(n => etykietaRodzaju(n.rodzaj).toLowerCase() + ': ' + n.tekst).join('; '));
+  uwagi.forEach(u => L.push('  uwaga: ' + u));
   const podobne = traf.filter(x => x.w.poziom !== 'pewne');
   if (podobne.length) L.push('  podobne w bazie (dodane na Twoje polecenie jako osobny dom): ' + podobne.slice(0, 3).map(x => '#' + x.s.nr).join(', '));
   const brak = ['miejscowosc', 'metraz'].concat(r.typ === 'mieszkanie' ? [] : ['dzialka']).filter(k => r[k] == null).concat(r.cena == null ? ['cena'] : []);
@@ -325,7 +382,14 @@ function scal(cel, rek, d, w, opcje) {
     cel.cena = rek.cena;
     cel.historiaCen.push({ data: d, cena: rek.cena, url: (rek.linki[0] || {}).url || '' });
   }
-  if (rek.notatka && !cel.notatki.some(n => n.tekst === rek.notatka)) cel.notatki.push({ data: d, tekst: rek.notatka });
+  const uwagiNotatek = [];
+  let ileNotatek = 0;
+  rek.noweNotatki.forEach(([k, t]) => {
+    if (cel.notatki.some(n => n.rodzaj === k && (n.tekst === t || (n.link && n.link === linkRaportu(t).cel)))) return;
+    const w = dodajNotatke(cel, k, t);
+    ileNotatek++;
+    if (w.uwaga) uwagiNotatek.push(w.uwaga);
+  });
   // przy imporcie status w bazie jest świeższy niż w Szukaczu, więc go nie ruszam
   if (rek.status && rek.status !== cel.status && !(opcje && opcje.zImportu)) {
     cel.status = rek.status;
@@ -347,6 +411,8 @@ function scal(cel, rek, d, w, opcje) {
   L.push('  dopasowanie: ' + dop);
   if (nowyLink) L.push('  dopisany nowy link (' + nowyLink.zrodlo + ')');
   if (uzupelnione.length) L.push('  uzupełnione pola: ' + uzupelnione.join(', '));
+  if (ileNotatek) L.push('  dopisane notatki: ' + ileNotatek);
+  uwagiNotatek.forEach(u => L.push('  uwaga: ' + u));
   if (zmianaRealna && cel.status === 'niezainteresowany' && zmiana.nowa < zmiana.stara) {
     L.push('  UWAGA: to ogłoszenie wcześniej odrzuciłeś' + (ostatniPowod(cel) && ostatniPowod(cel).powod ? ' (powód: ' + ostatniPowod(cel).powod + ')' : '') + '. Cena spadła, więc warto sprawdzić, czy powód nadal obowiązuje.');
   }
@@ -433,7 +499,13 @@ function pokaz(r) {
   r.linki.forEach(l => L.push('  link (' + l.zrodlo + ', ' + l.dodano + '): ' + l.url));
   if (r.historiaCen.length > 1) L.push('  historia cen: ' + r.historiaCen.map(h => h.data + ' ' + zl(h.cena)).join(' → '));
   L.push('  historia statusów: ' + r.historiaStatusow.map(h => h.data + ' ' + etykieta(h.status) + (h.powod ? ' (' + h.powod + ')' : '')).join(' → '));
-  r.notatki.forEach(n => L.push('  notatka ' + n.data + ': ' + n.tekst));
+  RODZAJE.forEach(([k, et]) => {
+    const g = r.notatki.filter(n => n.rodzaj === k);
+    if (!g.length) return;
+    L.push('  ' + et.toUpperCase() + ':');
+    g.forEach(n => L.push('    ' + (n.zamkniete ? '✓' : '•') + ' [' + n.nr + '] ' + n.tekst + (n.link ? ' → ' + n.link : '') + ' (' + n.data + ')' +
+      (n.zamkniete ? ', zamknięte ' + n.zamkniete.data + (n.zamkniete.wynik ? ': ' + n.zamkniete.wynik : '') : '')));
+  });
   return L.join('\n');
 }
 function lista(b, filtr) {
@@ -447,7 +519,7 @@ function lista(b, filtr) {
     g.forEach(o => {
       const ost = ostatniPowod(o);
       const zm = o.historiaCen.length > 1 ? ' [cena ' + proc(100 * (o.cena - o.historiaCen[0].cena) / o.historiaCen[0].cena) + ']' : '';
-      L.push('  ' + opis(o) + zm + (ost && ost.powod ? ' · ' + ost.powod : ''));
+      L.push('  ' + opis(o) + zm + (ost && ost.powod ? ' · ' + ost.powod : '') + znaczniki(o));
     });
   });
   return L.join('\n');
@@ -500,11 +572,18 @@ const POMOC = `Baza ogłoszeń ${WERSJA}. Dane: ${PLIK}
         pola: cena, miejscowosc, gmina, ulica, metraz, dzialka, pokoje, rok, typ, rodzaj, tytul, status, notatka, powod
         Otodom czytam sam; dla innych portali podaj pola albo JSON.
   status N <status> [powód]      statusy: ${STATUSY.map(s => s[1].toLowerCase()).join(', ')}
-  notatka N <tekst> · cena N <kwota> [link] · popraw N pole=wartość ...
+  waham N <tekst>                dlaczego się wahasz (na wierzchu karty)
+  sprawdzic N <tekst>            co sprawdzić; po sprawdzeniu: zamknij N <nr notatki> [wynik]
+  raport N <ścieżka|link> [opis] link do raportu na dysku albo w internecie
+  notatka N <tekst> · usun-notatke N <nr notatki>
+  cena N <kwota> [link] · popraw N pole=wartość ...
   pokaz N · lista [status|wszystkie] · szukaj <fraza> · import <plik.json> · pobierz <link> · usun N · widok`;
 
+const KOMENDY = { sprawdz: 'sprawdzic', watpliwosc: 'waham', watpliwosci: 'waham', plik: 'raport', usunnotatke: 'usun-notatke' };
 async function main(argv) {
-  const [kom, ...args] = argv;
+  const [surowe, ...args] = argv;
+  let kom = bezOgonkow(surowe || '').toLowerCase();
+  kom = KOMENDY[kom] || kom;
   const { flagi, reszta } = rozbierz(args);
   switch (kom) {
     case 'dodaj': {
@@ -532,14 +611,36 @@ async function main(argv) {
       if (kod === 'niezainteresowany' && !powod) t += '\n  Bez powodu. Dopisz go (status N niezainteresowany <powód>), wtedy przy kolejnym trafieniu od razu zobaczysz, dlaczego odpadło.';
       return { kod: 0, tekst: t };
     }
-    case 'notatka': {
+    case 'notatka':
+    case 'waham':
+    case 'sprawdzic':
+    case 'raport': {
       const b = wczytaj();
       const r = znajdzNr(b, reszta[0]);
-      const t = reszta.slice(1).join(' ').trim();
-      if (!t) throw new Error('Podaj treść notatki.');
-      r.notatki.push({ data: dzis(), tekst: t });
+      const t = (kom === 'raport' ? reszta[1] || '' : reszta.slice(1).join(' ')).trim();
+      if (!t) throw new Error(kom === 'raport' ? 'Podaj ścieżkę do pliku albo link.' : 'Podaj treść notatki.');
+      const w = dodajNotatke(r, kom, t, kom === 'raport' ? reszta.slice(2).join(' ') : '');
       zapisz(b);
-      return { kod: 0, tekst: opis(r) + '\n  dopisana notatka: ' + t };
+      return { kod: 0, tekst: opis(r) + '\n  dopisane (' + etykietaRodzaju(kom).toLowerCase() + ', nr ' + w.n.nr + '): ' + w.n.tekst +
+        (w.n.link ? ' → ' + w.n.link : '') + (w.uwaga ? '\n  uwaga: ' + w.uwaga : '') };
+    }
+    case 'zamknij': {
+      const b = wczytaj();
+      const r = znajdzNr(b, reszta[0]);
+      const n = znajdzNotatke(r, reszta[1]);
+      if (n.zamkniete) throw new Error('Notatka nr ' + n.nr + ' przy #' + r.nr + ' jest już zamknięta (' + n.zamkniete.data + ').');
+      const wynik = reszta.slice(2).join(' ').trim();
+      n.zamkniete = { data: dzis(), wynik: wynik || undefined };
+      zapisz(b);
+      return { kod: 0, tekst: opis(r) + '\n  zamknięte (' + etykietaRodzaju(n.rodzaj).toLowerCase() + ', nr ' + n.nr + '): ' + n.tekst + (wynik ? ' → ' + wynik : '') };
+    }
+    case 'usun-notatke': {
+      const b = wczytaj();
+      const r = znajdzNr(b, reszta[0]);
+      const n = znajdzNotatke(r, reszta[1]);
+      r.notatki = r.notatki.filter(x => x !== n);
+      zapisz(b);
+      return { kod: 0, tekst: opis(r) + '\n  usunięta notatka nr ' + n.nr + ': ' + n.tekst };
     }
     case 'cena':
     case 'popraw': {
@@ -602,5 +703,5 @@ if (require.main === module) {
     process.exitCode = 1;
   });
 } else {
-  module.exports = { main, parseKwota, parseLiczba, normUrl, idOgloszenia, zrodloZUrl, porownaj, oczysc, zOtodom, kodStatusu, dodajDoBazy, importuj, STATUSY };
+  module.exports = { main, parseKwota, parseLiczba, normUrl, idOgloszenia, zrodloZUrl, porownaj, oczysc, zOtodom, kodStatusu, dodajDoBazy, importuj, linkRaportu, STATUSY, RODZAJE };
 }
