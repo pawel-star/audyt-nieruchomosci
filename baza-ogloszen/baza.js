@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const WERSJA = '1.1';
+const WERSJA = '1.3';
 const KATALOG = process.env.BAZA_DANE || path.join(__dirname, 'dane');
 const PLIK = path.join(KATALOG, 'baza.json');
 const WIDOK = path.join(KATALOG, 'baza-widok.js');
@@ -276,6 +276,20 @@ function linijkaStatusu(r) {
 /* ---------- porównanie: czy to ten sam dom ---------- */
 function blisko(a, b, abs, rel) { return Math.abs(a - b) <= Math.max(abs, rel * Math.max(a, b)); }
 function lokalizacje(r) { return new Set([r.miejscowosc, r.gmina].filter(Boolean).map(klucz)); }
+/* piętro mieszkania z pola rodzaj, a gdy go tam nie ma, z tytułu: 0 = parter, null = nie wiadomo; dla domu zawsze null */
+function pietro(r, mieszkanie) {
+  if (!r || !(mieszkanie || r.typ === 'mieszkanie')) return null;
+  for (const pole of [r.rodzaj, r.tytul]) {
+    const t = klucz(pole);
+    if (!t) continue;
+    // najpierw numer: „1. piętro, komórka na parterze” to pierwsze piętro; „4-piętrowy blok” to nie piętro mieszkania
+    const m = t.match(/\b(\d{1,2}) ?(?:pietro|pietrze)\b/) || t.match(/\bpietro (\d{1,2})\b/);
+    if (m) return +m[1];
+    if (/\bparter(?:ze|u)?\b/.test(t)) return 0;
+  }
+  return null;
+}
+const nazwaPietra = n => n === 0 ? 'parter' : n + '. piętro';
 function porownaj(nowy, stary) {
   const nUrl = nowy.linki.map(l => normUrl(l.url));
   if (stary.linki.some(l => nUrl.includes(normUrl(l.url)))) return { poziom: 'pewne', pkt: 99, powody: ['ten sam link'] };
@@ -286,32 +300,45 @@ function porownaj(nowy, stary) {
   const A = lokalizacje(nowy), B = lokalizacje(stary);
   if (!A.size || ![...A].some(x => B.has(x))) return null;
   if (nowy.typ && stary.typ && nowy.typ !== stary.typ) return null;
-  let pkt = 0, mocne = 0;
-  const powody = ['ta sama miejscowość'];
+  let pkt = 0, mocne = 0, pytaj = false;   // pytaj: coś się nie zgadza albo brakuje, więc bez scalania na ślepo
+  const powody = ['ta sama miejscowość'], roznice = [];
   // metraż i działka: w tolerancji +2, do 15% różnicy −2, powyżej to inny dom
   for (const [k, abs, rel, nazwa] of [['metraz', 2, 0.02, 'metraż'], ['dzialka', 15, 0.03, 'działka']]) {
     const a = nowy[k], b = stary[k];
     if (a == null || b == null) continue;
     if (blisko(a, b, abs, rel)) { pkt += 2; mocne++; powody.push(nazwa + ' ' + b + (a !== b ? '/' + a : '') + ' m²'); }
-    else if (blisko(a, b, 0, 0.15)) { pkt -= 2; powody.push('inny ' + nazwa + ': ' + b + ' i ' + a + ' m²'); }
+    else if (blisko(a, b, 0, 0.15)) { pkt -= 2; roznice.push('inny ' + nazwa + ': ' + b + ' i ' + a + ' m²'); }
     else return null;
   }
   if (nowy.ulica && stary.ulica) {
     if (kluczUlicy(nowy.ulica) === kluczUlicy(stary.ulica)) { pkt += 2; mocne++; powody.push('ulica ' + stary.ulica); }
-    else { pkt -= 2; powody.push('inna ulica: ' + stary.ulica + ' i ' + nowy.ulica); }
+    else { pkt -= 2; roznice.push('inna ulica: ' + stary.ulica + ' i ' + nowy.ulica); }
+  }
+  // mieszkania: w jednym bloku wiele lokali ma tę samą ulicę, metraż i biuro, więc rozstrzyga piętro
+  if (nowy.typ === 'mieszkanie' || stary.typ === 'mieszkanie') {
+    const pn = pietro(nowy, true), ps = pietro(stary, true);
+    if (pn != null && ps != null) {
+      if (pn !== ps) return null;
+      pkt += 1; powody.push(nazwaPietra(ps));
+    } else {
+      pytaj = true;
+      roznice.push('brak piętra ' + (pn == null && ps == null ? 'w obu ogłoszeniach' : pn == null ? 'w nowym ogłoszeniu' : 'w #' + stary.nr));
+    }
   }
   if (nowy.pokoje && stary.pokoje) {
     const d = Math.abs(nowy.pokoje - stary.pokoje);
-    if (d === 0) { pkt += 1; powody.push(stary.pokoje + ' pokoi'); } else if (d >= 2) pkt -= 1;
+    if (d === 0) { pkt += 1; powody.push(stary.pokoje + ' pokoi'); }
+    else { if (d >= 2) pkt -= 1; roznice.push('inna liczba pokoi: ' + stary.pokoje + ' i ' + nowy.pokoje); }
   }
   if (nowy.rok && stary.rok) {
     const d = Math.abs(nowy.rok - stary.rok);
-    if (d <= 1) { pkt += 1; powody.push('rok ' + stary.rok); } else if (d > 3) pkt -= 1;
+    if (d <= 1) { pkt += 1; powody.push('rok ' + stary.rok); }
+    else { if (d > 3) pkt -= 1; pytaj = true; roznice.push('inny rok budowy: ' + stary.rok + ' i ' + nowy.rok); }
   }
   if (nowy.cena && stary.cena && blisko(nowy.cena, stary.cena, 0, 0.03)) { pkt += 1; powody.push('podobna cena'); }
   if (!mocne) return null;
-  if (pkt >= 4) return { poziom: 'prawdopodobne', pkt, powody };
-  if (pkt >= 2) return { poziom: 'mozliwe', pkt, powody };
+  if (pkt >= 4 && !pytaj) return { poziom: 'prawdopodobne', pkt, powody, roznice };
+  if (pkt >= 2) return { poziom: 'mozliwe', pkt, powody, roznice };
   return null;
 }
 const RANGA = { pewne: 3, prawdopodobne: 2, mozliwe: 1 };
@@ -337,8 +364,11 @@ function dodajDoBazy(b, dane, opcje) {
     const L = ['MOŻLIWY DUPLIKAT, nic nie zapisałem. Nowe ogłoszenie jest podobne do:'];
     traf.filter(x => x.w.poziom === 'mozliwe').slice(0, 3).forEach(x => {
       L.push('  ' + opis(x.s), '    ' + linijkaStatusu(x.s), '    zgodne: ' + x.w.powody.join(', '));
+      if (x.w.roznice.length) L.push('    różnice: ' + x.w.roznice.join(', '));
     });
     L.push('Ten sam dom: powtórz z --do ' + naj.s.nr + '. Inny dom: powtórz z --nowy.');
+    if (traf.some(x => x.w.poziom === 'mozliwe' && x.w.roznice.some(t => t.startsWith('brak piętra'))))
+      L.push('Piętro mieszkania wpisz w polu rodzaj, np. rodzaj="blok, 2. piętro" albo rodzaj="parter". Przy znanym piętrze rozstrzygam sam.');
     return { wynik: 'mozliwe', tekst: L.join('\n'), kandydaci: traf.map(x => x.s.nr) };
   }
   if (cel) return scal(cel, rek, d, naj && naj.s === cel ? naj.w : { poziom: 'wskazane', powody: ['wskazane ręcznie (--do)'] }, opcje);
@@ -395,7 +425,8 @@ function scal(cel, rek, d, w, opcje) {
     cel.status = rek.status;
     cel.historiaStatusow.push({ data: d, status: rek.status, powod: rek.powod || undefined });
   }
-  const dop = w.poziom === 'prawdopodobne' ? 'prawdopodobnie ten sam dom (' + w.powody.join(', ') + ')' : w.powody.join(', ');
+  const dop = (w.poziom === 'prawdopodobne' ? 'prawdopodobnie ' + (cel.typ === 'mieszkanie' ? 'to samo mieszkanie' : 'ten sam dom') + ' (' + w.powody.join(', ') + ')' : w.powody.join(', ')) +
+    (w.roznice && w.roznice.length ? '; różnice: ' + w.roznice.join(', ') : '');
   const zmianaRealna = zmiana && zmiana.stara != null;
   if (zmianaRealna) {
     const delta = zmiana.nowa - zmiana.stara;
@@ -431,6 +462,9 @@ function zOtodom(html, url) {
   const poz = lvl => (loc.find(l => l.locationLevel === lvl) || {}).name || null;
   const ul = ad.location && ad.location.address && ad.location.address.street;
   const bt = [].concat(t.Building_type || [])[0];
+  // piętro mieszkania: floor_1…floor_10 (sprawdzone na ogłoszeniach), ground_floor = parter; cellar, garret, floor_higher_10 pomijam
+  const fl = String([].concat(t.Floor_no || [])[0] || '');
+  const pietroOgl = fl === 'ground_floor' ? 'parter' : /^floor_\d+$/.test(fl) ? fl.slice(6) + '. piętro' : null;
   const gmina = poz('commune');
   return {
     url: ad.url || url,
@@ -441,7 +475,7 @@ function zOtodom(html, url) {
     pokoje: parseInt([].concat(t.Rooms_num || [])[0], 10) || null,
     rok: parseInt(t.Build_year, 10) || null,
     typ: t.ProperType || null,
-    rodzaj: bt ? (RODZAJ[bt] || bt) : null,
+    rodzaj: [bt ? (RODZAJ[bt] || bt) : null, pietroOgl].filter(Boolean).join(', ') || null,
     miejscowosc: poz('city_or_village') || poz('city') || gmina,
     gmina: gmina,
     ulica: ul && ul.name ? ul.name + (ul.number ? ' ' + ul.number : '') : null,
@@ -454,6 +488,93 @@ async function pobierz(url) {
   const r = await fetch(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'pl-PL,pl;q=0.9' }, redirect: 'follow', signal: AbortSignal.timeout(25000) });
   if (!r.ok) throw new Error('Otodom odpowiedział kodem ' + r.status + '.');
   return zOtodom(await r.text(), r.url || url);
+}
+
+/* ---------- przegląd: czy w ogłoszeniach coś się zmieniło ----------
+ * przeglad start: sam sprawdza linki z Otodom, zapamiętuje stan bazy i wypisuje, co Claude ma sprawdzić
+ *   ręcznie (inne portale) oraz czego szukać jako tego samego domu w nowych ogłoszeniach;
+ * przeglad koniec: porównuje bazę ze stanem z początku i zapisuje listę zmian, którą pokazuje strona. */
+async function sprawdzOtodom(url) {
+  let r;
+  try { r = await fetch(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'pl-PL,pl;q=0.9' }, redirect: 'follow', signal: AbortSignal.timeout(25000) }); }
+  catch (e) { return { stan: 'blad', komunikat: e.message }; }
+  if (r.status === 404 || r.status === 410) return { stan: 'zniklo' };
+  if (!r.ok) return { stan: 'blad', komunikat: 'kod ' + r.status };
+  const html = await r.text();
+  try { return { stan: 'ok', dane: zOtodom(html, r.url || url) }; }
+  catch (e) { return /zdjęte/.test(e.message) ? { stan: 'zniklo' } : { stan: 'blad', komunikat: e.message }; }
+}
+function migawka(b) {
+  return { maxNr: b.nastepnyNr - 1, wpisy: b.ogloszenia.map(o => ({ nr: o.nr, cena: o.cena, status: o.status, linki: o.linki.length,
+    notatki: o.notatki.reduce((m, n) => Math.max(m, n.nr || 0), 0) })) };
+}
+function frazaSzukania(o) {
+  return [o.typ === 'mieszkanie' ? 'mieszkanie' : 'dom', 'sprzedaż', o.miejscowosc, o.ulica && o.ulica.replace(/^ul\.?\s*/i, ''),
+    o.metraz && String(o.metraz).replace('.', ',') + ' m2', o.dzialka && 'działka ' + o.dzialka + ' m2'].filter(Boolean).join(' ');
+}
+const ileZmian = n => n === 1 ? '1 zmiana' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? n + ' zmiany' : n + ' zmian';
+async function przegladStart(b, sprawdz) {
+  sprawdz = sprawdz || sprawdzOtodom;
+  const d = dzis();
+  const L = [];
+  if (b.przegladTrwa) L.push('Poprzedni przegląd (' + b.przegladTrwa.data + ') nie został zakończony; zaczynam od nowa.');
+  b.przegladTrwa = { start: new Date().toISOString(), data: d, migawka: migawka(b) };
+  const aktywne = b.ogloszenia.filter(o => o.status !== 'niezainteresowany');
+  L.push('PRZEGLĄD rozpoczęty ' + d + ': ' + aktywne.length + ' aktywnych ogłoszeń.', '', 'OTODOM (sprawdzone automatycznie):');
+  const reczne = [];
+  let ileOtodom = 0;
+  for (const o of aktywne) {
+    for (const l of o.linki) {
+      if (zrodloZUrl(l.url) !== 'otodom') { reczne.push([o, l]); continue; }
+      ileOtodom++;
+      const w = await sprawdz(l.url);
+      if (w.stan !== 'blad') l.sprawdzone = d;
+      if (w.stan === 'zniklo') {
+        if (!o.notatki.some(n => n.tekst.startsWith('Przegląd: ogłoszenie na Otodom zniknęło') && n.rodzaj === 'notatka')) dodajNotatke(o, 'notatka', 'Przegląd: ogłoszenie na Otodom zniknęło (' + d + ').');
+        L.push('  #' + o.nr + ': ogłoszenie zniknęło');
+      } else if (w.stan === 'blad') {
+        L.push('  #' + o.nr + ': nie udało się sprawdzić (' + w.komunikat + '), sprawdź ręcznie: ' + l.url);
+      } else {
+        const c = w.dane.cena;
+        if (c && c !== o.cena) {
+          const stara = o.cena;
+          o.cena = c;
+          o.historiaCen.push({ data: d, cena: c, url: l.url });
+          L.push('  #' + o.nr + ': cena ' + zl(stara) + ' → ' + zl(c) + (stara ? ' (' + proc(100 * (c - stara) / stara) + ')' : ''));
+        } else L.push('  #' + o.nr + ': bez zmian (' + zl(o.cena) + ')');
+        if (/rezerwac|sprzedan/i.test(w.dane.tytul || '')) L.push('  #' + o.nr + ': w tytule „' + w.dane.tytul + '”');
+      }
+    }
+  }
+  if (!ileOtodom) L.push('  brak linków z Otodom');
+  L.push('', 'INNE PORTALE (otwórz i sprawdź cenę, rezerwację, czy ogłoszenie nadal jest):');
+  reczne.forEach(([o, l]) => L.push('  #' + o.nr + ' ' + l.zrodlo + ' (cena w bazie ' + zl(o.cena) + '): ' + l.url));
+  if (!reczne.length) L.push('  brak');
+  L.push('', 'TEN SAM DOM W INNYCH OGŁOSZENIACH (Otodom, OLX, Adresowo, okolica.pl, nieruchomosci-online, Gratka, Morizon, także jako nowe ogłoszenie na tym samym portalu):');
+  aktywne.forEach(o => L.push('  #' + o.nr + ' szukaj: ' + frazaSzukania(o) + ' · cena w bazie ' + zl(o.cena)));
+  L.push('', 'Na koniec: przeglad koniec');
+  return L.join('\n');
+}
+function przegladKoniec(b, uwagi) {
+  const p = b.przegladTrwa;
+  if (!p) throw new Error('Nie ma rozpoczętego przeglądu. Zacznij od: przeglad start');
+  const zm = [];
+  const stare = new Map(p.migawka.wpisy.map(w => [w.nr, w]));
+  b.ogloszenia.forEach(o => {
+    const s = stare.get(o.nr);
+    const kto = '#' + o.nr + ' ' + (o.miejscowosc || 'bez miejscowości');
+    if (!s) { zm.push(kto + ': nowe ogłoszenie w bazie (' + zl(o.cena) + ')'); return; }
+    if (o.cena !== s.cena) zm.push(kto + ': cena ' + zl(s.cena) + ' → ' + zl(o.cena) + (s.cena && o.cena ? ' (' + proc(100 * (o.cena - s.cena) / s.cena) + ')' : ''));
+    if (o.status !== s.status) zm.push(kto + ': status ' + etykieta(s.status) + ' → ' + etykieta(o.status));
+    o.linki.slice(s.linki).forEach(l => zm.push(kto + ': ten sam dom w nowym ogłoszeniu (' + l.zrodlo + ')'));
+    o.notatki.filter(n => n.nr > s.notatki).forEach(n => zm.push(kto + ': ' + n.tekst.replace(/^Przegląd:\s*/, '')));
+  });
+  const wpis = { data: p.data, start: p.start, koniec: new Date().toISOString(), zmiany: zm };
+  if (uwagi) wpis.uwagi = uwagi;
+  b.przeglady = (b.przeglady || []).concat([wpis]).slice(-20);
+  delete b.przegladTrwa;
+  return 'PRZEGLĄD zakończony ' + p.data + ': ' + (zm.length ? ileZmian(zm.length) : 'bez zmian') +
+    (zm.length ? '\n  ' + zm.join('\n  ') : '') + (uwagi ? '\n  uwagi: ' + uwagi : '');
 }
 
 /* ---------- import ze Szukacza ---------- */
@@ -577,7 +698,8 @@ const POMOC = `Baza ogłoszeń ${WERSJA}. Dane: ${PLIK}
   raport N <ścieżka|link> [opis] link do raportu na dysku albo w internecie
   notatka N <tekst> · usun-notatke N <nr notatki>
   cena N <kwota> [link] · popraw N pole=wartość ...
-  pokaz N · lista [status|wszystkie] · szukaj <fraza> · import <plik.json> · pobierz <link> · usun N · widok`;
+  pokaz N · lista [status|wszystkie] · szukaj <fraza> · import <plik.json> · pobierz <link> · usun N · widok
+  przeglad start · przeglad koniec [uwagi]   sprawdzenie zmian w ogłoszeniach, lista zmian trafia na stronę`;
 
 const KOMENDY = { sprawdz: 'sprawdzic', watpliwosc: 'waham', watpliwosci: 'waham', plik: 'raport', usunnotatke: 'usun-notatke' };
 async function main(argv) {
@@ -689,6 +811,16 @@ async function main(argv) {
       zapisz(b);
       return { kod: 0, tekst: 'USUNIĘTO: ' + opis(r) + '\n  poprzednia wersja bazy leży w ' + KOPIE };
     }
+    case 'przeglad': {
+      const b = wczytaj();
+      const co = klucz(reszta[0] || 'start');
+      let t;
+      if (co === 'start') t = await przegladStart(b);
+      else if (co === 'koniec') t = przegladKoniec(b, reszta.slice(1).join(' ').trim());
+      else throw new Error('Użyj: przeglad start albo przeglad koniec [uwagi].');
+      zapisz(b);
+      return { kod: 0, tekst: t };
+    }
     case 'widok': zapiszWidok(wczytaj()); return { kod: 0, tekst: 'Odświeżono ' + WIDOK };
     default: return { kod: kom ? 1 : 0, tekst: (kom ? 'Nie znam polecenia „' + kom + '”.\n' : '') + POMOC };
   }
@@ -703,5 +835,5 @@ if (require.main === module) {
     process.exitCode = 1;
   });
 } else {
-  module.exports = { main, parseKwota, parseLiczba, normUrl, idOgloszenia, zrodloZUrl, porownaj, oczysc, zOtodom, kodStatusu, dodajDoBazy, importuj, linkRaportu, STATUSY, RODZAJE };
+  module.exports = { main, parseKwota, parseLiczba, normUrl, idOgloszenia, zrodloZUrl, porownaj, pietro, oczysc, zOtodom, kodStatusu, dodajDoBazy, importuj, linkRaportu, przegladStart, przegladKoniec, STATUSY, RODZAJE };
 }

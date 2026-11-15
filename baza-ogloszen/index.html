@@ -57,6 +57,12 @@ header{position:sticky;top:0;z-index:10;background:rgba(15,18,24,.94);backdrop-f
 .nb li.zamk .tr{text-decoration:line-through;color:var(--tx3)}
 .nb .nd{color:var(--tx3);font-size:11.5px}
 .nb .wynik{display:block;color:var(--green);font-size:13px}
+.przeglad{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:14px}
+.przeglad .pg{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.przeglad .pg b{flex:1;min-width:180px}
+.przeglad ul{margin:8px 0 0;padding-left:18px;color:var(--tx2)}
+.przeglad li{margin:2px 0;overflow-wrap:anywhere}
+.przeglad .bz{color:var(--tx3);font-size:13px;margin-top:4px}
 .ozn{font-size:12px;font-weight:700;padding:1px 7px;border-radius:6px}
 .ozn.w{color:var(--yellow);background:#2a2110}.ozn.s{color:var(--blue);background:#132133}.ozn.r{color:var(--teal);background:#10302b}
 details{margin-top:6px;font-size:13px;color:var(--tx2)}
@@ -73,6 +79,7 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
 <header><div class="hd"><h1>Baza ogłoszeń<span class="sub" id="stan">wczytuję…</span></h1><a class="btn glowny" id="dodaj" href="#">+ Dodaj ogłoszenie</a><button class="btn" type="button" onclick="location.reload()">Odśwież</button></div></header>
 <div class="wrap">
   <div class="pipe" id="pipe"></div>
+  <div class="przeglad" id="przeglad"></div>
   <div class="tools">
     <input id="q" type="search" placeholder="Szukaj: miejscowość, ulica, notatka, portal">
     <select id="sort" aria-label="Sortowanie">
@@ -113,6 +120,22 @@ code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
     $('#lista').innerHTML = '<div class="empty">Baza jest jeszcze pusta albo nie ma pliku <code>dane/baza-widok.js</code>. Wklej Claude link do ogłoszenia, a wpis pojawi się tutaj po odświeżeniu.</div>';
     return;
   }
+  // ostatni przegląd zmian w ogłoszeniach i przycisk, który otwiera rozmowę z poleceniem przeglądu
+  (function () {
+    const p = (B.przeglady || []).slice(-1)[0];
+    const dataPl = d => new Date(d + 'T12:00:00').toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+    const btn = '<a class="btn glowny" href="' + esc(doClaude('Baza ogłoszeń: sprawdź zmiany w ogłoszeniach (przegląd).')) + '">Sprawdź zmiany w ogłoszeniach</a>';
+    let tresc;
+    if (!p) tresc = '<div class="pg"><b>Zmian w ogłoszeniach jeszcze nie sprawdzano.</b>' + btn + '</div>';
+    else {
+      const n = p.zmiany.length;
+      tresc = '<div class="pg"><b>Ostatnie sprawdzenie: ' + esc(dataPl(p.data)) + ' · ' + (n ? n + (n === 1 ? ' zmiana' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? ' zmiany' : ' zmian') : 'bez zmian') + '</b>' + btn + '</div>' +
+        (n ? '<ul>' + p.zmiany.map(z => '<li>' + esc(z) + '</li>').join('') + '</ul>' : '') +
+        (p.uwagi ? '<div class="bz">' + esc(p.uwagi) + '</div>' : '');
+    }
+    if (B.przegladTrwa) tresc += '<div class="bz">Przegląd z ' + esc(dataPl(B.przegladTrwa.data)) + ' nie został zakończony.</div>';
+    $('#przeglad').innerHTML = tresc;
+  })();
   $('#stan').textContent = lista.length + ' ogłoszeń · zmiana ' + (B._zmiana ? new Date(B._zmiana).toLocaleString('pl-PL', { dateStyle: 'medium', timeStyle: 'short' }) : '–');
 
   function pasek() {

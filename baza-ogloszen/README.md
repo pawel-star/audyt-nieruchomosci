@@ -43,17 +43,31 @@ Notatki widać na karcie ogłoszenia, pod parametrami, w czterech kolorowych ram
 
 Notatkę dodajesz zwykłym zdaniem w rozmowie albo przyciskiem „Dodaj notatkę” przy ogłoszeniu. Claude sam przypisze ją do właściwego rodzaju. Link do pliku na dysku otwiera się ze strony otwartej dwuklikiem z dysku.
 
+## Sprawdzanie zmian w ogłoszeniach
+
+Przycisk „Sprawdź zmiany w ogłoszeniach” na górze strony otwiera rozmowę z Claude z gotowym poleceniem. Po naciśnięciu Enter Claude:
+- sprawdza każde ogłoszenie oprócz odrzuconych: cenę, rezerwację, czy ogłoszenie nadal wisi (Otodom automatycznie, inne portale w przeglądarce),
+- szuka tego samego domu w innych ogłoszeniach: na Otodom, OLX, Adresowo, okolica.pl i innych portalach, także jako nowego ogłoszenia na tym samym portalu,
+- zapisuje zmiany cen w historii, a zniknięcia i rezerwacje jako notatki,
+- na koniec podaje listę zmian w rozmowie, a ta sama lista pojawia się na górze strony po „Odśwież”.
+
+Nic nie działa w tle: sprawdzanie dzieje się tylko po kliknięciu, np. raz w tygodniu.
+
 ## Jak rozpoznaje ten sam dom
 
 1. **Pewne:** ten sam link (bez dopisków w rodzaju `?utm_source=`) albo ten sam numer ogłoszenia na portalu, nawet gdy portal zmienił tytuł w adresie. Numer rozpoznaje dla Otodom, OLX, Facebooka, Gratki, Morizonu i nieruchomosci-online.
-2. **Prawdopodobne:** ta sama miejscowość albo gmina i zgodne parametry. Metraż (±2 m² albo 2%), działka (±15 m² albo 3%) i ulica dają po 2 punkty, liczba pokoi, rok budowy i cena (±3%) po 1. Od 4 punktów baza uznaje, że to ten sam dom: dopisuje link i ewentualnie nową cenę.
-3. **Możliwe:** od 2 punktów. Baza nic nie zapisuje i pyta.
+2. **Prawdopodobne:** ta sama miejscowość albo gmina i zgodne parametry. Metraż (±2 m² albo 2%), działka (±15 m² albo 3%) i ulica dają po 2 punkty, liczba pokoi, rok budowy (±1 rok), piętro mieszkania i cena (±3%) po 1. Od 4 punktów baza uznaje, że to ten sam dom: dopisuje link i ewentualnie nową cenę.
+3. **Możliwe:** od 2 punktów. Baza nic nie zapisuje i pyta, a przy pytaniu wypisuje, co się zgadza i co się różni.
 
 Metraż albo działka różne o więcej niż 15% wykluczają dopasowanie. Pamiętaj jednak, że biura podają metraż różnie (z garażem albo bez), więc ten sam dom z dwóch biur czasem trafi do pytania zamiast do automatycznego scalenia.
 
+Rok budowy różny o więcej niż rok nie pozwala scalić bez pytania, nawet przy wysokiej punktacji.
+
+**Mieszkania rozstrzyga piętro.** W jednym bloku kilka mieszkań ma tę samą ulicę, podobny metraż i często to samo biuro. Tak mieszkanie z 1. piętra wyglądało kiedyś na obniżkę ceny mieszkania z parteru w tym samym bloku. Dlatego inne piętro wyklucza dopasowanie, a mieszkanie bez piętra w którymś z ogłoszeń trafia do pytania zamiast do scalenia. Piętro baza czyta z pola `rodzaj` („blok, 2. piętro”, „parter”), a gdy go tam nie ma, z tytułu ogłoszenia.
+
 ## Skąd biorą się dane
 
-- **Otodom:** skrypt czyta sam cenę, metraż, działkę, pokoje, rok, rodzaj zabudowy, miejscowość, gminę, ulicę i biuro.
+- **Otodom:** skrypt czyta sam cenę, metraż, działkę, pokoje, rok, rodzaj zabudowy z piętrem mieszkania, miejscowość, gminę, ulicę i biuro.
 - **OLX** odrzuca zwykłe zapytania, a **Facebook** wymaga logowania. Claude czyta wtedy stronę przez przeglądarkę albo prosi o wklejenie treści posta.
 - **Inne portale:** Claude odczytuje stronę i przekazuje dane skryptowi.
 - **Szukacz:** w widoku Oferty zapisz kopię przyciskiem „3. Zapisz kopię .json” i podaj Claude ścieżkę do pliku. Możesz też wkleić to, co skopiowałeś we wtyczce przyciskiem „Kopiuj oferty do aplikacji”. Import dopisuje nowe oferty, rozpoznaje te, które już są, i nie zmienia statusów nadanych w bazie. Statusy Szukacza przechodzą tak: do umówienia → do kontaktu, przygotować raport → analiza wstępna, czekam na spotkanie i po wizycie → wizja lokalna, do decyzji → zainteresowany, odpada → niezainteresowany.
@@ -79,7 +93,7 @@ node baza-ogloszen/baza.js pokaz N
 node baza-ogloszen/baza.js import <plik.json>
 ```
 
-Pola przy `dodaj`: `cena`, `miejscowosc`, `gmina`, `ulica`, `metraz`, `dzialka`, `pokoje`, `rok`, `typ`, `rodzaj`, `tytul`, `status`, `notatka`, `powod`. Kwoty rozumie w zapisie „650 tys”, „1,2 mln”, „1.129.000 zł”, działkę także w arach i hektarach. `--sprawdz` pokazuje wynik bez zapisu.
+Pola przy `dodaj`: `cena`, `miejscowosc`, `gmina`, `ulica`, `metraz`, `dzialka`, `pokoje`, `rok`, `typ`, `rodzaj`, `tytul`, `status`, `notatka`, `powod`. Kwoty rozumie w zapisie „650 tys”, „1,2 mln”, „1.129.000 zł”, działkę także w arach i hektarach. Piętro mieszkania wpisujesz w `rodzaj`, np. `rodzaj="blok, 2. piętro"` albo `rodzaj=parter`. `--sprawdz` pokazuje wynik bez zapisu.
 
 ## Dane i prywatność
 

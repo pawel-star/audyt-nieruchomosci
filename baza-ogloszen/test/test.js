@@ -177,6 +177,69 @@ sprawdz(r.kod === 1 && /Nie ma w bazie ogłoszenia #99/.test(r.out), '26. nieist
 r = cli(['status', '2', 'coś', 'dziwnego']);
 sprawdz(r.kod === 1 && /Nie znam statusu/.test(r.out), '27. nieznany status', r.out);
 
-fs.rmSync(DANE, { recursive: true, force: true });
-console.log((zle ? '✗ ' : '✓ ') + ok + ' sprawdzeń zaliczonych, ' + zle + ' niezaliczonych');
-process.exitCode = zle ? 1 : 0;
+/* --- mieszkania w jednym bloku: piętro i rok budowy (przypadek z 15.11.2026: parter i 1. piętro, ta sama ulica i biuro) --- */
+[['blok, parter', 0], ['na parterze', 0], ['wysoki parter', 0], ['1. piętro', 1], ['blok, 2. piętro', 2], ['na 3 piętrze', 3], ['piętro: 4', 4], ['piętro w willi', null], ['blok', null]]
+  .forEach(([we, wy]) => sprawdz(B.pietro({ typ: 'mieszkanie', rodzaj: we }) === wy, 'pietro(' + JSON.stringify(we) + ') = ' + wy + ', jest ' + B.pietro({ typ: 'mieszkanie', rodzaj: we })));
+sprawdz(B.pietro({ typ: 'mieszkanie', rodzaj: 'blok', tytul: 'Mieszkanie 46,9 m2 Parter Przykładowo ul. Klonowa' }) === 0 && B.pietro({ typ: 'dom', rodzaj: 'dom 2 piętra' }) === null, 'pietro: z tytułu, a dla domu wcale');
+const adM = { url: 'https://www.otodom.pl/pl/oferta/m-ID4Mies', title: 'Mieszkanie', target: { Price: 550000, Area: '84', ProperType: 'mieszkanie', Building_type: ['block'], Floor_no: ['floor_2'] } };
+const oM = B.zOtodom('<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify({ props: { pageProps: { ad: adM } } }) + '</script>', 'x');
+adM.target.Floor_no = ['ground_floor'];
+const oP = B.zOtodom('<script id="__NEXT_DATA__" type="application/json">' + JSON.stringify({ props: { pageProps: { ad: adM } } }) + '</script>', 'x');
+sprawdz(oM.rodzaj === 'blok, 2. piętro' && oP.rodzaj === 'blok, parter', 'zOtodom dopisuje piętro mieszkania do rodzaju', oM.rodzaj + ' / ' + oP.rodzaj);
+{
+  const mb = { nastepnyNr: 1, ogloszenia: [] };
+  const blok = { typ: 'mieszkanie', miejscowosc: 'Przykładowo', gmina: 'Testowa', ulica: 'Klonowa', pokoje: 2 };
+  B.dodajDoBazy(mb, Object.assign({ url: 'https://www.okolica.pl/offer/show/11111-S-00001_0000_OMS/formular', tytul: 'Mieszkanie 46,9 m2 Parter Przykładowo ul. Klonowa', rodzaj: 'blok, parter', metraz: 46.9, rok: 2011, cena: 499000 }, blok));
+  let w = B.dodajDoBazy(mb, Object.assign({ url: 'https://www.okolica.pl/offer/show/11111-S-00002_0000_OMS/formular', tytul: '2-pokojowe mieszkanie z komórką lokatorską', rodzaj: '1. piętro', metraz: 46.5, rok: 2014, cena: 489000 }, blok));
+  sprawdz(w.wynik === 'dodano' && mb.ogloszenia.length === 2 && mb.ogloszenia[0].cena === 499000 && mb.ogloszenia[0].historiaCen.length === 1, '49. inne piętro w tym samym bloku: osobne mieszkanie, cena pierwszego nietknięta', w.tekst);
+  w = B.dodajDoBazy(mb, Object.assign({ url: 'https://example.com/m3', metraz: 46.9, rok: 2011, cena: 495000 }, blok));
+  sprawdz(w.wynik === 'mozliwe' && /różnice: .*brak piętra/.test(w.tekst) && mb.ogloszenia.length === 2, '50. mieszkanie bez piętra w ogłoszeniu: pytanie zamiast scalenia', w.tekst);
+  w = B.dodajDoBazy(mb, Object.assign({ url: 'https://example.com/m4', rodzaj: 'na parterze', metraz: 46.9, rok: 2014, cena: 495000 }, blok));
+  sprawdz(w.wynik === 'mozliwe' && /różnice: .*inny rok budowy: 2011 i 2014/.test(w.tekst), '51. to samo piętro, inny rok budowy: pytanie zamiast scalenia', w.tekst);
+  w = B.dodajDoBazy(mb, Object.assign({ url: 'https://example.com/m5', rodzaj: 'na parterze', metraz: 46.9, rok: 2011, cena: 495000 }, blok));
+  sprawdz(w.wynik === 'zmiana_ceny' && w.nr === 1 && /dopasowanie: [^\n]*parter/.test(w.tekst), '52. to samo piętro i rok na innym portalu: scalone ze zmianą ceny', w.tekst);
+  const db = { nastepnyNr: 1, ogloszenia: [] };
+  const dom = { typ: 'dom', miejscowosc: 'Przykładowo', ulica: 'Jaworowa', metraz: 77.8, dzialka: 390, pokoje: 2, cena: 750000 };
+  B.dodajDoBazy(db, Object.assign({ url: 'https://example.com/d1', rok: 1998 }, dom));
+  w = B.dodajDoBazy(db, Object.assign({ url: 'https://example.com/d2', rok: 2003 }, dom));
+  sprawdz(w.wynik === 'mozliwe' && /inny rok budowy: 1998 i 2003/.test(w.tekst) && db.ogloszenia.length === 1, '53. dom z innym rokiem budowy: pytanie zamiast scalenia', w.tekst);
+  w = B.dodajDoBazy(db, Object.assign({ url: 'https://example.com/d3', rok: 1999 }, dom));
+  sprawdz(w.wynik === 'juz' && w.nr === 1, '54. rok różny o jeden: nadal ten sam dom', w.tekst);
+}
+
+/* --- przegląd zmian (w pamięci, sprawdzanie Otodom podstawione, bez sieci) --- */
+(async () => {
+  process.env.BAZA_DZIS = '2026-11-20';
+  const pb = { nastepnyNr: 1, ogloszenia: [] };
+  B.dodajDoBazy(pb, { url: 'https://www.otodom.pl/pl/oferta/a-ID4Pa01', cena: 600000, miejscowosc: 'Tanie', metraz: 100, dzialka: 500, typ: 'dom' });
+  B.dodajDoBazy(pb, { url: 'https://www.otodom.pl/pl/oferta/b-ID4Pa02', cena: 500000, miejscowosc: 'Znika', metraz: 60, typ: 'mieszkanie' });
+  B.dodajDoBazy(pb, { url: 'https://www.otodom.pl/pl/oferta/c-ID4Pa03', cena: 450000, miejscowosc: 'Bez', metraz: 50, typ: 'mieszkanie' });
+  B.dodajDoBazy(pb, { url: 'https://www.olx.pl/d/oferta/d-CID3-IDpa04.html', cena: 700000, miejscowosc: 'Olx', ulica: 'Lipowa', metraz: 120, dzialka: 800, typ: 'dom' });
+  B.dodajDoBazy(pb, { url: 'https://www.otodom.pl/pl/oferta/e-ID4Pa05', cena: 400000, miejscowosc: 'Odrzucone', metraz: 40, typ: 'mieszkanie', status: 'odpada' });
+  const odp = {
+    'ID4Pa01': { stan: 'ok', dane: { cena: 570000, tytul: 'Dom' } },
+    'ID4Pa02': { stan: 'zniklo' },
+    'ID4Pa03': { stan: 'ok', dane: { cena: 450000, tytul: 'REZERWACJA mieszkanie' } },
+  };
+  const sprawdzane = [];
+  const t1 = await B.przegladStart(pb, async u => { sprawdzane.push(u); return odp[(u.match(/ID4\w+/) || [])[0]] || { stan: 'blad', komunikat: 'test' }; });
+  sprawdz(/#1: cena 600 000 zł → 570 000 zł \(−5,0%\)/.test(t1) && /#2: ogłoszenie zniknęło/.test(t1) && /#3: bez zmian/.test(t1) && /#3: w tytule „REZERWACJA/.test(t1), '42. przegląd: Otodom cena, zniknięcie, rezerwacja', t1);
+  sprawdz(/INNE PORTALE[\s\S]*#4 olx/.test(t1) && /#4 szukaj: dom sprzedaż Olx Lipowa 120 m2 działka 800 m2/.test(t1), '43. przegląd: inne portale i fraza do szukania', t1);
+  sprawdz(!sprawdzane.some(u => u.includes('ID4Pa05')) && !/#5/.test(t1), '44. przegląd pomija odrzucone', t1);
+  // w trakcie przeglądu: ten sam dom w nowym ogłoszeniu z niższą ceną i nowe ogłoszenie
+  B.dodajDoBazy(pb, { url: 'https://adresowo.pl/o/dom-olx-lipowa', cena: 650000, miejscowosc: 'Olx', ulica: 'Lipowa', metraz: 120, dzialka: 800, typ: 'dom' });
+  B.dodajDoBazy(pb, { url: 'https://example.com/nowy', cena: 300000, miejscowosc: 'Nowe', metraz: 30, typ: 'mieszkanie' });
+  const t2 = B.przegladKoniec(pb, 'OLX nie dało się otworzyć');
+  sprawdz(/PRZEGLĄD zakończony 2026-11-20: 5 zmian/.test(t2) && /#1 Tanie: cena 600 000 zł → 570 000 zł/.test(t2) && /#2 Znika: ogłoszenie na Otodom zniknęło/.test(t2) &&
+    /#4 Olx: cena 700 000 zł → 650 000 zł/.test(t2) && /#4 Olx: ten sam dom w nowym ogłoszeniu \(adresowo\)/.test(t2) && /#6 Nowe: nowe ogłoszenie w bazie/.test(t2), '45. przegląd: lista zmian na koniec', t2);
+  sprawdz(pb.przeglady.length === 1 && !pb.przegladTrwa && pb.przeglady[0].uwagi === 'OLX nie dało się otworzyć', '46. przegląd zapisany do pokazania na stronie');
+  let bl = '';
+  try { B.przegladKoniec(pb); } catch (e) { bl = e.message; }
+  sprawdz(/Nie ma rozpoczętego przeglądu/.test(bl), '47. koniec bez startu: błąd');
+  await B.przegladStart(pb, async () => ({ stan: 'ok', dane: { cena: null } }));
+  sprawdz(/1 zmiana|bez zmian/.test(B.przegladKoniec(pb)), '48. drugi przegląd bez zmian');
+
+  fs.rmSync(DANE, { recursive: true, force: true });
+  console.log((zle ? '✗ ' : '✓ ') + ok + ' sprawdzeń zaliczonych, ' + zle + ' niezaliczonych');
+  process.exitCode = zle ? 1 : 0;
+})();
