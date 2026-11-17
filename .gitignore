@@ -1,2 +1,10 @@
 # Baza ogłoszeń: prywatne dane (lista oglądanych domów, statusy, notatki). Repozytorium jest publiczne.
 baza-ogloszen/dane/
+
+# Zapis rozmowy, w której powstał szukacz: prywatny, nie do publicznego repozytorium.
+szukacz-nieruchomosci/czat/
+
+# Kopie robocze sprzed edycji, pliki systemowe i ustawienia lokalne aplikacji Claude.
+*.bak-*
+.DS_Store
+.claude/

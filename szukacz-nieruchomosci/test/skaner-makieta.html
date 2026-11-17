@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pl">
+<head><meta charset="utf-8"><title>Skaner na atrapie Chrome</title></head>
+<body>
+<!--
+  Strona skanera grup (wtyczka/skaner.html) z atrapą API Chrome i Facebooka, do testu w zwykłej przeglądarce.
+  Atrapa podaje wyniki wyszukiwania grup i posty z grup. Przerwy są skrócone do 30 ms.
+  Stan testu: window.__store (pamięć wtyczki), window.__otwarte (adresy otwarte w oknie roboczym).
+-->
+<script>
+const _st = window.setTimeout; window.setTimeout = (f, ms, ...a) => _st(f, Math.min(ms || 0, 30), ...a);
+window.confirm = () => true; window.alert = m => console.log('ALERT', m);
+const G = id => 'https://www.facebook.com/groups/' + id;
+window.__store = {
+  profile: { _app: 'szukacz-nieruchomosci', typ: 'dom', miasto: 'Kórnik', dzielnice: ['Bnin'], cenaDo: 900000, powOd: 110, elastyczne: ['cena'], luzne: ['cenaOd', 'cenaDo'], grupyNie: ['oddam', 'praca'], grupyFb: [G('odrzucona'), G('domykornik')] },
+  scanGroups: [G('domykornik'), G('oddamkornik'), G('prywatna')],
+  groupNames: { [G('oddamkornik')]: 'Oddam za darmo Kórnik' },
+  groupsBlocked: [G('odrzucona')]
+};
+window.__otwarte = [];
+const listeners = { updated: [], changed: [] };
+let currentUrl = '';
+const P1 = 'Sprzedam dom wolnostojący w Kórniku, 140 m2, działka 850 m2, cena 849 000 zł';
+const P2 = 'Sprzedam dom w Bninie, 130 m2, działka 700 m2, cena 950 000 zł';
+function odpowiedz(m) {
+  if (m.type === 'collectGroups') {
+    const q = decodeURIComponent(currentUrl.split('q=')[1] || '');
+    const base = [
+      { id: 'domykornik', url: G('domykornik'), name: 'Domy Kórnik i okolice', info: '3,2 tys. członków' },
+      { id: 'oddam2', url: G('oddam2'), name: 'Oddam za darmo – Kórnik i Bnin', info: '12 tys. członków' },
+      { id: 'pracakornik', url: G('pracakornik'), name: 'Praca Kórnik ogłoszenia', info: '5 tys. członków' },
+      { id: 'odrzucona', url: G('odrzucona'), name: 'Kupię sprzedam Kórnik', info: '9 tys. członków' },
+      { id: 'mamy', url: G('mamy'), name: 'Mamy z Kórnika', info: '2 tys. członków' },
+      { id: 'nieruchbnin', url: G('nieruchbnin'), name: 'Nieruchomości Bnin', info: '800 członków' }
+    ];
+    return { url: currentUrl, groups: base, q };
+  }
+  if (m.type === 'collect') {
+    if (currentUrl.includes('prywatna')) return { url: G('prywatna'), title: 'Grupa prywatna', total: 0, scanned: 0, skippedOld: 0, noDate: 0, joinNeeded: true, results: [], seconds: 3 };
+    const sc = t => window.__szukaczApi.score(m.profile, t);
+    const wynik = (t, link) => { const r = sc(t); return { pct: r.pct || 0, reject: r.reject, why: r.why, bad: r.bad, miss: r.miss, text: t, fp: window.__szukaczApi.norm(t).replace(/[^a-z0-9]/g, '').slice(0, 160), link, date: new Date().toISOString(), data: r.data }; };
+    if (currentUrl.includes('domykornik')) return { url: G('domykornik'), title: 'Domy Kórnik i okolice', total: 2, scanned: 2, skippedOld: 0, noDate: 0, joinNeeded: false, results: [wynik(P1, G('domykornik') + '/posts/1/'), wynik(P2, G('domykornik') + '/posts/2/')], seconds: 5 };
+    if (currentUrl.includes('nieruchbnin')) return { url: G('nieruchbnin'), title: 'Nieruchomości Bnin', total: 1, scanned: 1, skippedOld: 0, noDate: 0, joinNeeded: false, results: [wynik(P2, G('nieruchbnin') + '/posts/9/')], seconds: 4 };
+    return { url: currentUrl, title: '?', total: 0, scanned: 0, skippedOld: 0, noDate: 0, joinNeeded: false, results: [], seconds: 1 };
+  }
+  return { ok: true };
+}
+window.chrome = {
+  runtime: { getManifest: () => ({ version: '1.4' }), onMessage: { addListener() {} } },
+  storage: {
+    local: {
+      get: (keys, cb) => { const o = {}; (Array.isArray(keys) ? keys : [keys]).forEach(k => { if (k in __store) o[k] = JSON.parse(JSON.stringify(__store[k])); }); if (cb) cb(o); return Promise.resolve(o); },
+      set: (obj, cb) => { const ch = {}; Object.entries(obj).forEach(([k, v]) => { ch[k] = { oldValue: __store[k], newValue: v }; __store[k] = JSON.parse(JSON.stringify(v)); }); listeners.changed.forEach(l => l(ch, 'local')); if (cb) cb(); return Promise.resolve(); },
+      remove: k => { delete __store[k]; return Promise.resolve(); }
+    },
+    onChanged: { addListener: l => listeners.changed.push(l) }
+  },
+  windows: { create: async () => ({ id: 1, tabs: [{ id: 7 }] }), get: async () => ({ id: 1 }), remove: async () => {} },
+  tabs: {
+    update: async (id, { url }) => { currentUrl = url; __otwarte.push(url); _st(() => listeners.updated.slice().forEach(l => l(7, { status: 'complete' })), 5); return {}; },
+    onUpdated: { addListener: l => listeners.updated.push(l), removeListener: l => { const i = listeners.updated.indexOf(l); if (i >= 0) listeners.updated.splice(i, 1); } },
+    sendMessage: async (id, m) => odpowiedz(m)
+  },
+  scripting: { executeScript: async () => {} }
+};
+(async () => {
+  const html = await (await fetch('../wtyczka/skaner.html')).text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('style').forEach(s => document.head.appendChild(s));
+  doc.querySelectorAll('script').forEach(s => s.remove());
+  document.body.insertAdjacentHTML('beforeend', doc.body.innerHTML);
+  for (const f of ['content.js', 'skaner.js']) await new Promise(res => { const s = document.createElement('script'); s.src = '../wtyczka/' + f; s.onload = res; document.body.appendChild(s); });
+  window.__gotowe = true;
+})();
+</script>
+</body>
+</html>

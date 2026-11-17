@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Skaner grup – Szukacz nieruchomości</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#15181d;--muted:#5d6572;--line:#e1e4ea;--accent:#1f6f5f;--soft:#e3f1ed;--ok:#1f9d6b;--near:#2f7fd1;--weak:#c47f12;--bad:#c0392b;--warn-soft:#fff3df}
+@media (prefers-color-scheme:dark){:root{--bg:#111418;--card:#1a1f26;--ink:#e8ebf0;--muted:#9aa3b0;--line:#2a313b;--accent:#4fb39a;--soft:#163129;--warn-soft:#3a2a10}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:17px;margin:0;margin-right:auto}
+.layout{max-width:1200px;margin:0 auto;padding:20px;display:grid;grid-template-columns:380px minmax(0,1fr);gap:18px}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 10px}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
+input[type=number],textarea,select{width:100%;border:1px solid var(--line);background:var(--bg);color:inherit;border-radius:9px;padding:8px 10px;font:inherit}
+textarea{min-height:110px;resize:vertical;font-size:13px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:1px solid var(--line);background:var(--card);color:inherit;border-radius:9px;padding:9px 14px;cursor:pointer;font:inherit;font-weight:500}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.muted{color:var(--muted);font-size:13px}
+.note{font-size:13px;background:var(--bg);border-radius:9px;padding:10px 12px;line-height:1.4}
+.note.warn{background:var(--warn-soft)}
+.prof{font-size:13px;line-height:1.5}
+.log{font:12px ui-monospace,monospace;background:var(--bg);border-radius:9px;padding:10px;max-height:220px;overflow:auto;white-space:pre-wrap}
+.stat{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:10px}
+.stat b{color:var(--ink);font-size:18px;display:block}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.filters button{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;padding:5px 12px;cursor:pointer;font:inherit;font-size:13px}
+.filters button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.res{display:grid;gap:8px}
+.it{border:1px solid var(--line);border-left:5px solid var(--muted);border-radius:10px;padding:10px 12px;background:var(--card)}
+.it.ok{border-left-color:var(--ok)}.it.near{border-left-color:var(--near)}.it.weak{border-left-color:var(--weak)}.it.bad{border-left-color:var(--bad);opacity:.7}
+.it .h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.it .pct{font-weight:700;font-size:16px;color:var(--ink)}
+.it .new{background:var(--soft);color:var(--accent);border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600}
+.it .why{font-size:13px;margin-top:4px}
+.it .txt{font-size:14px;margin-top:6px;white-space:pre-wrap}
+.it .txt.short{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.it a{color:var(--accent)}
+.it .foot{display:flex;gap:12px;margin-top:6px;font-size:13px;align-items:center}
+.grp{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.grp:last-child{border-bottom:0}
+.grp input{margin-top:4px}
+.grp small{display:block;color:var(--muted);font-size:12px}
+.btn.sm{padding:3px 9px;font-size:12px}
+details.sub{margin-top:10px;font-size:13px}
+details.sub summary{cursor:pointer;color:var(--muted)}
+.hidden{display:none}
+.progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:8px 0}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:.3s}
+</style>
+</head>
+<body>
+<header>
+  <h1>Skaner grup na Facebooku <span id="ver" style="font:600 11px ui-monospace,monospace;color:var(--muted)"></span></h1>
+  <span class="muted" id="loginState">sprawdzam logowanie…</span>
+</header>
+<div class="layout">
+<div>
+  <div class="card">
+    <h2>Profil</h2>
+    <div class="prof" id="prof">Brak profilu. Wklej go w okienku wtyczki.</div>
+  </div>
+  <div class="card">
+    <h2>Grupy do przeszukania</h2>
+    <label for="groups">Adresy grup, jeden w linii (z profilu, z listy źródeł i z wyszukiwarki poniżej)</label>
+    <textarea id="groups" placeholder="https://www.facebook.com/groups/..."></textarea>
+    <div class="btns">
+      <button class="btn" id="findGroups">Znajdź grupy dla mojego miasta</button>
+    </div>
+    <div class="muted" style="margin-top:8px">Grupy usunięte z listy zapamiętuję jako odrzucone, więc nie wracają. Pomijam też grupy, których nazwa zawiera: <span id="slowaGrup"></span>. Te słowa zmienisz w aplikacji, w sekcji „Źródła poza portalami”.</div>
+    <div id="blockedBox" class="hidden"><details class="sub"><summary>Odrzucone grupy (<span id="blockedCnt">0</span>)</summary><div id="blockedList"></div></details></div>
+    <div id="foundBox" class="hidden" style="margin-top:12px">
+      <div class="muted" id="foundInfo"></div>
+      <div id="found"></div>
+      <div id="foundHiddenBox" class="hidden"><details class="sub"><summary>Pominięte po nazwie (<span id="foundHiddenCnt">0</span>). Zaznacz, jeśli któraś jednak się przyda.</summary><div id="foundHidden"></div></details></div>
+      <div class="btns"><button class="btn" id="selAll">Zaznacz wszystkie</button><button class="btn" id="selNone">Odznacz wszystkie</button><button class="btn primary" id="addFound">Dodaj zaznaczone do listy</button></div>
+      <div class="note" style="margin-top:8px">Do prywatnej grupy musisz dołączyć sam. Wtyczka nie wysyła próśb o dołączenie. Grupy, w których nie jesteś, zwrócą zero postów.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Parametry</h2>
+    <div class="row">
+      <div><label for="days">Posty z ostatnich (dni)</label><input type="number" id="days" value="2" min="1" max="60"></div>
+      <div><label for="maxPosts">Maks. postów na grupę</label><input type="number" id="maxPosts" value="60" min="10" max="300"></div>
+      <div><label for="pause">Przerwa między grupami (s)</label><input type="number" id="pause" value="6" min="2" max="60"></div>
+      <div><label for="minPct">Pokaż od (% dopasowania)</label><input type="number" id="minPct" value="0" min="0" max="100"></div>
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="start">Skanuj grupy</button>
+      <button class="btn" id="stop" disabled>Zatrzymaj</button>
+    </div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="log" id="log">Gotowy.</div>
+    <div class="note warn hidden" id="problemBox" style="margin-top:10px">Te grupy nic nie dały w ostatnim przebiegu. Najczęściej to grupa prywatna, do której nie należysz, albo grupa, która nie pozwala przeglądać postów:<div id="problemList" style="white-space:pre-wrap;margin:6px 0"></div><button class="btn" id="problemDel">Usuń je z listy i nie proponuj więcej</button></div>
+  </div>
+  <div class="note warn">Skaner otwiera grupy w osobnym oknie Chrome na Twojej sesji i przewija feed jak człowiek, z przerwami. Facebook nie lubi automatów. Trzymaj rozsądne liczby: kilka, kilkanaście grup dziennie, nie setki. Okno zostaw otwarte, bo Facebook nie ładuje postów w zminimalizowanych kartach.</div>
+</div>
+<div>
+  <div class="card">
+    <h2>Wyniki</h2>
+    <div class="stat" id="stat"></div>
+    <div class="filters" style="background:var(--soft);border-radius:9px;padding:8px 10px">
+      <span style="font-size:13px">Odłożone do katalogu: <b id="ofCnt">0</b></span>
+      <button id="ofCopy">Kopiuj oferty do aplikacji</button>
+      <button id="ofClear">Wyczyść odłożone</button>
+      <span class="muted" id="ofMsg"></span>
+    </div>
+    <div class="filters">
+      <button class="on" data-f="all">wszystkie</button>
+      <button data-f="ok">pasują</button>
+      <button data-f="near" title="Nie spełniają 1–2 kryteriów oznaczonych w aplikacji jako elastyczne">prawie</button>
+      <button data-f="weak">słabo</button>
+      <button data-f="bad">odpadły</button>
+      <button data-f="new">tylko nowe</button>
+      <span style="margin-left:auto"></span>
+      <button id="rescore" title="Ocenia zapisane wyniki według bieżącego profilu, bez ponownego skanowania Facebooka">Przelicz według profilu</button>
+      <button id="csv">Eksport CSV</button>
+      <button id="clearRes">Wyczyść</button>
+    </div>
+    <div class="res" id="res"><div class="muted">Jeszcze nic nie skanowałem.</div></div>
+  </div>
+</div>
+</div>
+<script src="content.js"></script>
+<script src="skaner.js"></script>
+</body>
+</html>

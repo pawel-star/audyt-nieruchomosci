@@ -444,7 +444,7 @@ function note(k,v){ S.n[k]=v; if(v&&v.trim())mark(k,'reczne'); save(); paintBar(
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'3.8', data:'listopad 2026',
+const APP={name:'Audyt Nieruchomości', ver:'3.9', data:'listopad 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -1694,6 +1694,21 @@ Jeśli numeru w ogłoszeniu nie ma, napisz to w notatce. To częsta sytuacja i p
    <li>Przejrzyj kolejno wszystkie działy: I-O, I-Sp, II, III, IV. Zrób zrzut ekranu każdego.</li></ol>
    <b>Nie ma publicznego API</b> do ksiąg wieczystych — to jedyna część audytu, którą musisz wykonać ręcznie. Zajmie ci 5 minut.`},
 
+ {id:'kw_istnieje', core:true,
+  scr:`Z ogłoszenia ustal, czy dla nieruchomości jest założona księga wieczysta. Szukaj słów: księga wieczysta, KW, numer księgi, forma własności z KW albo bez KW, spółdzielcze własnościowe prawo do lokalu.
+Kod wybierz tylko wtedy, gdy ogłoszenie mówi to wprost (podany numer albo zapis „z KW" to „jest", zapis „bez KW" lub „brak księgi" to „brak").
+Samo milczenie ogłoszenia nie znaczy, że księgi nie ma: wtedy zostaw notatkę „ogłoszenie nie podaje" i nie wybieraj kodu.`,
+  src:'wlasne', mode:'man', q:'Czy dla nieruchomości jest założona księga wieczysta?', type:'select',
+  why:'Bez księgi bank zwykle nie ustanowi hipoteki, więc nie dostaniesz kredytu na zakup. To też argument do negocjacji: założenie księgi i uregulowanie stanu prawnego to koszt i czas po stronie sprzedającego.',
+  opts:[['jest','Tak, księga jest (podany numer albo zapis „z KW")'],['brak','Nie ma księgi albo sprzedający jej nie ma'],['?','Nie ustalono']],
+  flag:v=>{
+    if(v==='brak')return R('Brak księgi wieczystej: ryzyko braku kredytu','Bez księgi wieczystej bank zwykle nie przyjmie zabezpieczenia hipotecznego, więc finansowanie kredytem może się nie udać. Zapytaj swój bank przed umową przedwstępną, czy akceptuje taką nieruchomość i co musi być w dokumentach. Założenie księgi albo uregulowanie stanu prawnego wymaga postępowania i czasu. Koszty urzędowe i czas trwania nie są tu zweryfikowane, ustal je w wydziale ksiąg wieczystych właściwego sądu rejonowego.',0,0,'Nieruchomość bez księgi wieczystej: kupujący nie ma pewności co do stanu prawnego i ryzykuje brak finansowania bankowego, więc cena musi to uwzględniać, a założenie księgi i uregulowanie stanu prawnego leży po stronie sprzedającego.');
+    if(v==='jest')return G('Księga wieczysta jest założona','Nadal odczytaj wszystkie działy, bo sam numer nie mówi nic o obciążeniach.');
+    return null;},
+  help:`<b>Jak ustalić:</b> z ogłoszenia (numer lub zapis „z KW"), a jeśli go nie ma, zapytaj sprzedającego o numer księgi przed pierwszym spotkaniem. Numer możesz sprawdzić w przeglądarce ksiąg wieczystych (patrz niżej).
+   <br><br><b>Spółdzielcze własnościowe prawo do lokalu</b> też może mieć księgę. Zapytaj, czy jest założona, i zapytaj bank, na jakich warunkach finansuje takie prawo, bo warunki bywają inne niż przy odrębnej własności.
+   <br><br><b>Brak księgi nie rozstrzyga sam o odmowie kredytu</b>, ale to ryzyko trzeba zdjąć przed zaliczką: rozmowa z doradcą w banku zajmuje jeden telefon.`},
+
  {id:'kw_wzmianka', src:'wlasne', mode:'man', q:'Czy w którymkolwiek dziale widnieje wzmianka?',
   why:'Wzmianka oznacza, że złożono wniosek, który nie został jeszcze rozpoznany. Treść księgi jest wtedy nieaktualna.',
   type:'yn', opts:YN,
@@ -2149,6 +2164,20 @@ Jeśli nic nie znajdziesz, nie wybieraj kodu brak, tylko napisz w notatce, gdzie
    Żużlobeton kruszy się i sypie ciemnym, spieczonym materiałem.
    <br><br><b>Rok budowy jako podpowiedź:</b> lata pięćdziesiąte–siedemdziesiąte to duże prawdopodobieństwo żużlobetonu,
    od lat osiemdziesiątych dominuje cegła i pustak, od dwutysięcznych beton komórkowy i keramzyt.`},
+
+ {id:'b_termo', src:'wlasne', mode:'man', q:'Czy jest raport termoizolacji i w jakim stanie jest ocieplenie?', type:'select',
+  why:'Przy wielkiej płycie ocieplenie i styki płyt decydują o wilgoci, pleśni i rachunkach za ogrzewanie. Brak dokumentów to argument do negocjacji, a przy lokalu także ryzyko dopłat z funduszu remontowego.',
+  opts:[['ok','Jest raport lub świadectwo energetyczne, ocieplenie w dobrym stanie'],['braki','Jest raport i wskazuje braki (mostki, odspojone ocieplenie, wilgoć na stykach)'],['brak','Sprzedający nie ma żadnych dokumentów o ociepleniu'],['nieoc','Budynek nieocieplony albo ocieplony dawno temu'],['?','Nie ustalono']],
+  flag:v=>{
+    if(v==='braki')return R('Raport termoizolacji wskazuje braki w ociepleniu','Raport pokazuje mostki cieplne albo wadliwe ocieplenie. Przy domu koszt naprawy ponosisz sam. Przy lokalu w budynku z wielkiej płyty decyduje wspólnota albo spółdzielnia, więc sprawdź uchwały, fundusz remontowy i plan docieplenia. Kwoty zależą od zakresu i nie są tu zweryfikowane, poproś o kosztorys.',0,0,'Raport termoizolacji wskazuje braki w ociepleniu, których usunięcie wymaga nakładów po stronie kupującego.');
+    if(v==='nieoc')return R('Budynek nieocieplony lub ocieplony dawno','Słabe ocieplenie to wyższe rachunki, ryzyko wilgoci i pleśni oraz przyszłe dopłaty na termomodernizację. W budynku z wielkiej płyty dochodzą styki płyt, które po latach rozszczelniają się i przemarzają. Sprawdź protokoły przeglądów, historię napraw i uchwały o remoncie. Kwoty nie są tu zweryfikowane.',0,0,'Budynek bez aktualnego ocieplenia: kupujący odziedziczy koszt termomodernizacji i wyższe rachunki za ogrzewanie.');
+    if(v==='brak')return Y('Brak dokumentów o ociepleniu','Bez raportu termoizolacji, świadectwa charakterystyki energetycznej i dokumentów z wykonanego docieplenia nie ocenisz stanu budynku. Sprzedający ma obowiązek udostępnić świadectwo energetyczne przy sprzedaży. Brak dokumentów traktuj jako brak pewności co do stanu i uwzględnij w cenie.',0,0,'Brak raportu termoizolacji i dokumentacji docieplenia: kupujący nie może ocenić stanu technicznego budynku.');
+    if(v==='ok')return G('Raport lub świadectwo jest, ocieplenie w dobrym stanie','');
+    return null;},
+  help:`<b>Co poprosić od sprzedającego (i spółdzielni lub wspólnoty):</b>
+   <ul><li>świadectwo charakterystyki energetycznej,</li><li>raport z termowizji albo audyt energetyczny, jeśli były robione,</li><li>dokumenty wykonanego docieplenia (rok, grubość, wykonawca, gwarancja),</li><li>uchwały o remontach i planowane dopłaty (przy lokalu).</li></ul>
+   <b>Dom z wielkiej płyty albo budynek wielorodzinny z płyty:</b> przy oględzinach zerknij na narożniki i styki płyt od środka (zawilgocenie, pleśń, odspojone tapety) oraz na stan elewacji. Plamy w narożnikach przy zimnej ścianie zwykle znaczą mostek cieplny.
+   <br><br><b>Termowizja</b> jest najtańsza zimą, gdy różnica temperatur wewnątrz i na zewnątrz jest duża. Cenę usługi sprawdź u lokalnych firm, tu jej nie podaję.`},
 
  {id:'b_okna', src:'wlasne', mode:'field', q:'Jakie są okna — ile szyb i z czego?',
   why:'Nie pytaj, czy są szczelne, bo każdy sprzedający powie że tak. Zapytaj o typ, bo to fakt do sprawdzenia.',

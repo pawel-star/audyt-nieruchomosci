@@ -1,5 +1,10 @@
 # Historia zmian
 
+## 3.9
+- **Nowe pytanie `kw_istnieje` (moduł Księga, w screeningu): czy dla nieruchomości jest założona księga wieczysta.** Odpowiedź „brak” daje czerwoną flagę z ostrzeżeniem o ryzyku braku kredytu hipotecznego i argumentem do negocjacji. Prompt screeningu każe wtyczce wybrać kod tylko przy jawnym zapisie w ogłoszeniu („z KW”, numer, „bez KW”), a milczenie ogłoszenia zostawić jako notatkę, bo brak wzmianki to nie brak księgi.
+- **Nowe pytanie `b_termo` (sekcja Budynek): raport termoizolacji i stan ocieplenia**, z uwagą o wielkiej płycie. Odpowiedzi: raport i dobry stan, raport z brakami, brak dokumentów, budynek nieocieplony. Flagi mają argument negocjacyjny; kwoty zostały na 0, bo koszty termomodernizacji w budynku wielorodzinnym zależą od wspólnoty i nie są zweryfikowane. Help wymienia, jakie dokumenty poprosić (świadectwo energetyczne, termowizja, dokumenty docieplenia, uchwały o remontach).
+- Kody i id istniejących pytań bez zmian, nowe są dopisane, więc stare audyty i eksporty importują się jak dawniej.
+
 ## 3.8
 - **Końcówka wtyczki nie dokleja się już do notatki ostatniego pytania.** Po blokach odpowiedzi wtyczka dopisuje „Do dokończenia…”, „Zadania niedokończone: …”, „Pytania na koniec: …”. W Rybojedzku ten tekst wszedł do notatek `s_smog`, `b_samowola` i `c_rcn`. Teraz blok kończy się na wierszu `kody: …`, na nagłówku końcówki (`naglowekKoncowki()`) albo na nagłówku `###` bez rozpoznanego kodu. Samo „Podsumowanie:” liczy się tylko jako osobny wiersz, bo w środku notatki może zaczynać zwykły akapit. Nagłówek `##` z eksportu Notion (nazwa sekcji) tylko zamyka blok, więc ponowny import karty z Notion nie daje żadnego tekstu poza blokami.
 - Tekst poza blokami trafia do `S.imp` i jest widoczny w komunikacie po imporcie (skrót) oraz na karcie Start „Co wtyczka dopisała poza blokami odpowiedzi” (`dopisekWtyczki()`), z przyciskiem Usuń. Kolejna wklejka z dopiskiem zastępuje poprzedni.

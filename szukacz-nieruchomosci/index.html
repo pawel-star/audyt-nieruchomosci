@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Szukacz nieruchomości</title>
+<meta name="description" content="Zbuduj profil poszukiwanej nieruchomości i generuj wyszukiwania poza Otodom i OLX: grupy na Facebooku, biura z okolicy, lokalne ogłoszenia.">
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --ink:#15181d; --muted:#5d6572; --line:#e1e4ea;
+  --accent:#1f6f5f; --accent-ink:#ffffff; --accent-soft:#e3f1ed; --warn:#9a5b00; --warn-soft:#fff3df;
+  --chip:#eef0f4; --chip-ink:#2b313a; --danger:#b3261e; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --radius:12px; --fs:15px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111418; --card:#1a1f26; --ink:#e8ebf0; --muted:#9aa3b0; --line:#2a313b;
+    --accent:#4fb39a; --accent-ink:#0b1512; --accent-soft:#163129; --warn:#e2a74a; --warn-soft:#3a2a10;
+    --chip:#242b34; --chip-ink:#dde2e9; --danger:#f28b82; --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111418; --card:#1a1f26; --ink:#e8ebf0; --muted:#9aa3b0; --line:#2a313b;
+  --accent:#4fb39a; --accent-ink:#0b1512; --accent-soft:#163129; --warn:#e2a74a; --warn-soft:#3a2a10;
+  --chip:#242b34; --chip-ink:#dde2e9; --danger:#f28b82; --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:var(--fs)/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+header.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header .brand{font-weight:700;font-size:17px;margin-right:auto;display:flex;align-items:center;gap:8px}
+header .brand small{font-weight:400;color:var(--muted);font-size:13px}
+header .brand .ver{font:600 11px ui-monospace,monospace;color:var(--muted);background:var(--chip);border-radius:999px;padding:2px 7px}
+.profiles{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:20px;max-width:1280px;margin:0 auto;padding:20px 16px 80px}
+@media (max-width:980px){.layout{grid-template-columns:1fr}.panel{position:static!important}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px}
+details.card>summary{list-style:none;cursor:pointer;padding:14px 18px;font-weight:600;display:flex;align-items:center;gap:10px;user-select:none}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary .n{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 9px;min-width:26px;text-align:center}
+details.card>summary .n:empty{display:none}
+details.card>summary .chev{width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:.15s}
+details[open].card>summary .chev{transform:rotate(45deg)}
+details.card>summary .hint{font-weight:400;color:var(--muted);font-size:13px}
+.body{padding:4px 18px 18px;display:grid;gap:14px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.row.two{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label,.lbl{font-size:13px;color:var(--muted);font-weight:500}
+.field .help{font-size:12px;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:9px 11px;outline:none;transition:border .12s,box-shadow .12s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{min-height:84px;resize:vertical}
+.range{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
+.range span{color:var(--muted);font-size:12px}
+.unit{position:relative}
+.unit input{padding-right:46px}
+.unit em{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--muted);font-size:12px;pointer-events:none}
+.seg{display:inline-flex;flex-wrap:wrap;gap:6px}
+.seg label{cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:inline-block;padding:7px 13px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--chip-ink);transition:.12s;font-size:14px}
+.seg input:checked+span{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.seg input:focus-visible+span{box-shadow:0 0 0 3px var(--accent-soft)}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px 14px}
+.checks label{display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 2px;border-radius:6px}
+.checks label:hover{background:var(--bg)}
+.checks input{width:17px;height:17px;accent-color:var(--accent);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:6px 8px;min-height:42px;cursor:text}
+.chips:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.chips .chip{background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:4px 8px 4px 11px;display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.chips .chip b{font-weight:400}
+.chips .chip button{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:0 2px;line-height:1;font-size:16px}
+.chips .chip button:hover{color:var(--danger)}
+.chips input{flex:1;min-width:120px;border:0;background:transparent;outline:none;padding:4px 2px}
+.chips.must .chip{background:var(--accent-soft);color:var(--ink)}
+.chips.excl .chip{background:var(--warn-soft);color:var(--ink)}
+.panel{position:sticky;top:66px;align-self:start;display:grid;gap:14px;max-height:calc(100vh - 80px);overflow:auto}
+.panel .card{margin:0}
+.panel .pad{padding:16px 18px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:9px 14px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:8px;transition:.12s}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.summary{display:flex;flex-wrap:wrap;gap:6px}
+.summary .s{font-size:13px;background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:4px 10px}
+.summary .s.k{background:var(--accent-soft)}
+.summary .s.x{background:var(--warn-soft)}
+.count{font-size:13px;color:var(--muted)}
+.count b{color:var(--ink);font-size:22px;display:block;line-height:1.1}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;border:0;background:transparent;padding:11px 8px;cursor:pointer;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tab{display:none;padding:14px 18px}
+.tab.on{display:block}
+.group{margin-bottom:16px}
+.group h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.group h4 .btn{margin-left:auto}
+.links{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.links li{display:flex;gap:8px;align-items:flex-start}
+.links a{text-decoration:none;color:var(--ink);padding:7px 10px;border-radius:8px;background:var(--bg);flex:1;display:block;border:1px solid transparent}
+.links a:hover{border-color:var(--accent)}
+.links a small{display:block;color:var(--muted);font-size:12px;word-break:break-word}
+.links a .t{font-weight:500}
+.links .tag{font-size:11px;color:var(--muted);padding-top:9px;min-width:48px;text-align:right}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:12px;font-size:12px;overflow:auto;max-height:420px;margin:0;white-space:pre-wrap;word-break:break-word}
+.note{font-size:13px;color:var(--muted);background:var(--bg);border-radius:9px;padding:10px 12px;line-height:1.4}
+.note.warn{background:var(--warn-soft);color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;opacity:0;transition:.2s;pointer-events:none;z-index:50;font-size:14px}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.hidden{display:none!important}
+.inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
+.switch input{width:17px;height:17px;accent-color:var(--accent);margin:0}
+.src-list{display:grid;gap:4px;margin-top:8px}
+.src-list .it{display:flex;gap:8px;align-items:center;font-size:14px;background:var(--bg);border-radius:8px;padding:6px 10px}
+.src-list .it a{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none}
+.src-list .it button{border:0;background:transparent;cursor:pointer;color:var(--muted)}
+.src-list .it button:hover{color:var(--danger)}
+kbd{font:12px ui-monospace,monospace;background:var(--chip);padding:1px 5px;border-radius:4px}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+.ptitle{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:10px}
+.act{display:grid;gap:4px;margin-bottom:12px}
+.act .btn{justify-content:flex-start;text-align:left}
+.act p{margin:0;font-size:13px;color:var(--muted);line-height:1.4}
+.views{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.views button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:6px 14px;cursor:pointer;font:inherit;font-weight:500}
+.views button.on{background:var(--accent);color:var(--accent-ink)}
+.views button span{background:rgba(255,255,255,.25);border-radius:999px;padding:0 7px;font-size:12px;margin-left:4px}
+.views button:not(.on) span{background:var(--chip);color:var(--chip-ink)}
+.pipeline{display:flex;flex-wrap:wrap;gap:6px}
+.pipeline button{border:1px solid var(--line);background:var(--bg);color:var(--chip-ink);border-radius:999px;padding:5px 11px;cursor:pointer;font:inherit;font-size:13px}
+.pipeline button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pipeline button b{font-weight:700;margin-left:4px}
+.of-list{display:grid;gap:10px}
+.of{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--muted);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow)}
+.of[data-status=umowic]{border-left-color:#2f7fd1}.of[data-status=raport]{border-left-color:#8e5bd1}.of[data-status=czekam]{border-left-color:#c47f12}.of[data-status=po_wizycie]{border-left-color:#1f9d6b}.of[data-status=decyzja]{border-left-color:#d1a52f}.of[data-status=odpada]{border-left-color:#c0392b;opacity:.65}
+.of-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.of-head .nm{font-weight:700;font-size:16px}
+.of-head .id{font:12px ui-monospace,monospace;color:var(--muted)}
+.of-head select{width:auto;padding:5px 8px;font-size:13px;margin-left:auto}
+.stars{display:inline-flex;gap:1px}
+.stars button{border:0;background:transparent;cursor:pointer;font-size:18px;color:var(--line);padding:0 1px;line-height:1}
+.stars button.on{color:#e0a800}
+.of-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:6px}
+.of-meta b{color:var(--ink);font-weight:600}
+.of-why{font-size:13px;margin-top:6px}
+.of-txt{font-size:14px;margin-top:6px;white-space:pre-wrap}
+.of-txt.short{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.of-notes{font-size:13px;margin-top:6px;padding:8px 10px;background:var(--bg);border-radius:8px;white-space:pre-wrap}
+.of-foot{display:flex;gap:12px;margin-top:8px;font-size:13px;align-items:center;flex-wrap:wrap}
+.of-foot a{color:var(--accent)}
+.of-foot .lnk{border:0;background:transparent;color:var(--accent);cursor:pointer;padding:0;font:inherit;font-size:13px}
+.of-foot .lnk.danger{color:var(--danger)}
+.tryb{margin-left:auto;display:inline-flex;align-items:center;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;cursor:pointer;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);user-select:none;white-space:nowrap}
+.tryb input{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.tryb span::before{content:'musi być spełnione'}
+.tryb:has(input:checked){background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.tryb input:checked+span::before{content:'może się zmienić'}
+.tryb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+details.card>summary .tryb+.n{margin-left:0}
+.footer-actions{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:14px 0 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">Szukacz nieruchomości <span class="ver" id="ver" title="Wersja aplikacji"></span><small>profil + wyszukiwania poza Otodom i OLX</small></div>
+  <div class="views"><button type="button" class="on" data-view="profil">Profil wyszukiwania</button><button type="button" data-view="oferty">Oferty <span id="ofCount">0</span></button></div>
+  <div class="profiles">
+    <select id="profileSel" title="Zapisane profile"><option value="">Zapisane profile…</option></select>
+    <input type="text" id="profileName" placeholder="Nazwa profilu, np. Kraków 3 pok." style="width:220px">
+    <button class="btn sm" id="saveProfile" type="button">Zapisz</button>
+    <button class="btn sm ghost danger" id="delProfile" type="button" title="Usuń wybrany profil">Usuń</button>
+    <button class="btn sm ghost" id="theme" type="button" title="Przełącz motyw">◐</button>
+  </div>
+</header>
+
+<main class="layout" id="view-profil">
+<form id="f" class="form" autocomplete="off" onsubmit="return false">
+<div class="note" style="margin-bottom:14px">Przy każdej sekcji jest przełącznik: <b>musi być spełnione</b> albo <b>może się zmienić</b>. Ogłoszenie, które nie spełnia jednego lub dwóch kryteriów elastycznych, wtyczka i asystent AI pokazują osobno jako „prawie pasuje”. Kryterium oznaczone jako „musi” zawsze odrzuca ogłoszenie.</div>
+
+<details class="card" open data-sekcja="podstawy">
+  <summary><span class="chev"></span>Podstawy <span class="hint">transakcja, typ, rynek</span><label class="tryb" title="Typ nieruchomości i kupno albo wynajem zawsze muszą się zgadzać. Przełącznik dotyczy rynku, źródła ogłoszenia, rodzaju domu. Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="podstawy"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="row two">
+      <div class="field"><span class="lbl">Transakcja</span>
+        <div class="seg">
+          <label><input type="radio" name="transakcja" value="kupno" checked><span>Kupno</span></label>
+          <label><input type="radio" name="transakcja" value="wynajem"><span>Wynajem</span></label>
+        </div></div>
+      <div class="field"><span class="lbl">Rynek</span>
+        <div class="seg">
+          <label><input type="radio" name="rynek" value="" checked><span>Dowolny</span></label>
+          <label><input type="radio" name="rynek" value="wtórny"><span>Wtórny</span></label>
+          <label><input type="radio" name="rynek" value="pierwotny"><span>Pierwotny</span></label>
+        </div></div>
+    </div>
+    <div class="field"><span class="lbl">Typ nieruchomości</span>
+      <div class="seg">
+        <label><input type="radio" name="typ" value="mieszkanie" checked><span>Mieszkanie</span></label>
+        <label><input type="radio" name="typ" value="dom"><span>Dom</span></label>
+        <label><input type="radio" name="typ" value="dzialka"><span>Działka</span></label>
+        <label><input type="radio" name="typ" value="lokal"><span>Lokal użytkowy</span></label>
+        <label><input type="radio" name="typ" value="garaz"><span>Garaż</span></label>
+        <label><input type="radio" name="typ" value="pokoj"><span>Pokój</span></label>
+        <label><input type="radio" name="typ" value="hala"><span>Hala / magazyn</span></label>
+      </div></div>
+    <div class="row two">
+      <div class="field"><span class="lbl">Od kogo</span>
+        <div class="seg">
+          <label><input type="radio" name="odkogo" value="" checked><span>Dowolnie</span></label>
+          <label><input type="radio" name="odkogo" value="bezposrednio"><span>Tylko bezpośrednio</span></label>
+          <label><input type="radio" name="odkogo" value="biuro"><span>Tylko biura</span></label>
+        </div></div>
+      <div class="field" data-for="dom"><span class="lbl">Rodzaj domu</span>
+        <div class="checks">
+          <label><input type="checkbox" name="rodzajDomu" value="wolnostojący">wolnostojący</label>
+          <label><input type="checkbox" name="rodzajDomu" value="bliźniak">bliźniak</label>
+          <label><input type="checkbox" name="rodzajDomu" value="szeregowiec">szeregowiec</label>
+          <label><input type="checkbox" name="rodzajDomu" value="siedlisko">siedlisko / gospodarstwo</label>
+          <label><input type="checkbox" name="rodzajDomu" value="letniskowy">letniskowy</label>
+        </div></div>
+    </div>
+  </div>
+</details>
+
+<details class="card" open data-sekcja="lokalizacja">
+  <summary><span class="chev"></span>Lokalizacja <span class="hint">to najważniejsze pole dla wyszukiwań</span><label class="tryb" title="Dotyczy miejsc, których unikasz. Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="lokalizacja"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="row">
+      <div class="field"><label for="woj">Województwo</label>
+        <select id="woj" name="woj"><option value="">dowolne</option>
+        <option>dolnośląskie</option><option>kujawsko-pomorskie</option><option>lubelskie</option><option>lubuskie</option><option>łódzkie</option><option>małopolskie</option><option>mazowieckie</option><option>opolskie</option><option>podkarpackie</option><option>podlaskie</option><option>pomorskie</option><option>śląskie</option><option>świętokrzyskie</option><option>warmińsko-mazurskie</option><option>wielkopolskie</option><option>zachodniopomorskie</option></select></div>
+      <div class="field"><label for="miasto">Miasto lub gmina</label><input type="text" id="miasto" name="miasto" placeholder="np. Kraków, Piaseczno, gmina Zabierzów"></div>
+      <div class="field"><label for="promien">Promień wokół miasta</label>
+        <select id="promien" name="promien"><option value="0">tylko w granicach</option><option value="5">+ 5 km</option><option value="10">+ 10 km</option><option value="15">+ 15 km</option><option value="25">+ 25 km</option><option value="50">+ 50 km</option></select></div>
+    </div>
+    <div class="field"><span class="lbl">Dzielnice, osiedla, miejscowości (wpisz i Enter)</span>
+      <div class="chips" data-chips="dzielnice"><input type="text" placeholder="np. Podgórze, Ruczaj, Zielonki"></div>
+      <span class="help">Każda pozycja da osobne wyszukiwanie. Działa też jako plus w ocenie ogłoszeń we wtyczce.</span></div>
+    <div class="field"><span class="lbl">Miejsca, których unikasz (wpisz i Enter)</span>
+      <div class="chips excl" data-chips="dzielniceNie"><input type="text" placeholder="np. Nowa Huta, przy obwodnicy"></div></div>
+    <div class="field"><label for="okolica">Okolica własnymi słowami</label>
+      <input type="text" id="okolica" name="okolica" placeholder="np. blisko lasu, 10 min do tramwaju, spokojna ulica, nie przy torach"></div>
+  </div>
+</details>
+
+<details class="card" open data-sekcja="cena">
+  <summary><span class="chev"></span>Cena <span class="hint"></span><label class="tryb" title="Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="cena"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="row">
+      <div class="field"><span class="lbl">Cena <span data-txt="cenaLbl">całkowita</span></span>
+        <div class="range"><div class="unit"><input type="number" name="cenaOd" placeholder="od" min="0" step="1000"><em>zł</em></div><span>–</span><div class="unit"><input type="number" name="cenaDo" placeholder="do" min="0" step="1000"><em>zł</em></div></div></div>
+      <div class="field" data-not="garaz pokoj"><span class="lbl">Cena za m²</span>
+        <div class="range"><div class="unit"><input type="number" name="cenaM2Od" placeholder="od" min="0" step="100"><em>zł/m²</em></div><span>–</span><div class="unit"><input type="number" name="cenaM2Do" placeholder="do" min="0" step="100"><em>zł/m²</em></div></div></div>
+      <div class="field" data-for="mieszkanie pokoj lokal"><label>Czynsz administracyjny maks.</label><div class="unit"><input type="number" name="czynszMax" placeholder="np. 800" min="0" step="50"><em>zł/mc</em></div></div>
+      <div class="field" data-trans="wynajem"><label>Kaucja maks.</label><div class="unit"><input type="number" name="kaucjaMax" placeholder="np. 5000" min="0" step="100"><em>zł</em></div></div>
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" name="doNegocjacji">cena do negocjacji mile widziana</label>
+      <label><input type="checkbox" name="bezProwizji">bez prowizji pośrednika</label>
+      <label><input type="checkbox" name="bezCenyUzgodnienia">pomiń „cena do uzgodnienia”</label>
+      <label data-trans="wynajem"><input type="checkbox" name="mediaWliczone">media wliczone w cenę</label>
+      <label data-trans="kupno"><input type="checkbox" name="bezKredytu">sprzedający akceptuje kredyt (bez „tylko gotówka”)</label>
+      <label data-trans="kupno"><input type="checkbox" name="bezObciazen">bez obciążeń hipotecznych / lokatorów</label>
+    </div>
+  </div>
+</details>
+
+<details class="card" open data-sekcja="powierzchnia">
+  <summary><span class="chev"></span>Powierzchnia i układ <span class="hint"></span><label class="tryb" title="Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="powierzchnia"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="row">
+      <div class="field"><span class="lbl">Powierzchnia <span data-txt="powLbl">użytkowa</span></span>
+        <div class="range"><div class="unit"><input type="number" name="powOd" placeholder="od" min="0"><em>m²</em></div><span>–</span><div class="unit"><input type="number" name="powDo" placeholder="do" min="0"><em>m²</em></div></div></div>
+      <div class="field" data-for="mieszkanie dom"><span class="lbl">Liczba pokoi</span>
+        <div class="range"><input type="number" name="pokojeOd" placeholder="od" min="1" max="20"><span>–</span><input type="number" name="pokojeDo" placeholder="do" min="1" max="20"></div></div>
+      <div class="field" data-for="dom dzialka"><span class="lbl">Powierzchnia działki</span>
+        <div class="range"><div class="unit"><input type="number" name="dzialkaOd" placeholder="od" min="0"><em>m²</em></div><span>–</span><div class="unit"><input type="number" name="dzialkaDo" placeholder="do" min="0"><em>m²</em></div></div></div>
+      <div class="field" data-for="mieszkanie dom"><label>Łazienki min.</label><select name="lazienkiMin"><option value="">dowolnie</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+      <div class="field" data-for="mieszkanie dom"><label>Kuchnia</label><select name="kuchnia"><option value="">dowolna</option><option value="oddzielna">oddzielna</option><option value="aneks">aneks / otwarta</option></select></div>
+      <div class="field" data-for="dom"><label>Kondygnacje</label><select name="kondygnacje"><option value="">dowolnie</option><option value="parterowy">parterowy</option><option value="poddasze">z poddaszem użytkowym</option><option value="pietrowy">piętrowy</option></select></div>
+    </div>
+    <div class="checks" data-for="mieszkanie dom">
+      <label><input type="checkbox" name="rozkladowe">układ rozkładowy (bez pokoi przechodnich)</label>
+      <label><input type="checkbox" name="dwustronne">mieszkanie dwustronne</label>
+      <label><input type="checkbox" name="oknaWKazdym">okno w każdym pokoju i kuchni</label>
+      <label><input type="checkbox" name="garderoba">garderoba / pomieszczenie gospodarcze</label>
+      <label><input type="checkbox" name="wysokie">wysokie sufity (powyżej 2,8 m)</label>
+      <label><input type="checkbox" name="dwaPoziomy">dwupoziomowe mile widziane</label>
+    </div>
+  </div>
+</details>
+
+<details class="card" data-not="dzialka" data-sekcja="budynek">
+  <summary><span class="chev"></span>Budynek i stan <span class="hint">piętro, rok, technologia, wykończenie</span><label class="tryb" title="Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="budynek"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="row">
+      <div class="field" data-for="mieszkanie pokoj lokal"><span class="lbl">Piętro</span>
+        <div class="range"><input type="number" name="pietroOd" placeholder="od (0 = parter)" min="-1" max="60"><span>–</span><input type="number" name="pietroDo" placeholder="do" min="0" max="60"></div></div>
+      <div class="field" data-for="mieszkanie pokoj lokal"><label>Pięter w budynku maks.</label><input type="number" name="pietraMax" placeholder="np. 4" min="1" max="60"></div>
+      <div class="field"><span class="lbl">Rok budowy</span>
+        <div class="range"><input type="number" name="rokOd" placeholder="od" min="1800" max="2035"><span>–</span><input type="number" name="rokDo" placeholder="do" min="1800" max="2035"></div></div>
+      <div class="field" data-for="mieszkanie pokoj lokal"><label>Winda</label><select name="winda"><option value="">dowolnie</option><option value="tak">wymagana</option><option value="niekoniecznie">niekoniecznie, ale plus</option></select></div>
+    </div>
+    <div class="field"><span class="lbl">Stan wykończenia (zaznacz akceptowane)</span>
+      <div class="checks">
+        <label><input type="checkbox" name="stan" value="do zamieszkania">do zamieszkania</label>
+        <label><input type="checkbox" name="stan" value="po remoncie">po remoncie / po generalnym</label>
+        <label><input type="checkbox" name="stan" value="do odświeżenia">do odświeżenia</label>
+        <label><input type="checkbox" name="stan" value="do remontu">do remontu</label>
+        <label><input type="checkbox" name="stan" value="do wykończenia">do wykończenia / deweloperski</label>
+        <label><input type="checkbox" name="stan" value="stan surowy">stan surowy</label>
+      </div></div>
+    <div class="row two">
+      <div class="field" data-for="mieszkanie pokoj lokal"><span class="lbl">Rodzaj zabudowy</span>
+        <div class="checks">
+          <label><input type="checkbox" name="zabudowa" value="blok">blok</label>
+          <label><input type="checkbox" name="zabudowa" value="kamienica">kamienica</label>
+          <label><input type="checkbox" name="zabudowa" value="apartamentowiec">apartamentowiec</label>
+          <label><input type="checkbox" name="zabudowa" value="niska zabudowa">niska zabudowa / willa</label>
+          <label><input type="checkbox" name="zabudowa" value="szeregowiec">szeregowiec</label>
+          <label><input type="checkbox" name="zabudowa" value="loft">loft</label>
+        </div></div>
+      <div class="field"><span class="lbl">Materiał i technologia</span>
+        <div class="checks">
+          <label><input type="checkbox" name="material" value="cegła">cegła</label>
+          <label><input type="checkbox" name="material" value="wielka płyta">wielka płyta</label>
+          <label><input type="checkbox" name="material" value="silikat">silikat / beton komórkowy</label>
+          <label><input type="checkbox" name="material" value="drewno">drewno / szkielet</label>
+          <label><input type="checkbox" name="bezWielkiejPlyty">wyklucz wielką płytę</label>
+        </div></div>
+    </div>
+    <div class="row two">
+      <div class="field"><span class="lbl">Ogrzewanie (akceptowane)</span>
+        <div class="checks">
+          <label><input type="checkbox" name="ogrzewanie" value="miejskie">miejskie</label>
+          <label><input type="checkbox" name="ogrzewanie" value="gazowe">gazowe</label>
+          <label><input type="checkbox" name="ogrzewanie" value="pompa ciepła">pompa ciepła</label>
+          <label><input type="checkbox" name="ogrzewanie" value="elektryczne">elektryczne</label>
+          <label><input type="checkbox" name="ogrzewanie" value="kominek">kominek / kozy</label>
+          <label><input type="checkbox" name="ogrzewanie" value="węglowe">piec węglowy / ekogroszek</label>
+          <label><input type="checkbox" name="bezPiecaWeglowego">wyklucz piec węglowy</label>
+        </div></div>
+      <div class="field"><span class="lbl">Okna i instalacje</span>
+        <div class="checks">
+          <label><input type="checkbox" name="instal" value="okna PCV">okna PCV / nowe</label>
+          <label><input type="checkbox" name="instal" value="nowa instalacja">nowa instalacja elektryczna</label>
+          <label><input type="checkbox" name="instal" value="fotowoltaika">fotowoltaika</label>
+          <label><input type="checkbox" name="instal" value="światłowód">światłowód</label>
+          <label><input type="checkbox" name="instal" value="rekuperacja">rekuperacja</label>
+          <label><input type="checkbox" name="instal" value="ocieplony">budynek ocieplony</label>
+        </div></div>
+    </div>
+  </div>
+</details>
+
+<details class="card" data-not="dzialka" data-sekcja="udogodnienia">
+  <summary><span class="chev"></span>Udogodnienia <span class="hint">to, co ma być w środku i wokół</span><label class="tryb" title="Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="udogodnienia"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="field"><span class="lbl">Wymagane (brak wzmianki obniża ocenę; gdy ogłoszenie mówi wprost „bez…” albo „brak…”, kryterium jest niespełnione)</span>
+      <div class="checks">
+        <label><input type="checkbox" name="udog" value="balkon">balkon</label>
+        <label><input type="checkbox" name="udog" value="taras">taras</label>
+        <label><input type="checkbox" name="udog" value="loggia">loggia</label>
+        <label><input type="checkbox" name="udog" value="ogródek">ogródek / ogród</label>
+        <label><input type="checkbox" name="udog" value="piwnica">piwnica</label>
+        <label><input type="checkbox" name="udog" value="komórka lokatorska">komórka lokatorska</label>
+        <label><input type="checkbox" name="udog" value="garaż">garaż</label>
+        <label><input type="checkbox" name="udog" value="miejsce postojowe">miejsce postojowe</label>
+        <label><input type="checkbox" name="udog" value="hala garażowa">miejsce w hali garażowej</label>
+        <label><input type="checkbox" name="udog" value="klimatyzacja">klimatyzacja</label>
+        <label><input type="checkbox" name="udog" value="umeblowane">umeblowane</label>
+        <label><input type="checkbox" name="udog" value="nieumeblowane">nieumeblowane</label>
+        <label><input type="checkbox" name="udog" value="AGD">sprzęt AGD</label>
+        <label><input type="checkbox" name="udog" value="zmywarka">zmywarka</label>
+        <label><input type="checkbox" name="udog" value="pralka">pralka</label>
+        <label><input type="checkbox" name="udog" value="domofon">domofon / wideodomofon</label>
+        <label><input type="checkbox" name="udog" value="monitoring">monitoring</label>
+        <label><input type="checkbox" name="udog" value="ochrona">ochrona / teren zamknięty</label>
+        <label><input type="checkbox" name="udog" value="rowerownia">rowerownia / wózkownia</label>
+        <label><input type="checkbox" name="udog" value="plac zabaw">plac zabaw</label>
+        <label><input type="checkbox" name="udog" value="dla niepełnosprawnych">dostęp dla osób z niepełnosprawnością</label>
+        <label><input type="checkbox" name="udog" value="kominek">kominek</label>
+        <label><input type="checkbox" name="udog" value="sauna">sauna / jacuzzi</label>
+        <label><input type="checkbox" name="udog" value="basen">basen</label>
+      </div></div>
+    <div class="row" data-trans="wynajem">
+      <div class="field"><label>Zwierzęta</label><select name="zwierzeta"><option value="">dowolnie</option><option value="tak">muszą być akceptowane</option></select></div>
+      <div class="field"><label>Najemcy</label><select name="najemcy"><option value="">dowolnie</option><option value="studenci">studenci OK</option><option value="rodzina">rodzina z dziećmi OK</option><option value="firma">na firmę OK</option></select></div>
+      <div class="field"><label>Dostępne od</label><input type="date" name="dostepneOd"></div>
+      <div class="field"><label>Minimalny okres najmu</label><select name="okres"><option value="">dowolnie</option><option value="krótki">krótkoterminowo OK</option><option value="12">min. 12 miesięcy</option><option value="24">min. 24 miesiące</option></select></div>
+    </div>
+    <div class="checks" data-trans="wynajem">
+      <label><input type="checkbox" name="umowaOkazjonalna">zgoda na umowę okazjonalną</label>
+      <label><input type="checkbox" name="meldunek">możliwość meldunku</label>
+      <label><input type="checkbox" name="palenieNie">dla niepalących OK</label>
+    </div>
+  </div>
+</details>
+
+<details class="card" data-for="dzialka dom" data-sekcja="dzialka">
+  <summary><span class="chev"></span>Działka i grunt <span class="hint">przeznaczenie, media, dojazd</span><label class="tryb" title="Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="dzialka"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="row two">
+      <div class="field"><span class="lbl">Przeznaczenie</span>
+        <div class="checks">
+          <label><input type="checkbox" name="przezn" value="budowlana">budowlana</label>
+          <label><input type="checkbox" name="przezn" value="rolna">rolna</label>
+          <label><input type="checkbox" name="przezn" value="rolno-budowlana">rolno-budowlana</label>
+          <label><input type="checkbox" name="przezn" value="rekreacyjna">rekreacyjna</label>
+          <label><input type="checkbox" name="przezn" value="leśna">leśna</label>
+          <label><input type="checkbox" name="przezn" value="siedliskowa">siedliskowa</label>
+          <label><input type="checkbox" name="przezn" value="inwestycyjna">inwestycyjna / usługowa</label>
+        </div></div>
+      <div class="field"><span class="lbl">Dokumenty i stan prawny</span>
+        <div class="checks">
+          <label><input type="checkbox" name="prawne" value="MPZP">objęta MPZP</label>
+          <label><input type="checkbox" name="prawne" value="warunki zabudowy">wydane warunki zabudowy</label>
+          <label><input type="checkbox" name="prawne" value="pozwolenie na budowę">pozwolenie na budowę</label>
+          <label><input type="checkbox" name="prawne" value="księga wieczysta">założona księga wieczysta</label>
+          <label><input type="checkbox" name="prawne" value="bez służebności">bez służebności</label>
+        </div></div>
+    </div>
+    <div class="row two">
+      <div class="field"><span class="lbl">Media (wymagane)</span>
+        <div class="checks">
+          <label><input type="checkbox" name="media" value="prąd">prąd</label>
+          <label><input type="checkbox" name="media" value="woda">woda</label>
+          <label><input type="checkbox" name="media" value="gaz">gaz</label>
+          <label><input type="checkbox" name="media" value="kanalizacja">kanalizacja</label>
+          <label><input type="checkbox" name="media" value="szambo">szambo / oczyszczalnia OK</label>
+          <label><input type="checkbox" name="media" value="media w drodze">media w drodze (do przyłączenia)</label>
+        </div></div>
+      <div class="field"><span class="lbl">Dojazd i ukształtowanie</span>
+        <div class="checks">
+          <label><input type="checkbox" name="teren" value="droga asfaltowa">droga asfaltowa</label>
+          <label><input type="checkbox" name="teren" value="droga utwardzona">droga utwardzona OK</label>
+          <label><input type="checkbox" name="teren" value="dostęp do drogi publicznej">dostęp do drogi publicznej</label>
+          <label><input type="checkbox" name="teren" value="płaska">płaska</label>
+          <label><input type="checkbox" name="teren" value="ze spadkiem">ze spadkiem / widokowa</label>
+          <label><input type="checkbox" name="teren" value="zalesiona">zalesiona</label>
+          <label><input type="checkbox" name="teren" value="ogrodzona">ogrodzona</label>
+          <label><input type="checkbox" name="teren" value="narożna">narożna</label>
+          <label><input type="checkbox" name="teren" value="bez linii wysokiego napięcia">bez linii wysokiego napięcia</label>
+        </div></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Szerokość działki min.</label><div class="unit"><input type="number" name="szerokoscMin" placeholder="np. 20" min="0"><em>m</em></div></div>
+      <div class="field"><label>Kształt</label><select name="ksztalt"><option value="">dowolny</option><option value="prostokąt">prostokątna</option><option value="kwadrat">zbliżona do kwadratu</option></select></div>
+    </div>
+  </div>
+</details>
+
+<details class="card" data-sekcja="okolica">
+  <summary><span class="chev"></span>Okolica i dojazd <span class="hint">odległości, hałas, ekspozycja</span><label class="tryb" title="Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="okolica"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="row">
+      <div class="field"><label>Do centrum maks.</label><div class="unit"><input type="number" name="doCentrum" placeholder="np. 20" min="0"><em>min</em></div></div>
+      <div class="field"><label>Do przystanku maks.</label><div class="unit"><input type="number" name="doPrzystanku" placeholder="np. 10" min="0"><em>min pieszo</em></div></div>
+      <div class="field"><label>Do szkoły / przedszkola maks.</label><div class="unit"><input type="number" name="doSzkoly" placeholder="np. 15" min="0"><em>min pieszo</em></div></div>
+      <div class="field"><label>Do sklepu maks.</label><div class="unit"><input type="number" name="doSklepu" placeholder="np. 5" min="0"><em>min pieszo</em></div></div>
+      <div class="field"><label>Do lasu / parku maks.</label><div class="unit"><input type="number" name="doLasu" placeholder="np. 2" min="0"><em>km</em></div></div>
+    </div>
+    <div class="row two">
+      <div class="field"><span class="lbl">Ekspozycja okien</span>
+        <div class="checks">
+          <label><input type="checkbox" name="ekspozycja" value="południe">południe</label>
+          <label><input type="checkbox" name="ekspozycja" value="wschód">wschód</label>
+          <label><input type="checkbox" name="ekspozycja" value="zachód">zachód</label>
+          <label><input type="checkbox" name="ekspozycja" value="północ">północ OK</label>
+        </div></div>
+      <div class="field"><span class="lbl">Otoczenie</span>
+        <div class="checks">
+          <label><input type="checkbox" name="otoczenie" value="cicha okolica">cicha okolica, z dala od ruchliwej ulicy</label>
+          <label><input type="checkbox" name="otoczenie" value="widok">ładny widok / okna na zieleń</label>
+          <label><input type="checkbox" name="otoczenie" value="ostatnie piętro">ostatnie piętro (bez sąsiadów nad głową)</label>
+          <label><input type="checkbox" name="otoczenie" value="nie parter">nie parter</label>
+          <label><input type="checkbox" name="otoczenie" value="parter z ogródkiem">parter z ogródkiem OK</label>
+          <label><input type="checkbox" name="otoczenie" value="komunikacja miejska">dobra komunikacja miejska</label>
+          <label><input type="checkbox" name="otoczenie" value="blisko autostrady">blisko wjazdu na obwodnicę / autostradę</label>
+          <label><input type="checkbox" name="otoczenie" value="nie przy torach">nie przy torach / lotnisku</label>
+        </div></div>
+    </div>
+  </div>
+</details>
+
+<details class="card" data-sekcja="ogloszenie">
+  <summary><span class="chev"></span>Wymagania wobec ogłoszenia <span class="hint">świeżość, zdjęcia, kontakt</span><label class="tryb" title="„Rezerwacja” i „sprzedane” odpadają zawsze. Kliknij, żeby przełączyć. „Musi być spełnione”: ogłoszenie poza widełkami odpada. „Może się zmienić”: ogłoszenie trochę poza widełkami (cena do 15%, metraż i działka do 20%, pokoje i piętro o jeden, rok o 10 lat) albo z jedną cechą niezgodną trafia do „prawie pasuje”, jeśli takich odchyleń ma najwyżej dwa."><input type="checkbox" name="elastyczne" value="ogloszenie"><span></span></label><span class="n"></span></summary>
+  <div class="body">
+    <div class="row">
+      <div class="field"><label>Ogłoszenia z ostatnich (dni)</label><div class="unit"><input type="number" name="wiek" placeholder="np. 3" min="1" max="365"><em>dni</em></div><button type="button" class="btn sm ghost" id="odPrzegladu" style="margin-top:6px" hidden></button><span class="help">Ustawia filtr czasu w wyszukiwaniach Google (1 = ostatnie 24 h, 3 = ostatnie 3 dni). Puste pole znaczy „dowolny”. Przycisk pod polem wpisuje liczbę dni od Twojego ostatniego kliknięcia „Otwórz wszystkie”, więc nie wracasz do tego, co już widziałeś. Wyszukiwania Google na tej stronie wycinają portale, a nie każdy wynik ma datę, więc filtr bywa przybliżony.</span></div>
+      <div class="field"><label>Minimalna liczba zdjęć</label><input type="number" name="zdjeciaMin" placeholder="np. 5" min="0"></div>
+    </div>
+    <div class="checks">
+      <label><input type="checkbox" name="zPlanem">z rzutem / planem</label>
+      <label><input type="checkbox" name="zTelefonem">z numerem telefonu w treści</label>
+      <label><input type="checkbox" name="zAdresem">z dokładnym adresem lub ulicą</label>
+      <label><input type="checkbox" name="bezRezerwacji">pomiń „rezerwacja” / „sprzedane”</label>
+      <label><input type="checkbox" name="bezInwestycji">pomiń oferty „pod inwestycję” / pakiety</label>
+      <label><input type="checkbox" name="bezTbs">pomiń TBS / spółdzielcze lokatorskie</label>
+      <label><input type="checkbox" name="bezUdzialu">pomiń udział w nieruchomości</label>
+    </div>
+  </div>
+</details>
+
+<details class="card" open>
+  <summary><span class="chev"></span>Własne kryteria <span class="hint">to, czego portale nie mają w filtrach</span><span class="n"></span></summary>
+  <div class="body">
+    <div class="field"><span class="lbl">Słowa, które muszą wystąpić w ogłoszeniu (wpisz i Enter)</span>
+      <div class="chips must" data-chips="slowaMusza"><input type="text" placeholder="np. strych, widok na góry, własność hipoteczna"></div>
+      <span class="help">Wtyczka odrzuci ogłoszenie, jeśli któregoś brakuje. W wyszukiwaniach Google trafiają w cudzysłów.</span></div>
+    <div class="field"><span class="lbl">Słowa mile widziane (każde daje punkt)</span>
+      <div class="chips" data-chips="slowaPlus"><input type="text" placeholder="np. kominek, strych, niski czynsz, od zaraz"></div></div>
+    <div class="field"><span class="lbl">Słowa wykluczające (ogłoszenie odpada)</span>
+      <div class="chips excl" data-chips="slowaMinus"><input type="text" placeholder="np. parter, licytacja, udział, TBS, przechodni"></div></div>
+    <div class="field"><label for="opis">Opis tego, czego szukasz, własnymi słowami</label>
+      <textarea id="opis" name="opis" placeholder="np. Szukam mieszkania dla rodziny z dwójką dzieci, ważna cisza i zieleń pod oknem, może być do odświeżenia, ale nie do generalnego remontu. Ważny jest sensowny czynsz i miejsce na rower."></textarea>
+      <span class="help">Ten tekst trafia do profilu. Przyda się, gdy będziesz oceniać ogłoszenia z pomocą AI albo przekażesz profil pośrednikowi.</span></div>
+  </div>
+</details>
+
+<details class="card" open>
+  <summary><span class="chev"></span>Źródła poza portalami <span class="hint">grupy FB, biura, strony lokalne</span><span class="n"></span></summary>
+  <div class="body">
+    <div class="note">Wpisz adresy grup na Facebooku i stron biur, które już znasz. Grupy może też znaleźć sama wtyczka: w jej okienku kliknij „Skaner grup”, a ona wyszuka grupy dla Twojego miasta, przejdzie je po kolei i oceni posty z ostatnich X dni. Wymaga to zalogowania na Facebooku w Chrome, na Twoim koncie.</div>
+    <div class="row two">
+      <div class="field"><label for="grupyFb">Grupy na Facebooku (jeden adres w linii)</label><textarea id="grupyFb" name="grupyFb" placeholder="https://www.facebook.com/groups/mieszkania-krakow&#10;https://www.facebook.com/groups/123456789"></textarea></div>
+      <div class="field"><label for="biura">Strony biur nieruchomości i lokalne portale (jeden adres w linii)</label><textarea id="biura" name="biura" placeholder="https://biuro-xyz.pl/oferty&#10;https://ogloszenia.twojemiasto.pl/nieruchomosci"></textarea></div>
+    </div>
+    <div class="field"><span class="lbl">Dodatkowe rodzaje źródeł do przeszukania</span>
+      <div class="checks">
+        <label><input type="checkbox" name="zrodla" value="spoldzielnie">spółdzielnie mieszkaniowe (przetargi na lokale)</label>
+        <label><input type="checkbox" name="zrodla" value="komornik">licytacje komornicze</label>
+        <label><input type="checkbox" name="zrodla" value="gmina">przetargi gminne i Skarbu Państwa</label>
+        <label><input type="checkbox" name="zrodla" value="deweloper">strony deweloperów z okolicy</label>
+        <label><input type="checkbox" name="zrodla" value="syndyk">sprzedaż z masy upadłości (syndyk)</label>
+        <label><input type="checkbox" name="zrodla" value="tablice">lokalne tablice i gazety ogłoszeniowe</label>
+        <label><input type="checkbox" name="zrodla" value="agencje">przetargi AMW i KOWR (lokale, domy, działki państwowe)</label>
+      </div></div>
+    <div class="field"><span class="lbl">Grupy na Facebooku do pominięcia: słowo w nazwie grupy (wpisz i Enter)</span>
+      <div class="chips excl" data-chips="grupyNie"><input type="text" placeholder="np. oddam, za darmo, praca"></div>
+      <span class="help">Skaner grup nie proponuje i nie przegląda grup, których nazwa zawiera któreś z tych słów. Lista zapisuje się razem z profilem. Pojedyncze grupy odrzucasz krzyżykiem w skanerze, a wtyczka je zapamiętuje.</span></div>
+    <div class="field"><label for="pomijane">Portale, które pomijasz w wyszukiwaniach Google (jedna domena w linii)</label>
+      <textarea id="pomijane" name="pomijane" style="min-height:70px">otodom.pl
+olx.pl
+gratka.pl
+morizon.pl
+nieruchomosci-online.pl
+domiporta.pl
+lento.pl
+gumtree.pl
+sprzedajemy.pl
+oferty.net
+adresowo.pl
+szybko.pl</textarea><span class="help">Google ignoruje bardzo długie zapytania, dlatego do każdego trafia maksymalnie 12 pierwszych domen.</span></div>
+  </div>
+</details>
+
+<div class="btns">
+  <button type="button" class="btn ghost danger" id="resetAll">Wyczyść wszystkie pola</button>
+</div>
+</form>
+
+<aside class="panel">
+  <div class="card">
+    <div class="pad">
+      <div class="count"><b id="cnt">0</b>aktywnych filtrów</div>
+      <div class="summary" id="summary" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="pad">
+      <div class="ptitle">Co skopiować i gdzie wkleić</div>
+      <div class="act">
+        <button type="button" class="btn primary" id="copyProfile">1. Kopiuj profil do wtyczki Chrome (Facebook)</button>
+        <p>Wklej w okienku wtyczki: „Wklej / zmień profil”, potem „Zapisz”. Wtyczka na tej podstawie znajduje grupy na Facebooku, przegląda posty z X dni i ocenia je. Potrzebne Twoje logowanie na Facebooku w Chrome.</p>
+      </div>
+      <div class="act">
+        <button type="button" class="btn" id="copyPrompt">2. Kopiuj prompt do szukania ogłoszeń w internecie</button>
+        <p>Wklej do Claude (także Claude w Chrome) lub ChatGPT z włączonym wyszukiwaniem. Prompt zawiera wszystkie kryteria, zakaz portali z listy, gotowe adresy startowe, Twoje źródła i format odpowiedzi. Nie wklejaj tam profilu JSON z przycisku 1, bo asystent nie dostanie listy portali do pominięcia. Podgląd w zakładce „Prompt”.</p>
+      </div>
+      <div class="act">
+        <button type="button" class="btn ghost" id="dlProfile">3. Zapisz kopię .json (profil, zapisane profile, oferty)</button>
+        <p>Plik do odtworzenia wszystkiego na innym komputerze albo po wyczyszczeniu przeglądarki.</p>
+        <button type="button" class="btn ghost" id="loadFileBtn">Wczytaj kopię z pliku .json</button>
+        <input type="file" id="loadFile" accept="application/json,.json" class="hidden">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tabs">
+      <button type="button" class="on" data-tab="szukaj">Wyszukiwania</button>
+      <button type="button" data-tab="zrodla">Twoje źródła</button>
+      <button type="button" data-tab="prompt">Prompt</button>
+      <button type="button" data-tab="json">JSON</button>
+    </div>
+    <div class="tab on" id="tab-szukaj"><div id="out"></div></div>
+    <div class="tab" id="tab-zrodla"><div id="outSrc"></div></div>
+    <div class="tab" id="tab-prompt"><pre id="prompt"></pre></div>
+    <div class="tab" id="tab-json"><pre id="json"></pre></div>
+  </div>
+  <div class="note">Ta strona nie ma dostępu do Facebooka ani cudzych serwisów, więc sama nie pobiera ogłoszeń. Robi to wtyczka na Twojej zalogowanej sesji: „Skaner grup” znajduje grupy, przegląda posty z ostatnich X dni i ocenia je według profilu zbudowanego tutaj.</div>
+</aside>
+</main>
+<main class="layout hidden" id="view-oferty">
+<div>
+  <div class="card">
+    <div class="pad">
+      <div class="inline" style="justify-content:space-between">
+        <div class="pipeline" id="pipeline"></div>
+      </div>
+      <div class="inline" style="margin-top:10px">
+        <input type="text" id="ofQ" placeholder="Szukaj w nazwie, miejscowości, notatkach…" style="flex:1;min-width:200px">
+        <select id="ofSort"><option value="ocena">sortuj: ocena</option><option value="dodano">sortuj: najnowsze</option><option value="cena">sortuj: cena rosnąco</option><option value="status">sortuj: status</option></select>
+        <select id="ofZrodlo"><option value="">każde źródło</option></select>
+      </div>
+    </div>
+  </div>
+  <div id="ofList" class="of-list"></div>
+</div>
+<aside class="panel">
+  <div class="card">
+    <div class="pad">
+      <div class="ptitle" id="ofFormTitle">Dodaj ofertę</div>
+      <form id="ofForm" autocomplete="off" onsubmit="return false">
+        <input type="hidden" name="id">
+        <div class="field"><label>Link do ogłoszenia</label><input type="text" name="link" placeholder="https://…"></div>
+        <div class="row">
+          <div class="field"><label>Typ</label><select name="typ"><option value="">jak w profilu</option><option value="mieszkanie">mieszkanie</option><option value="dom">dom</option><option value="dzialka">działka</option><option value="lokal">lokal</option><option value="garaz">garaż</option><option value="pokoj">pokój</option><option value="hala">hala</option></select></div>
+          <div class="field"><label>Źródło</label><select name="zrodlo"></select></div>
+          <div class="field"><label>Miejscowość / dzielnica</label><input type="text" name="miejscowosc"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Cena</label><div class="unit"><input type="number" name="cena" min="0" step="1000"><em>zł</em></div></div>
+          <div class="field"><label>Metraż</label><div class="unit"><input type="number" name="pow" min="0"><em>m²</em></div></div>
+          <div class="field"><label>Pokoje</label><input type="number" name="pokoje" min="0"></div>
+          <div class="field"><label>Piętro</label><input type="text" name="pietro" placeholder="np. 2/4"></div>
+        </div>
+        <div class="field"><label>Nazwa rekordu (zostaw puste, nadam automatycznie)</label><input type="text" name="nazwa" placeholder="np. DOM-Kornik-590k-85m2"></div>
+        <div class="row">
+          <div class="field"><label>Status</label><select name="status"></select></div>
+          <div class="field"><label>Ocena</label><select name="ocena"><option value="0">bez oceny</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+        </div>
+        <div class="field"><label>Opis lub treść ogłoszenia</label><textarea name="opis" style="min-height:70px"></textarea></div>
+        <div class="field"><label>Notatki (kontakt, termin, wrażenia)</label><textarea name="notatki" style="min-height:60px"></textarea></div>
+        <div class="btns"><button type="button" class="btn primary" id="ofSave">Zapisz ofertę</button><button type="button" class="btn ghost hidden" id="ofCancel">Anuluj</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <div class="pad">
+      <div class="ptitle">Wklej oferty z wtyczki lub asystenta</div>
+      <textarea id="ofPaste" placeholder="Wklej to, co skopiowałeś przyciskiem „Kopiuj oferty do aplikacji” we wtyczce, albo listę linków (jeden w linii)." style="min-height:80px"></textarea>
+      <div class="btns" style="margin-top:8px"><button type="button" class="btn" id="ofImport">Dodaj do katalogu</button></div>
+      <p class="help" style="margin:8px 0 0">Duplikaty po linku pomijam. Oferty bez nazwy dostają nazwę z typu, miejscowości, ceny i metrażu.</p>
+    </div>
+  </div>
+  <div class="note">Statusy prowadzą ofertę od znalezienia do decyzji: nowe → do umówienia → przygotować raport → czekam na spotkanie → po wizycie → do decyzji. „Odpada” zostaje w katalogu, żebyś nie oceniał tej samej oferty drugi raz. Raport przed wizytą zrobisz w aplikacji Audyt Nieruchomości w katalogu wyżej.</div>
+</aside>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const f=document.getElementById('f');
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const APP={nazwa:'Szukacz nieruchomości',ver:'1.5'};
+$('#ver').textContent='v'+APP.ver;
+const LS_CUR='szukacz.current', LS_PROF='szukacz.profiles', LS_THEME='szukacz.theme';
+const DEFAULT_POMIJANE=$('#pomijane').defaultValue.split('\n').map(x=>x.trim()).filter(Boolean);
+// słowa w nazwach grup FB, które skaner pomija (te same co domyślne we wtyczce)
+const GRUPY_NIE_DOMYSLNE=['oddam','oddaję','za darmo','gratis','praca','zatrudnię','ubrania','ciuchy','motoryzacja','zwierzęta','zgubione','znalezione'];
+const SEKCJE={podstawy:'podstawy',lokalizacja:'lokalizacja',cena:'cena',powierzchnia:'powierzchnia',budynek:'budynek i stan',udogodnienia:'udogodnienia',dzialka:'działka',okolica:'okolica',ogloszenie:'wymagania wobec ogłoszenia'};
+
+/* ---------- chipsy ---------- */
+const chips={};
+$$('[data-chips]').forEach(box=>{
+  const key=box.dataset.chips; chips[key]=[];
+  const inp=$('input',box);
+  const render=()=>{
+    $$('.chip',box).forEach(c=>c.remove());
+    chips[key].forEach((v,i)=>{
+      const c=document.createElement('span');c.className='chip';
+      c.innerHTML='<b></b><button type="button" aria-label="usuń">×</button>';
+      $('b',c).textContent=v;
+      $('button',c).onclick=()=>{chips[key].splice(i,1);render();update();};
+      box.insertBefore(c,inp);
+    });
+  };
+  const add=raw=>{raw.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean).forEach(v=>{if(!chips[key].some(x=>x.toLowerCase()===v.toLowerCase()))chips[key].push(v);});render();update();};
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===','){e.preventDefault();if(inp.value.trim())add(inp.value);inp.value='';}
+    else if(e.key==='Backspace'&&!inp.value&&chips[key].length){chips[key].pop();render();update();}
+  });
+  inp.addEventListener('blur',()=>{if(inp.value.trim()){add(inp.value);inp.value='';}});
+  box.addEventListener('click',()=>inp.focus());
+  box._set=arr=>{chips[key]=[...(arr||[])];render();};
+});
+
+/* ---------- stan ---------- */
+function readState(){
+  const s={};
+  $$('input,select,textarea',f).forEach(el=>{
+    if(!el.name)return;
+    if(el.type==='checkbox'){
+      if(el.value&&el.value!=='on'){(s[el.name]=s[el.name]||[]);if(el.checked)s[el.name].push(el.value);}
+      else if(el.checked)s[el.name]=true;
+    }else if(el.type==='radio'){if(el.checked&&el.value!=='')s[el.name]=el.value;}
+    else if(el.type==='number'){if(el.value!=='')s[el.name]=Number(el.value);}
+    else if(el.tagName==='TEXTAREA'&&(el.name==='grupyFb'||el.name==='biura'||el.name==='pomijane')){
+      const arr=el.value.split('\n').map(x=>x.trim()).filter(Boolean);if(arr.length)s[el.name]=arr;
+    }else if(el.value!=='')s[el.name]=el.value;
+  });
+  Object.keys(s).forEach(k=>{if(Array.isArray(s[k])&&!s[k].length)delete s[k];});
+  if(s.pomijane&&s.pomijane.join('\n')===DEFAULT_POMIJANE.join('\n'))delete s.pomijane;
+  Object.entries(chips).forEach(([k,v])=>{if(v.length||k==='grupyNie')s[k]=[...v];});
+  s.promien=Number(s.promien||0);if(!s.promien)delete s.promien;
+  if(s.transakcja==='kupno')delete s.transakcja; // domyślne
+  return s;
+}
+function writeState(s){
+  if(s&&typeof s.wiek==='string'){s=Object.assign({},s);const n=wiekDni(s.wiek);if(n)s.wiek=n;else delete s.wiek;}
+  f.reset();
+  $$('[data-chips]').forEach(b=>b._set([]));
+  Object.entries(s||{}).forEach(([k,v])=>{
+    if(chips[k]!==undefined){$(`[data-chips="${k}"]`)._set(v);return;}
+    const els=$$(`[name="${k}"]`,f);if(!els.length)return;
+    const el=els[0];
+    if(el.type==='checkbox'){
+      if(Array.isArray(v))els.forEach(e=>e.checked=v.includes(e.value));else el.checked=!!v;
+    }else if(el.type==='radio'){els.forEach(e=>e.checked=(e.value===String(v)));}
+    else if(Array.isArray(v))el.value=v.join('\n');
+    else el.value=v;
+  });
+  if(!s||!s.transakcja)$('[name=transakcja][value=kupno]').checked=true;
+  if(!s||!Array.isArray(s.grupyNie))$('[data-chips="grupyNie"]')._set(GRUPY_NIE_DOMYSLNE);
+  update();
+}
+
+/* ---------- widoczność zależna od typu ---------- */
+function applyVisibility(s){
+  const typ=s.typ||'mieszkanie', trans=s.transakcja||'kupno';
+  $$('[data-for]').forEach(el=>el.classList.toggle('hidden',!el.dataset.for.split(' ').includes(typ)));
+  $$('[data-not]').forEach(el=>el.classList.toggle('hidden',el.dataset.not.split(' ').includes(typ)));
+  $$('[data-trans]').forEach(el=>el.classList.toggle('hidden',el.dataset.trans!==trans));
+  $('[data-txt=cenaLbl]').textContent=trans==='wynajem'?'miesięcznie':'całkowita';
+  $('[data-txt=powLbl]').textContent=typ==='dzialka'?'działki':'użytkowa';
+}
+
+/* ---------- etykiety do podsumowania ---------- */
+const LBL={transakcja:v=>v==='wynajem'?'wynajem':'kupno',typ:v=>({mieszkanie:'mieszkanie',dom:'dom',dzialka:'działka',lokal:'lokal',garaz:'garaż',pokoj:'pokój',hala:'hala/magazyn'})[v],rynek:v=>'rynek '+v,odkogo:v=>v==='bezposrednio'?'tylko bezpośrednio':'tylko biura',
+ woj:v=>'woj. '+v,miasto:v=>v,promien:v=>'+'+v+' km',okolica:v=>'okolica: '+v,
+ cenaOd:v=>'cena od '+fmt(v),cenaDo:v=>'cena do '+fmt(v),cenaM2Od:v=>'od '+fmt(v)+'/m²',cenaM2Do:v=>'do '+fmt(v)+'/m²',czynszMax:v=>'czynsz ≤ '+fmt(v),kaucjaMax:v=>'kaucja ≤ '+fmt(v),
+ powOd:v=>'od '+v+' m²',powDo:v=>'do '+v+' m²',pokojeOd:v=>'od '+v+' pok.',pokojeDo:v=>'do '+v+' pok.',dzialkaOd:v=>'działka od '+v+' m²',dzialkaDo:v=>'działka do '+v+' m²',lazienkiMin:v=>'≥ '+v+' łaz.',kuchnia:v=>'kuchnia '+v,kondygnacje:v=>v,
+ pietroOd:v=>'piętro od '+v,pietroDo:v=>'piętro do '+v,pietraMax:v=>'≤ '+v+' pięter',rokOd:v=>'rok od '+v,rokDo:v=>'rok do '+v,winda:v=>'winda: '+v,
+ wiek:v=>{const n=wiekDni(v);return n?(n===1?'z 24 h':'z '+n+' dni'):'';},zdjeciaMin:v=>'≥ '+v+' zdjęć',zwierzeta:v=>'zwierzęta OK',najemcy:v=>v,dostepneOd:v=>'od '+v,okres:v=>'okres: '+v,
+ doCentrum:v=>'centrum ≤ '+v+' min',doPrzystanku:v=>'przystanek ≤ '+v+' min',doSzkoly:v=>'szkoła ≤ '+v+' min',doSklepu:v=>'sklep ≤ '+v+' min',doLasu:v=>'las ≤ '+v+' km',szerokoscMin:v=>'szer. ≥ '+v+' m',ksztalt:v=>v,opis:v=>'opis własny'};
+const BOOL={doNegocjacji:'do negocjacji',bezProwizji:'bez prowizji',bezCenyUzgodnienia:'bez „do uzgodnienia”',mediaWliczone:'media wliczone',bezKredytu:'kredyt OK',bezObciazen:'bez obciążeń',rozkladowe:'rozkładowe',dwustronne:'dwustronne',oknaWKazdym:'okna w każdym',garderoba:'garderoba',wysokie:'wysokie sufity',dwaPoziomy:'dwupoziomowe',bezWielkiejPlyty:'bez wielkiej płyty',bezPiecaWeglowego:'bez pieca',umowaOkazjonalna:'umowa okazjonalna',meldunek:'meldunek',palenieNie:'niepalący',zPlanem:'z planem',zTelefonem:'z telefonem',zAdresem:'z adresem',bezRezerwacji:'bez rezerwacji',bezInwestycji:'bez pakietów',bezTbs:'bez TBS',bezUdzialu:'bez udziałów'};
+const SKIP=new Set(['pomijane','grupyFb','biura','elastyczne','grupyNie']);
+function fmt(n){return new Intl.NumberFormat('pl-PL').format(n)+' zł';}
+function renderSummary(s){
+  const pelny=s;s=aktywne(s);
+  const box=$('#summary');box.innerHTML='';let n=0;
+  const push=(t,cls='')=>{const e=document.createElement('span');e.className='s '+cls;e.textContent=t;box.appendChild(e);};
+  push(LBL.typ(s.typ||'mieszkanie')+' · '+LBL.transakcja(s.transakcja||'kupno'),'k');
+  Object.entries(s).forEach(([k,v])=>{
+    if(k==='typ'||k==='transakcja'||SKIP.has(k))return;
+    if(Array.isArray(v)){
+      n+=v.length;
+      if(k==='slowaMusza')v.forEach(x=>push('musi: '+x,'k'));
+      else if(k==='slowaMinus'||k==='dzielniceNie')v.forEach(x=>push('nie: '+x,'x'));
+      else v.forEach(x=>push(x));
+    }else if(v===true){n++;push(BOOL[k]||k);}
+    else if(LBL[k]){n++;push(LBL[k](v));}
+  });
+  const el=(pelny.elastyczne||[]).filter(k=>{const d=$(`details[data-sekcja="${k}"]`,f);return d&&!d.classList.contains('hidden');});
+  push(el.length?'może się zmienić: '+el.map(k=>SEKCJE[k]).join(', '):'wszystkie sekcje: musi być spełnione',el.length?'x':'k');
+  $('#cnt').textContent=n;
+  $$('details.card').forEach(d=>{
+    let c=0;$$('input,select,textarea',d).forEach(el=>{if(!el.name||SKIP.has(el.name))return;if(el.closest('.hidden'))return;
+      if(el.type==='checkbox'){if(el.checked)c++;}else if(el.type==='radio'){if(el.checked&&el.value&&el.value!=='kupno'&&el.name!=='typ')c++;}else if(el.value!==''&&!(el.name==='promien'&&el.value==='0'))c++;});
+    $$('[data-chips]',d).forEach(b=>{if(!SKIP.has(b.dataset.chips))c+=chips[b.dataset.chips].length;});
+    $('summary .n',d).textContent=c||'';
+  });
+}
+
+/* ---------- generator wyszukiwań ---------- */
+const TYP_SLOWA={mieszkanie:{k:['mieszkanie','sprzedam mieszkanie'],w:['mieszkanie do wynajęcia','wynajmę mieszkanie']},
+ dom:{k:['dom','sprzedam dom'],w:['dom do wynajęcia','wynajmę dom']},dzialka:{k:['działka','sprzedam działkę'],w:['działka do wydzierżawienia','dzierżawa działki']},
+ lokal:{k:['lokal użytkowy','sprzedam lokal'],w:['lokal do wynajęcia','wynajmę lokal']},garaz:{k:['garaż','sprzedam garaż'],w:['garaż do wynajęcia']},
+ pokoj:{k:['pokój','sprzedam pokój'],w:['pokój do wynajęcia','wynajmę pokój']},hala:{k:['hala magazyn','sprzedam halę'],w:['hala do wynajęcia','magazyn do wynajęcia']}};
+const enc=encodeURIComponent;
+/* wiek ogłoszenia w dniach; stare profile miały d / w / m */
+function wiekDni(v){if(v===undefined||v===null||v==='')return 0;if(v==='d')return 1;if(v==='w')return 7;if(v==='m')return 30;const n=Math.round(Number(v));return n>0?n:0;}
+const g=(q,s)=>{const n=wiekDni(s.wiek);return 'https://www.google.com/search?q='+enc(q)+(n?'&tbs=qdr:d'+n:'');};
+const fbG=q=>'https://www.facebook.com/search/groups/?q='+enc(q);
+const fbP=q=>'https://www.facebook.com/search/posts/?q='+enc(q);
+function excl(s){return (s.pomijane||DEFAULT_POMIJANE).slice(0,12).map(d=>'-site:'+d).join(' ');}
+function groupIdFromUrl(u){const m=u.match(/facebook\.com\/groups\/([^/?#]+)/i);return m?m[1]:null;}
+
+function buildSearches(s){
+  const typ=s.typ||'mieszkanie', wyn=s.transakcja==='wynajem';
+  const tw=TYP_SLOWA[typ][wyn?'w':'k'];
+  const m=s.miasto||'', ex=excl(s);
+  const must=(s.slowaMusza||[]).map(x=>'"'+x+'"').join(' ');
+  const dz=s.dzielnice||[];
+  const groups=[];
+  if(!m){return [{title:'Zacznij od miasta',items:[],note:'Wpisz miasto lub gminę w sekcji Lokalizacja. Wtedy pojawią się gotowe wyszukiwania na Facebooku, w Google i na mapie.'}];}
+
+  // Facebook
+  const fb=[];
+  const typWord={mieszkanie:'mieszkania',dom:'domy',dzialka:'działki',lokal:'lokale',garaz:'garaże',pokoj:'pokoje',hala:'hale'}[typ];
+  [typWord+' '+m, 'nieruchomości '+m, m+' ogłoszenia', typWord+(wyn?' do wynajęcia ':' na sprzedaż ')+m, m+' bez pośredników', m+' mieszkania sprzedam wynajmę']
+    .forEach(q=>fb.push({t:'Znajdź grupy: '+q,u:fbG(q),tag:'grupy'}));
+  // grupy mieszkańców: właściciele często wystawiają dom tam, a nie w grupach z ogłoszeniami
+  [m,...dz.slice(0,3)].forEach(x=>fb.push({t:'Znajdź grupy mieszkańców: '+x,u:fbG(x+' mieszkańcy'),tag:'grupy'}));
+  // Marketplace: wtyczka ocenia karty ogłoszeń na liście wyników („Skanuj tę stronę”)
+  fb.push({t:'Marketplace: '+tw[0]+' '+m,u:'https://www.facebook.com/marketplace/search/?query='+enc(tw[0]+' '+m),tag:'marketplace'});
+  fb.push({t:'Marketplace: '+(wyn?'nieruchomości na wynajem':'nieruchomości na sprzedaż')+' (okolica ustawiona w Marketplace)',u:'https://www.facebook.com/marketplace/category/'+(wyn?'propertyrentals':'propertyforsale'),tag:'marketplace'});
+  fb.push({t:'Posty: '+tw[0]+' '+m+(must?' '+must:''),u:fbP(tw[0]+' '+m+(must?' '+must:'')),tag:'posty'});
+  if(s.odkogo!=='biuro')fb.push({t:'Posty: '+tw[1]+' '+m+' bezpośrednio',u:fbP(tw[1]+' '+m+' bezpośrednio'),tag:'posty'});
+  dz.slice(0,6).forEach(d=>fb.push({t:'Posty: '+tw[0]+' '+d,u:fbP(tw[0]+' '+d+' '+m),tag:'posty'}));
+  fb.push({t:'Google po Facebooku: '+tw[1]+' '+m,u:g('site:facebook.com/groups '+tw[1]+' '+m+(must?' '+must:''),s),tag:'google'});
+  (s.grupyFb||[]).forEach(u=>{const id=groupIdFromUrl(u);if(id)fb.push({t:'Szukaj w grupie '+id+': '+tw[0],u:'https://www.facebook.com/groups/'+id+'/search/?q='+enc(tw[0]+(dz[0]?' '+dz[0]:'')),tag:'moja grupa'});});
+  groups.push({title:'Facebook',items:fb,note:'Te linki otwierają wyszukiwarkę Facebooka, więc musisz być zalogowany w tej przeglądarce. Google nie widzi postów z prywatnych grup, dlatego grup szukasz tutaj, a ogłoszenia w nich ocenia wtyczka.'});
+
+  // biura i strony lokalne
+  const b=[];
+  b.push({t:'Mapa: biura nieruchomości w '+m,u:'https://www.google.com/maps/search/'+enc('biuro nieruchomości '+m),tag:'mapa'});
+  b.push({t:'Biura z własnymi ofertami: '+m,u:g('"biuro nieruchomości" '+m+' oferty '+tw[0]+' '+ex,s),tag:'google'});
+  b.push({t:tw[0]+' '+m+' poza portalami',u:g(tw[0]+' '+m+(must?' '+must:'')+' '+ex,s),tag:'google'});
+  if(s.odkogo!=='biuro')b.push({t:tw[1]+' '+m+' bezpośrednio',u:g(tw[1]+' '+m+' ("bezpośrednio" OR "bez pośredników" OR "od właściciela") '+ex,s),tag:'google'});
+  dz.slice(0,8).forEach(d=>b.push({t:tw[0]+' '+d,u:g(tw[0]+' "'+d+'" '+m+(must?' '+must:'')+' '+ex,s),tag:'google'}));
+  if(s.promien)b.push({t:tw[0]+' okolice '+m+' (gminy sąsiednie)',u:g(tw[0]+' "gmina" OR "okolice" '+m+' '+ex,s),tag:'google'});
+  b.push({t:'Lokalne portale ogłoszeniowe: '+m,u:g(m+' lokalne ogłoszenia nieruchomości portal '+ex,s),tag:'google'});
+  (s.biura||[]).forEach(u=>{let d='';try{d=new URL(u).hostname;}catch(e){d=u;}b.push({t:'Twoja strona: '+d,u:u.startsWith('http')?u:'https://'+u,tag:'moja'});b.push({t:'Google na '+d+': '+tw[0],u:g('site:'+d+' '+tw[0]+(dz[0]?' '+dz[0]:''),s),tag:'google'});});
+  groups.push({title:'Biura i strony lokalne',items:b});
+
+  // dodatkowe rodzaje źródeł
+  const z=s.zrodla||[];const extra=[];
+  if(z.includes('spoldzielnie'))extra.push({t:'Spółdzielnie: przetargi na lokale w '+m,u:g('spółdzielnia mieszkaniowa '+m+' przetarg lokal mieszkalny',s),tag:'google'});
+  if(z.includes('komornik')){extra.push({t:'Licytacje komornicze: '+m,u:'https://elicytacje.komornik.pl/items?keyword='+enc(m),tag:'portal'});extra.push({t:'Obwieszczenia komornicze: '+m,u:g('licytacja komornicza '+tw[0]+' '+m+' obwieszczenie',s),tag:'google'});}
+  if(z.includes('gmina'))extra.push({t:'Przetargi gminne: '+m,u:g('"przetarg" "nieruchomość" '+m+' site:bip.*.pl OR "urząd miasta" OR "urząd gminy"',s),tag:'google'});
+  if(z.includes('deweloper'))extra.push({t:'Deweloperzy: '+m,u:g('deweloper '+m+' nowe '+typWord+' oferta '+ex+' -site:rynekpierwotny.pl',s),tag:'google'});
+  if(z.includes('syndyk'))extra.push({t:'Sprzedaż przez syndyka: '+m,u:g('syndyk sprzedaż '+tw[0]+' '+m,s),tag:'google'});
+  if(z.includes('agencje')){extra.push({t:'Agencja Mienia Wojskowego: przetargi '+(s.woj?'woj. '+s.woj:m),u:g('site:amw.com.pl przetarg '+tw[0]+' '+(s.woj||m),s),tag:'google'});extra.push({t:'KOWR: przetargi na nieruchomości '+m,u:g('KOWR przetarg sprzedaż nieruchomości '+m+(typ==='dom'?' siedlisko':''),s),tag:'google'});}
+  if(z.includes('tablice'))extra.push({t:'Gazety i tablice ogłoszeń: '+m,u:g(m+' gazeta ogłoszenia nieruchomości OR "tablica ogłoszeń" '+tw[0],s),tag:'google'});
+  if(extra.length)groups.push({title:'Nietypowe źródła',items:extra});
+  return groups;
+}
+function renderSearches(s){
+  const out=$('#out');out.innerHTML='';
+  buildSearches(s).forEach(gr=>{
+    const d=document.createElement('div');d.className='group';
+    const h=document.createElement('h4');h.textContent=gr.title;
+    if(gr.items.length>1){const b=document.createElement('button');b.type='button';b.className='btn sm ghost';b.textContent='Otwórz wszystkie';b.title='Przeglądarka może zablokować wyskakujące okna. Zezwól dla tej strony.';b.onclick=()=>{zapiszPrzeglad();gr.items.forEach(i=>window.open(i.u,'_blank'));};h.appendChild(b);}
+    d.appendChild(h);
+    if(gr.note){const n=document.createElement('div');n.className='note';n.style.marginBottom='8px';n.textContent=gr.note;d.appendChild(n);}
+    const ul=document.createElement('ul');ul.className='links';
+    gr.items.forEach(i=>{const li=document.createElement('li');li.innerHTML='<a target="_blank" rel="noopener"><span class="t"></span><small></small></a><span class="tag"></span>';const a=$('a',li);a.href=i.u;$('.t',a).textContent=i.t;$('small',a).textContent=decodeURIComponent(i.u).replace(/^https?:\/\/(www\.)?/,'').slice(0,110);$('.tag',li).textContent=i.tag;ul.appendChild(li);});
+    d.appendChild(ul);out.appendChild(d);
+  });
+}
+function renderSources(s){
+  const o=$('#outSrc');o.innerHTML='';
+  const mk=(title,arr,empty)=>{const d=document.createElement('div');d.className='group';d.innerHTML='<h4></h4>';$('h4',d).textContent=title;
+    if(!arr||!arr.length){const e=document.createElement('div');e.className='empty';e.textContent=empty;d.appendChild(e);}
+    else{const l=document.createElement('div');l.className='src-list';arr.forEach(u=>{const it=document.createElement('div');it.className='it';it.innerHTML='<a target="_blank" rel="noopener"></a>';const a=$('a',it);a.href=u.startsWith('http')?u:'https://'+u;a.textContent=u.replace(/^https?:\/\/(www\.)?/,'');l.appendChild(it);});d.appendChild(l);
+      const b=document.createElement('button');b.type='button';b.className='btn sm ghost';b.textContent='Otwórz wszystkie';b.onclick=()=>{zapiszPrzeglad();arr.forEach(u=>window.open(u.startsWith('http')?u:'https://'+u,'_blank'));};d.appendChild(b);}
+    o.appendChild(d);};
+  mk('Grupy na Facebooku',s.grupyFb,'Brak. Dodaj adresy w sekcji „Źródła poza portalami” albo znajdź grupy przez wyszukiwania obok.');
+  mk('Biura i strony lokalne',s.biura,'Brak. Mapa Google w zakładce Wyszukiwania pokaże biura z okolicy, wklej tu adresy ich stron z ofertami.');
+  const n=document.createElement('div');n.className='note';n.innerHTML='Codzienna rutyna: otwórz wszystkie źródła, na każdej karcie kliknij wtyczkę i <b>Skanuj</b>. Dopasowane ogłoszenia dostaną zieloną ramkę i punkty.';o.appendChild(n);
+}
+
+/* ---------- prompt dla asystenta AI ---------- */
+const GROUP_LBL={stan:'akceptowany stan',zabudowa:'rodzaj zabudowy',material:'materiał',ogrzewanie:'akceptowane ogrzewanie',instal:'instalacje',udog:'wymagane udogodnienia',rodzajDomu:'rodzaj domu',przezn:'przeznaczenie działki',prawne:'stan prawny działki',media:'wymagane media',teren:'teren i dojazd',ekspozycja:'ekspozycja okien',otoczenie:'otoczenie',slowaMusza:'słowa, które muszą wystąpić w ogłoszeniu',slowaPlus:'słowa mile widziane',slowaMinus:'słowa wykluczające',dzielnice:'preferowane dzielnice i miejscowości',dzielniceNie:'miejsca do unikania'};
+const HARD=new Set(['cenaOd','cenaDo','cenaM2Od','cenaM2Do','czynszMax','kaucjaMax','powOd','powDo','pokojeOd','pokojeDo','dzialkaOd','dzialkaDo','pietroOd','pietroDo','pietraMax','rokOd','rokDo','lazienkiMin','slowaMusza','slowaMinus','dzielniceNie','rynek','odkogo','winda','bezRezerwacji','bezTbs','bezUdzialu','bezWielkiejPlyty','bezPiecaWeglowego','bezCenyUzgodnienia','bezInwestycji','bezKredytu','bezObciazen','zwierzeta','stan','rodzajDomu','przezn','media','prawne','szerokoscMin','dostepneOd','okres','najemcy','kuchnia','kondygnacje','ksztalt']);
+const META=new Set(['typ','transakcja','woj','miasto','promien','okolica','opis','grupyFb','biura','pomijane','zrodla','wiek','zdjeciaMin','zPlanem','zTelefonem','zAdresem','elastyczne','grupyNie','luzne']);
+function kv(k,v){
+  if(Array.isArray(v))return (GROUP_LBL[k]||k)+': '+v.join(', ');
+  if(v===true)return BOOL[k]||k;
+  if(LBL[k])return LBL[k](v);
+  return k+': '+v;
+}
+function buildPrompt(s){
+  s=aktywne(s);
+  const typ=LBL.typ(s.typ||'mieszkanie'), trans=s.transakcja==='wynajem'?'do wynajęcia':'do kupienia';
+  const L=[];
+  let where=s.miasto?('w: '+s.miasto+(s.promien?' i okolice do '+s.promien+' km':'')):'(lokalizacja nieokreślona)';
+  if(s.woj)where+=', woj. '+s.woj;
+  L.push('Szukam dla siebie ogłoszeń: '+typ+' '+trans+', '+where+'.');
+  if(s.dzielnice)L.push('Preferowane miejsca: '+s.dzielnice.join(', ')+'.');
+  if(s.okolica)L.push('Okolica, na której mi zależy: '+s.okolica+'.');
+  if(s.opis)L.push('\nCzego szukam, własnymi słowami:\n'+s.opis);
+  const hard=[],flex=[],soft=[],luz=new Set(luzneKlucze(s));
+  Object.entries(s).forEach(([k,v])=>{if(META.has(k)||k==='dzielnice')return;if(!HARD.has(k)){soft.push(kv(k,v));return;}(luz.has(k)&&k!=='bezRezerwacji'?flex:hard).push(kv(k,v));});
+  if(hard.length)L.push('\nKryteria twarde, muszą być spełnione (ogłoszenie, które ich nie spełnia, pomiń):\n- '+hard.join('\n- '));
+  if(flex.length)L.push('\nKryteria elastyczne, mogą się zmienić (lekkie przekroczenie nie wyklucza ogłoszenia: cena do 15% wyżej, metraż lub działka do 20% poza widełkami, pokoje albo piętro o jeden, rok budowy o 10 lat):\n- '+flex.join('\n- '));
+  if(soft.length)L.push('\nKryteria mile widziane (każde spełnione podnosi ocenę):\n- '+soft.join('\n- '));
+  const req=[];
+  if(wiekDni(s.wiek))req.push('tylko ogłoszenia dodane w ciągu ostatnich '+wiekDni(s.wiek)+' dni (starsze pomiń, to prawdopodobnie ogłoszenia, które użytkownik już widział)');
+  if(s.zdjeciaMin)req.push('minimum '+s.zdjeciaMin+' zdjęć');
+  if(s.zPlanem)req.push('z rzutem lub planem');if(s.zTelefonem)req.push('z numerem telefonu');if(s.zAdresem)req.push('z ulicą lub dokładnym adresem');
+  if(req.length)L.push('\nWymagania wobec samego ogłoszenia: '+req.join('; ')+'.');
+  const pom=(s.pomijane||DEFAULT_POMIJANE);
+  L.push('\nGdzie szukać. NIE korzystaj z tych portali i pomiń wyniki, które z nich pochodzą: '+pom.join(', ')+'.');
+  const src=['strony biur nieruchomości z '+(s.miasto||'tego terenu')+' i okolic (sekcje „oferty” na ich własnych stronach)','lokalne portale ogłoszeniowe i gazety z regionu','publiczne grupy i strony na Facebooku z ogłoszeniami nieruchomości z tego terenu','ogłoszenia bezpośrednio od właścicieli (strony typu „bez pośredników”)'];
+  const Z={agencje:'przetargi Agencji Mienia Wojskowego (amw.com.pl) i KOWR (Biuletyn Informacji Publicznej KOWR)',spoldzielnie:'przetargi spółdzielni mieszkaniowych na lokale',komornik:'licytacje komornicze (elicytacje.komornik.pl i obwieszczenia)',gmina:'przetargi gmin i Skarbu Państwa (BIP)',deweloper:'strony deweloperów z tego terenu',syndyk:'sprzedaż z masy upadłości przez syndyków',tablice:'lokalne tablice i gazety ogłoszeniowe'};
+  (s.zrodla||[]).forEach(z=>{if(Z[z])src.push(Z[z]);});
+  L.push('Szukaj w tych źródłach:\n- '+src.join('\n- '));
+  if(s.grupyFb)L.push('Grupy na Facebooku, które już znam (sprawdź, co da się tam zobaczyć publicznie):\n- '+s.grupyFb.join('\n- '));
+  if(s.biura)L.push('Strony biur i portali, które już znam (sprawdź je w pierwszej kolejności):\n- '+s.biura.join('\n- '));
+  const starts=buildSearches(s).filter(g=>g.title!=='Facebook').flatMap(g=>g.items).filter(i=>i.tag==='google'||i.tag==='mapa'||i.tag==='moja'||i.tag==='portal').slice(0,14);
+  if(starts.length)L.push('\nZacznij od tych adresów, po kolei (to zapytania z gotowym wykluczeniem portali, nie zmieniaj ich):\n- '+starts.map(i=>i.t+': '+i.u).join('\n- '));
+  L.push('\nJak pracować:\n1. Otwórz każdy adres z listy wyżej. Z wyników Google wybieraj tylko strony biur, lokalne portale i strony prywatne. Jeśli wynik prowadzi do '+pom.slice(0,3).join(', ')+' lub innego wykluczonego portalu, pomiń go bez otwierania.\n2. Na stronie biura wejdź do sekcji oferty i przejrzyj ogłoszenia dla tego terenu. Otwieraj ogłoszenia, nie oceniaj po tytule.\n3. Z każdego pasującego ogłoszenia spisz dane z treści. Nie zgaduj tego, czego w ogłoszeniu nie ma, napisz „brak danych”.\n4. Nie kończ po pierwszej stronie wyników. Sprawdź wszystkie adresy z listy i dopiero wtedy odpowiedz.');
+  L.push('\n(Prompt wygenerowany przez '+APP.nazwa+' v'+APP.ver+', '+new Date().toISOString().slice(0,10)+'.)');
+  const prawie=flex.length?'3. Posortuj od najlepiej dopasowanych. Osobno podaj 3–5 ogłoszeń „prawie pasujących”: spełniają wszystkie kryteria twarde, a nie spełniają jednego lub dwóch kryteriów elastycznych. Przy każdym napisz, którego kryterium nie spełnia i o ile (np. cena o 6% wyższa). Kryteriów twardych nie naginaj.':'3. Posortuj od najlepiej dopasowanych. Osobno podaj 3–5 ogłoszeń „prawie pasujących”: spełniają wszystkie kryteria twarde, ale brakuje im jednego lub dwóch kryteriów mile widzianych albo ogłoszenie nie podaje danych, żeby to ustalić. Napisz, czego brakuje. Kryteriów twardych nie naginaj.';
+  L.push('\nJak odpowiedzieć:\n1. Podaj ogłoszenia, które spełniają wszystkie kryteria twarde'+(flex.length?' i elastyczne':'')+' i mają działający link. Nie wymyślaj ofert i nie podawaj ogłoszeń, których nie otworzyłeś.\n2. Dla każdego: link, źródło, data ogłoszenia, cena, cena za m², metraż, pokoje, piętro, lokalizacja, co pasuje, czego brakuje lub nie da się ustalić, ocena 0–100.\n'+prawie+'\n4. Na końcu wymień źródła, które sprawdziłeś, i te, do których nie udało się wejść (np. prywatne grupy, strony wymagające logowania).');
+  return L.join('\n');
+}
+
+/* ---------- update ---------- */
+let t;
+function update(){
+  const s=readState();applyVisibility(s);renderSummary(s);
+  $('#json').textContent=JSON.stringify(profile(s),null,2);
+  $('#prompt').textContent=buildPrompt(s);
+  clearTimeout(t);t=setTimeout(()=>{renderSearches(s);renderSources(s);},120);
+  try{localStorage.setItem(LS_CUR,JSON.stringify(s));}catch(e){}
+}
+// Pola ukryte dla wybranego typu (np. piętro przy domu) zostają w stanie formularza, ale nie trafiają do oceny ani promptu.
+// Wcześniej piętro z profilu mieszkania odrzucało domy parterowe.
+function aktywne(s){const o={};Object.entries(s).forEach(([k,v])=>{const box=$(`[data-chips="${k}"]`,f);const els=box?[box]:$$(`[name="${k}"]`,f);
+  if(els.length&&els.every(e=>{const h=e.closest('.hidden');return h&&f.contains(h);}))return;o[k]=v;});return o;}
+// nazwy pól z sekcji oznaczonych „może się zmienić”; po nich wtyczka poznaje kryteria elastyczne
+function luzneKlucze(s){const el=new Set(s.elastyczne||[]);const out=new Set();
+  $$('details[data-sekcja]',f).forEach(d=>{if(!el.has(d.dataset.sekcja))return;$$('[name]',d).forEach(x=>{if(!['elastyczne','typ','transakcja'].includes(x.name))out.add(x.name);});$$('[data-chips]',d).forEach(b=>out.add(b.dataset.chips));});
+  return [...out];}
+function profile(s){const a=aktywne(s);if(a.elastyczne)a.luzne=luzneKlucze(a);return Object.assign({_app:'szukacz-nieruchomosci',_v:1,_wersja:APP.ver,_data:new Date().toISOString().slice(0,10)},a);}
+f.addEventListener('input',update);f.addEventListener('change',update);
+$$('.tryb').forEach(l=>{const inp=$('input',l);l.tabIndex=0;
+  const flip=e=>{e.preventDefault();e.stopPropagation();inp.checked=!inp.checked;update();};
+  l.addEventListener('click',flip);l.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter')flip(e);});});
+
+/* ---------- oferty: katalog ze statusami ---------- */
+const LS_OF='szukacz.oferty';
+const STATUSY=[['nowe','Nowe'],['umowic','Do umówienia'],['raport','Przygotować raport'],['czekam','Czekam na spotkanie'],['po_wizycie','Po wizycie'],['decyzja','Do decyzji'],['odpada','Odpada']];
+const ZRODLA=[['fb','Facebook'],['biuro','Biuro nieruchomości'],['bezposrednio','Bezpośrednio od właściciela'],['portal','Portal'],['ai','Asystent AI'],['inne','Inne']];
+const stLbl=k=>(STATUSY.find(x=>x[0]===k)||[k,k])[1], zrLbl=k=>(ZRODLA.find(x=>x[0]===k)||[k,k||'nieznane'])[1];
+let oferty=[], ofFilter={status:'',q:'',sort:'ocena',zrodlo:''};
+function loadOferty(){try{oferty=JSON.parse(localStorage.getItem(LS_OF)||'[]');}catch(e){oferty=[];}if(!Array.isArray(oferty))oferty=[];}
+function saveOferty(){localStorage.setItem(LS_OF,JSON.stringify(oferty));updateOfCount();}
+function updateOfCount(){$('#ofCount').textContent=oferty.filter(o=>o.status!=='odpada').length;}
+function nextId(){const d=new Date().toISOString().slice(0,10).replace(/-/g,'');const used=new Set(oferty.map(o=>o.id));let n=1,id;do{id='OF-'+d+'-'+String(n++).padStart(3,'0');}while(used.has(id));return id;}
+function slug(x){return (x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/Ł/g,'L').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+function zgadnijTyp(txt){const t=(txt||'').toLowerCase();if(/dzia[łl]k/.test(t))return 'dzialka';if(/\bdom(u|ek|em|y)?\b|bli[źz]niak|szeregow|segment/.test(t))return 'dom';if(/mieszkani|kawalerk|apartament/.test(t))return 'mieszkanie';if(/lokal/.test(t))return 'lokal';if(/gara[żz]/.test(t))return 'garaz';if(/hal[aę]|magazyn/.test(t))return 'hala';return '';}
+function nazwaOferty(o){const t=o.typ||zgadnijTyp((o.opis||'')+' '+(o.nazwa||''))||readState().typ||'mieszkanie';
+  if(!o.miejscowosc&&!o.cena&&!o.pow){let h='';try{h=new URL(o.link).hostname.replace(/^www\./,'');}catch(e){}return 'OFERTA-'+(slug(h)||'bez-linku');}const parts=[({mieszkanie:'MIESZK',dom:'DOM',dzialka:'DZIALKA',lokal:'LOKAL',garaz:'GARAZ',pokoj:'POKOJ',hala:'HALA'})[t]||t.toUpperCase()];if(o.miejscowosc)parts.push(slug(o.miejscowosc).split('-').slice(0,2).join('-'));if(o.cena)parts.push(Math.round(o.cena/1000)+'k');if(o.pow)parts.push(Math.round(o.pow)+'m2');return parts.join('-');}
+function normLink(u){return (u||'').trim().replace(/[?#].*$/,'').replace(/\/$/,'');}
+function addOferta(data){
+  const link=normLink(data.link);
+  if(link&&oferty.some(o=>normLink(o.link)===link))return null;
+  const now=new Date().toISOString();
+  const o=Object.assign({status:'nowe',ocena:0,zrodlo:'inne',dodano:now,historia:[]},data,{id:nextId(),link:data.link||''});
+  if(!o.typ)o.typ=zgadnijTyp(o.opis)||readState().typ||'mieszkanie';
+  if(!o.nazwa)o.nazwa=nazwaOferty(o);
+  o.historia.push({status:o.status,ts:now});
+  oferty.unshift(o);return o;
+}
+function setStatus(o,st){if(o.status===st)return;o.status=st;(o.historia=o.historia||[]).push({status:st,ts:new Date().toISOString()});}
+function parseOfertyText(txt){
+  txt=txt.trim();if(!txt)return [];
+  try{const j=JSON.parse(txt);const arr=Array.isArray(j)?j:(j.oferty||j.results||[j]);return arr.map(x=>({
+    link:x.link||x.url||'',nazwa:x.nazwa||'',zrodlo:x.zrodlo||(/facebook\.com/.test(x.link||'')?'fb':'inne'),miejscowosc:x.miejscowosc||x.lokalizacja||'',
+    cena:x.cena||(x.data&&x.data.price)||undefined,pow:x.pow||(x.data&&x.data.area)||undefined,pokoje:x.pokoje||(x.data&&x.data.rooms)||undefined,pietro:x.pietro||(x.data&&x.data.floor!==undefined?String(x.data.floor):''),
+    opis:x.opis||x.text||x.snippet||'',pasuje:x.pasuje||(x.why||[]).join(', '),brakuje:x.brakuje||[...(x.miss||[]).map(m=>'odchylenie: '+m),...(x.bad||[])].join(', '),pct:x.pct,grupa:x.group||x.grupa||'',dataOgl:x.date||x.dataOgl||'',notatki:x.notatki||'',status:x.status||'nowe',ocena:x.ocena||0}));}catch(e){}
+  return txt.split('\n').map(l=>l.trim()).filter(l=>/^https?:\/\//.test(l)).map(l=>({link:l,zrodlo:/facebook\.com/.test(l)?'fb':'ai'}));
+}
+function fmtZl(n){return n?new Intl.NumberFormat('pl-PL').format(n)+' zł':'';}
+function renderOferty(){
+  const pipe=$('#pipeline');pipe.innerHTML='';
+  const mk=(k,l)=>{const b=document.createElement('button');b.type='button';b.className=ofFilter.status===k?'on':'';const n=k===''?oferty.length:oferty.filter(o=>o.status===k).length;b.innerHTML='<span></span><b></b>';$('span',b).textContent=l;$('b',b).textContent=n;b.onclick=()=>{ofFilter.status=k;renderOferty();};pipe.appendChild(b);};
+  mk('','Wszystkie');STATUSY.forEach(([k,l])=>mk(k,l));
+  const q=ofFilter.q.toLowerCase();
+  let list=oferty.filter(o=>(!ofFilter.status||o.status===ofFilter.status)&&(!ofFilter.zrodlo||o.zrodlo===ofFilter.zrodlo)&&(!q||[o.nazwa,o.miejscowosc,o.notatki,o.opis,o.grupa,o.id].join(' ').toLowerCase().includes(q)));
+  const stIdx=k=>STATUSY.findIndex(x=>x[0]===k);
+  list.sort((a,b)=>ofFilter.sort==='cena'?((a.cena||1e12)-(b.cena||1e12)):ofFilter.sort==='dodano'?(b.dodano||'').localeCompare(a.dodano||''):ofFilter.sort==='status'?stIdx(a.status)-stIdx(b.status):((b.ocena||0)-(a.ocena||0)||(b.pct||0)-(a.pct||0)||(b.dodano||'').localeCompare(a.dodano||'')));
+  const box=$('#ofList');box.innerHTML='';
+  if(!list.length){box.innerHTML='<div class="card"><div class="pad empty">'+(oferty.length?'Nic nie pasuje do filtra.':'Katalog jest pusty. Dodaj ofertę formularzem obok, wklej oferty z wtyczki albo listę linków.')+'</div></div>';return;}
+  list.forEach(o=>{
+    const d=document.createElement('div');d.className='of';d.dataset.status=o.status;
+    d.innerHTML=`<div class="of-head"><span class="nm"></span><span class="id"></span><span class="stars"></span><select></select></div>
+      <div class="of-meta"></div><div class="of-why"></div><div class="of-txt short"></div><div class="of-notes hidden"></div>
+      <div class="of-foot"><a target="_blank" rel="noopener">otwórz ogłoszenie</a><button type="button" class="lnk more">pokaż całość</button><button type="button" class="lnk edit">edytuj</button><button type="button" class="lnk del danger">usuń</button><span class="muted" style="margin-left:auto;font-size:12px"></span></div>`;
+    $('.nm',d).textContent=o.nazwa;$('.id',d).textContent=o.id;
+    const st=$('.stars',d);for(let i=1;i<=5;i++){const b=document.createElement('button');b.type='button';b.textContent='★';b.className=i<=(o.ocena||0)?'on':'';b.title=i+'/5';b.onclick=()=>{o.ocena=(o.ocena===i?0:i);saveOferty();renderOferty();};st.appendChild(b);}
+    const sel=$('select',d);STATUSY.forEach(([k,l])=>{const op=document.createElement('option');op.value=k;op.textContent=l;sel.appendChild(op);});sel.value=o.status;sel.onchange=()=>{setStatus(o,sel.value);saveOferty();renderOferty();};
+    const meta=[];if(o.cena)meta.push('<b>'+fmtZl(o.cena)+'</b>');if(o.cena&&o.pow)meta.push(fmtZl(Math.round(o.cena/o.pow))+'/m²');if(o.pow)meta.push('<b>'+o.pow+' m²</b>');if(o.pokoje)meta.push(o.pokoje+' pok.');if(o.pietro)meta.push('piętro '+o.pietro);if(o.miejscowosc)meta.push(o.miejscowosc);meta.push(zrLbl(o.zrodlo)+(o.grupa?': '+o.grupa:''));if(o.dataOgl)meta.push('ogłoszenie z '+String(o.dataOgl).slice(0,10));
+    $('.of-meta',d).innerHTML=meta.map(m=>'<span>'+m+'</span>').join('');
+    const why=[];if(o.pct!==undefined&&o.pct!=='')why.push('dopasowanie '+o.pct+'%');if(o.pasuje)why.push('pasuje: '+o.pasuje);if(o.brakuje)why.push('brakuje: '+o.brakuje);$('.of-why',d).textContent=why.join(' · ');if(!why.length)$('.of-why',d).remove();
+    if(o.opis)$('.of-txt',d).textContent=o.opis;else{$('.of-txt',d).remove();$('.more',d).remove();}
+    if(o.notatki){const n=$('.of-notes',d);n.classList.remove('hidden');n.textContent='Notatki: '+o.notatki;}
+    const a=$('.of-foot a',d);if(o.link)a.href=o.link;else a.remove();
+    const m=$('.more',d);if(m)m.onclick=()=>{const t=$('.of-txt',d);t.classList.toggle('short');m.textContent=t.classList.contains('short')?'pokaż całość':'zwiń';};
+    $('.edit',d).onclick=()=>editOferta(o);
+    $('.del',d).onclick=()=>{if(confirm('Usunąć „'+o.nazwa+'” z katalogu? Jeśli chcesz tylko odłożyć, ustaw status „Odpada”.')){oferty=oferty.filter(x=>x!==o);saveOferty();renderOferty();}};
+    $('.of-foot span',d).textContent='dodano '+(o.dodano||'').slice(0,10)+(o.historia&&o.historia.length>1?' · status zmieniony '+o.historia[o.historia.length-1].ts.slice(0,10):'');
+    box.appendChild(d);
+  });
+}
+function ofFormEl(n){return $('#ofForm [name="'+n+'"]');}
+function editOferta(o){
+  ['id','link','typ','zrodlo','miejscowosc','cena','pow','pokoje','pietro','nazwa','status','ocena','opis','notatki'].forEach(k=>{const el=ofFormEl(k);if(el)el.value=o[k]===undefined||o[k]===null?'':o[k];});
+  $('#ofFormTitle').textContent='Edytuj: '+o.nazwa;$('#ofSave').textContent='Zapisz zmiany';$('#ofCancel').classList.remove('hidden');
+  $('#ofForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function resetOfForm(){$('#ofForm').reset();ofFormEl('id').value='';$('#ofFormTitle').textContent='Dodaj ofertę';$('#ofSave').textContent='Zapisz ofertę';$('#ofCancel').classList.add('hidden');}
+function initOferty(){
+  const zs=ofFormEl('zrodlo');ZRODLA.forEach(([k,l])=>{const op=document.createElement('option');op.value=k;op.textContent=l;zs.appendChild(op);const o2=op.cloneNode(true);$('#ofZrodlo').appendChild(o2);});
+  const ss=ofFormEl('status');STATUSY.forEach(([k,l])=>{const op=document.createElement('option');op.value=k;op.textContent=l;ss.appendChild(op);});
+  $('#ofSave').onclick=()=>{
+    const g=k=>{const el=ofFormEl(k);return el?el.value.trim():'';};
+    const data={link:g('link'),typ:g('typ'),zrodlo:g('zrodlo'),miejscowosc:g('miejscowosc'),cena:g('cena')?+g('cena'):undefined,pow:g('pow')?+g('pow'):undefined,pokoje:g('pokoje')?+g('pokoje'):undefined,pietro:g('pietro'),nazwa:g('nazwa'),status:g('status'),ocena:+g('ocena')||0,opis:g('opis'),notatki:g('notatki')};
+    if(!data.link&&!data.nazwa&&!data.miejscowosc&&!data.opis){toast('Podaj przynajmniej link, nazwę albo miejscowość.');return;}
+    const id=g('id');
+    if(id){const o=oferty.find(x=>x.id===id);if(o){const st=data.status;delete data.status;if(!data.typ)delete data.typ;Object.assign(o,data);if(!o.nazwa)o.nazwa=nazwaOferty(o);setStatus(o,st);toast('Zapisano zmiany.');}}
+    else{const o=addOferta(data);if(!o){toast('Ta oferta już jest w katalogu (ten sam link).');return;}toast('Dodano „'+o.nazwa+'”.');}
+    saveOferty();resetOfForm();renderOferty();
+  };
+  $('#ofCancel').onclick=resetOfForm;
+  $('#ofImport').onclick=()=>{const arr=parseOfertyText($('#ofPaste').value);if(!arr.length){toast('Nie rozpoznałem ofert. Wklej JSON z wtyczki albo linki, jeden w linii.');return;}let n=0,dup=0;arr.forEach(x=>{if(addOferta(x))n++;else dup++;});saveOferty();renderOferty();$('#ofPaste').value='';toast('Dodano '+n+(dup?', pominięto '+dup+' duplikatów':'')+'.');};
+  $('#ofQ').oninput=e=>{ofFilter.q=e.target.value;renderOferty();};
+  $('#ofSort').onchange=e=>{ofFilter.sort=e.target.value;renderOferty();};
+  $('#ofZrodlo').onchange=e=>{ofFilter.zrodlo=e.target.value;renderOferty();};
+}
+
+/* ---------- przełączanie widoków ---------- */
+$$('.views button').forEach(b=>b.onclick=()=>{$$('.views button').forEach(x=>x.classList.toggle('on',x===b));$('#view-profil').classList.toggle('hidden',b.dataset.view!=='profil');$('#view-oferty').classList.toggle('hidden',b.dataset.view!=='oferty');if(b.dataset.view==='oferty')renderOferty();localStorage.setItem('szukacz.view',b.dataset.view);});
+
+/* ---------- kopia zapasowa ---------- */
+function kopia(){return {_app:'szukacz-nieruchomosci',_typ:'kopia',_v:1,_wersja:APP.ver,_data:new Date().toISOString().slice(0,10),current:readState(),profiles:loadProfiles(),oferty};}
+function wczytajKopie(obj){
+  if(!obj||obj._app!=='szukacz-nieruchomosci')throw new Error('to nie jest plik z tej aplikacji');
+  if(obj._typ==='kopia'){
+    const p=loadProfiles();Object.assign(p,obj.profiles||{});saveProfiles(p);fillProfileSel();
+    let n=0;(obj.oferty||[]).forEach(o=>{if(!oferty.some(x=>x.id===o.id||(o.link&&normLink(x.link)===normLink(o.link)))){oferty.push(o);n++;}});saveOferty();
+    if(obj.current)writeState(obj.current);
+    return 'Wczytano kopię: '+Object.keys(obj.profiles||{}).length+' profili, '+n+' nowych ofert.';
+  }
+  const st=Object.assign({},obj);['_app','_v','_data'].forEach(k=>delete st[k]);writeState(st);return 'Wczytano profil z pliku.';
+}
+
+/* ---------- przyciski ---------- */
+function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800);}
+$('#copyProfile').onclick=async()=>{const txt=JSON.stringify(profile(readState()));try{await navigator.clipboard.writeText(txt);toast('Profil skopiowany. Otwórz okienko wtyczki w Chrome, kliknij „Wklej / zmień profil” i wklej.');}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Profil skopiowany.');}};
+$('#copyPrompt').onclick=async()=>{const txt=buildPrompt(readState());try{await navigator.clipboard.writeText(txt);toast('Prompt skopiowany. Wklej go do asystenta AI z wyszukiwaniem w internecie.');}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Prompt skopiowany.');}};
+$('#dlProfile').onclick=()=>{const blob=new Blob([JSON.stringify(kopia(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='szukacz-kopia-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Zapisano kopię: profil, zapisane profile i oferty.');};
+$('#loadFileBtn').onclick=()=>$('#loadFile').click();
+$('#loadFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{toast(wczytajKopie(JSON.parse(r.result)));renderOferty();}catch(err){toast('Nie udało się wczytać: '+err.message);}};r.readAsText(f);e.target.value='';};
+$('#resetAll').onclick=()=>{if(confirm('Wyczyścić wszystkie pola?')){writeState({});toast('Wyczyszczone.');}};
+$$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.tab').forEach(x=>x.classList.toggle('on',x.id==='tab-'+b.dataset.tab));});
+
+/* ---------- profile ---------- */
+function loadProfiles(){try{return JSON.parse(localStorage.getItem(LS_PROF)||'{}');}catch(e){return {};}}
+function saveProfiles(p){localStorage.setItem(LS_PROF,JSON.stringify(p));}
+function fillProfileSel(sel){const el=$('#profileSel');const p=loadProfiles();el.innerHTML='<option value="">Zapisane profile…</option>';Object.keys(p).sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;el.appendChild(o);});if(sel)el.value=sel;}
+$('#saveProfile').onclick=()=>{let n=$('#profileName').value.trim()||$('#profileSel').value;if(!n){const s=readState();n=(LBL.typ(s.typ||'mieszkanie'))+' '+(s.miasto||'')+' '+(s.transakcja||'kupno');n=n.trim();}const p=loadProfiles();p[n]=readState();saveProfiles(p);fillProfileSel(n);$('#profileName').value='';toast('Zapisano profil „'+n+'”.');};
+$('#delProfile').onclick=()=>{const n=$('#profileSel').value;if(!n)return;if(!confirm('Usunąć profil „'+n+'”?'))return;const p=loadProfiles();delete p[n];saveProfiles(p);fillProfileSel('');toast('Usunięto.');};
+$('#profileSel').onchange=e=>{const n=e.target.value;if(!n)return;const p=loadProfiles();if(p[n]){writeState(p[n]);$('#profileName').value=n;toast('Wczytano „'+n+'”.');}};
+
+/* ---------- motyw ---------- */
+const th=localStorage.getItem(LS_THEME);if(th)document.documentElement.dataset.theme=th;
+$('#theme').onclick=()=>{const cur=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');const nx=cur==='dark'?'light':'dark';document.documentElement.dataset.theme=nx;localStorage.setItem(LS_THEME,nx);};
+
+/* ---------- ostatni przegląd: ile dni minęło od ostatniego „Otwórz wszystkie” ---------- */
+const LS_PRZEGLAD='szukacz.przeglad';
+function zapiszPrzeglad(){try{localStorage.setItem(LS_PRZEGLAD,String(Date.now()));}catch(e){}pokazPrzeglad();}
+function dniOdPrzegladu(){try{const t=Number(localStorage.getItem(LS_PRZEGLAD));if(!t)return 0;/* zaokrąglenie w górę, żeby nie zgubić ogłoszeń z dnia przeglądu */return Math.max(1,Math.ceil((Date.now()-t)/86400000));}catch(e){return 0;}}
+function pokazPrzeglad(){const b=$('#odPrzegladu');if(!b)return;const n=dniOdPrzegladu();if(!n){b.hidden=true;return;}b.hidden=false;b.textContent='Od ostatniego przeglądu: '+n+' '+(n===1?'dzień':'dni');b.onclick=()=>{const el=$('[name="wiek"]',f);el.value=n;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));};}
+
+/* ---------- start ---------- */
+pokazPrzeglad();
+fillProfileSel();
+let cur=null;try{cur=JSON.parse(localStorage.getItem(LS_CUR)||'null');}catch(e){}
+writeState(cur||{});
+loadOferty();initOferty();updateOfCount();
+if(localStorage.getItem('szukacz.view')==='oferty')$('.views button[data-view=oferty]').click();
+})();
+</script>
+</body>
+</html>

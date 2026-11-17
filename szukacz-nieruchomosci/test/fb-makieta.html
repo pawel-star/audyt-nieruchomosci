@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Makieta Facebooka do testu wtyczki</title>
+<style>body{font:15px/1.4 sans-serif;margin:20px;max-width:760px}.post{border:1px solid #ccc;margin:12px 0;padding:10px}[role=dialog]{position:fixed;inset:40px;background:#fff;border:2px solid #333;overflow:auto;padding:16px}li{list-style:none;margin:6px 0;padding:6px;background:#f2f2f2}</style>
+</head>
+<body>
+<!--
+  Makieta struktury strony grupy na Facebooku do testu wtyczki (test/fb-makieta.html?w=A|B|C|D).
+  A: posty bez role="article", komentarze z role="article" (obecny układ Facebooka, który mylił starą wersję)
+  B: posty z role="article", komentarze zagnieżdżone (starszy układ)
+  C: post otwarty w okienku nad feedem
+  D: Marketplace, karty ogłoszeń
+  E: układ podpatrzony na prawdziwych grupach 15.11.2026 (opis przy budowie scenariusza niżej)
+-->
+<div id="app"></div>
+<script>
+const w = new URLSearchParams(location.search).get('w') || 'A';
+const komentarz = (kto, txt, art = true) => `<li><div ${art ? 'role="article" aria-label="Komentarz użytkownika ' + kto + '"' : ''}><a href="/groups/1/posts/111/?comment_id=9">${kto}</a><div>${txt}</div><span>Lubię to!</span> <span>Odpowiedz</span> <span>2 godz.</span></div></li>`;
+const post = (id, kto, txt, kom, art) => `<div ${art ? 'role="article" aria-labelledby="x' + id + '"' : ''} class="post">
+  <div><a href="/groups/1/user/5">${kto}</a> · <a href="/groups/1/posts/${id}/?__cft__=abc">3 godz.</a></div>
+  <div data-ad-preview="message"><div dir="auto">${txt}</div></div>
+  <div>12 · 3 komentarze</div>
+  <div><span>Lubię to!</span> <span>Komentarz</span> <span>Udostępnij</span></div>
+  <ul>${kom}</ul>
+  <div>Napisz komentarz…</div>
+</div>`;
+const P1 = 'Sprzedam dom wolnostojący w Kórniku. Powierzchnia 140 m2, działka 850 m2. Cena 849 000 zł. Stan do zamieszkania, bez pośredników.';
+const P2 = 'Na sprzedaż dom w Bninie, 130 m2, działka 700 m2, 4 pokoje, cena 820 tys. zł, kontakt prywatnie.';
+const K1 = komentarz('Anna Nowak', 'Chętnie kupię, proszę o priv') + komentarz('Piotr Zieliński', 'Ile za m2? Do wynajęcia też?');
+const K2 = komentarz('Ewa Kot', 'Szukam czegoś podobnego, 2 mln budżet');
+let html = '';
+if (w === 'A') html = `<div role="main"><h1>Nieruchomości Kórnik</h1><div>O grupie: sprzedam, kupię, wynajmę mieszkania i domy</div><div role="feed"><div>${post(111, 'Jan Kowalski', P1, K1, false)}</div><div>${post(222, 'Maria Lis', P2, K2, false)}</div><div><div>Ładowanie…</div></div></div></div>`;
+if (w === 'B') html = `<div role="main"><div role="feed"><div>${post(111, 'Jan Kowalski', P1, K1, true)}</div><div>${post(222, 'Maria Lis', P2, K2, true)}</div></div></div>`;
+if (w === 'C') html = `<div role="main"><div role="feed"><div>${post(222, 'Maria Lis', P2, K2, false)}</div><div>${post(333, 'Ola Grzyb', 'Oddam za darmo kanapę, odbiór Kórnik', '', false)}</div></div></div>
+  <div role="dialog" aria-label="Post użytkownika Jan Kowalski">${post(111, 'Jan Kowalski', P1, K1, false)}</div>`;
+// E: układ podpatrzony na grupach 2026-11-15. Posty bez role="article", części oznaczone data-ad-rendering-role,
+// ukryty ciąg „Facebook…”, data w ukrytym opisie odnośnika (aria-labelledby), adres posta dopiero po najechaniu,
+// pole „Skomentuj jako”, komentarze z aria-label „Komentarz <imię> 2 godz. temu”, zaślepka ładowania z role="article".
+const smiec = Array(11).fill('<span>Facebook</span>').join(' ');
+let nr = 0;
+const postE = (id, kto, czas, tresc, dodatki, kom) => { nr++; return `<div><div>
+  <div>${smiec}<span data-ad-rendering-role="profile_name"><a href="/groups/2/user/${nr}/?__cft__[0]=x">${kto}</a></span>
+  <a href="?__cft__[0]=AZj${nr}" aria-labelledby="lab${nr}" data-post="/groups/2/posts/${id}/"></a><span id="lab${nr}" style="position:absolute;left:-9999px">${czas}</span></div>
+  <div data-ad-rendering-role="story_message"><div dir="auto">${tresc}</div></div>${dodatki}
+  <div><span data-ad-rendering-role="like_button"><svg width="10" height="10"></svg></span> <span data-ad-rendering-role="comment_button"></span></div>
+  ${kom}<div role="textbox" aria-label="Skomentuj jako Paweł">Skomentuj jako Paweł</div> ${smiec}</div></div>`; };
+const komE = (kto, txt) => `<div role="article" aria-label="Komentarz ${kto} 2 godz. temu"><a href="#">${kto}</a><div>${txt}</div><span>2 godz.</span> <span>Lubię to!</span> <span>Odpowiedz</span></div>`;
+if (w === 'E') {
+  html = `<div role="main"><div role="feed">
+    <div><div>sortuj aktualności w grupie według Nowe posty</div></div>
+    ${postE(901, 'Ewa K.', '3 godz. temu', 'Własny dom w Poznaniu sprzedam. Taras 40 m2 na piętrze, można zabudować i powstaje dodatkowe 40 m2.', '<div><span data-ad-rendering-role="title">Przytulny dom | Radojewo | 110,90 m2</span></div>', komE('Anna N.', 'Chętnie kupię, proszę o priv') + komE('Piotr Z.', 'Do wynajęcia też?'))}
+    ${postE(902, 'Jan B.', 'dzień temu', 'Poznań. Mały domek w typie czworaka.', '<div><span data-ad-rendering-role="meta">999 000 ZŁ · POZNAŃ, POLSKA</span> <div role="button">Wyślij wiadomość</div></div>', '')}
+    <div><div role="article"></div></div>
+  </div></div>`;
+}
+if (w === 'D') html =`<div role="main"><a href="/marketplace/item/123456/?ref=search"><span>849 000 zł</span><span>Dom wolnostojący 140 m2</span><span>Kórnik, PL</span></a> <a href="/marketplace/item/654321/"><span>1 200 zł</span><span>Rower górski</span><span>Kórnik, PL</span></a></div>`;
+document.getElementById('app').innerHTML = html;
+// jak na Facebooku: odnośnik z datą dostaje adres posta dopiero po najechaniu
+document.querySelectorAll('a[data-post]').forEach(a => a.addEventListener('mouseover', () => a.setAttribute('href', a.dataset.post)));
+if (w === 'D') history.replaceState(null, '', '/marketplace/kornik/search/?w=D');
+window.__szukaczTestFB = true;
+const s = document.createElement('script'); s.src = '../wtyczka/content.js';
+if (w === 'D') s.src = '/wtyczka/content.js';
+// ?v=nazwa-pliku pozwala porównać ze starą wersją z kopii w katalogu szukacza
+const v = new URLSearchParams(location.search).get('v'); if (v) { s.src = '/' + v; window.chrome = { runtime: { onMessage: { addListener() {} } } }; }
+document.body.appendChild(s);
+</script>
+</body>
+</html>
