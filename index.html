@@ -444,7 +444,7 @@ function note(k,v){ S.n[k]=v; if(v&&v.trim())mark(k,'reczne'); save(); paintBar(
 /* ============================================================
    TOŻSAMOŚĆ APLIKACJI
    ============================================================ */
-const APP={name:'Audyt Nieruchomości', ver:'3.9', data:'listopad 2026',
+const APP={name:'Audyt Nieruchomości', ver:'3.10', data:'listopad 2026',
   prawo:'stan prawny: sierpień 2026'};
 
 /* ============================================================
@@ -4339,11 +4339,26 @@ function oknoModelu(){
   const E0=Math.round(c.E-pol), N0=Math.round(c.N-pol);
   return {E0,N0,E1:E0+2*pol,N1:N0+2*pol,bok:2*pol};
 }
-function urlModelu(typ){
+/* Usługa ma dwie wersje każdego modelu: w układzie wysokości EVRF2007 i w starszym Kronsztadt 86.
+   Dla części kraju wersja EVRF2007 zwraca same zera (sprawdzone w Rakowni, gm. Murowana Goślina,
+   listopad 2026), a Kronsztadt 86 ma tam prawdziwe dane. Domyślnie EVRF2007, zapasowo 'kron'.
+   Różnica między układami to kilkanaście centymetrów, poniżej progów liczenia cienia. */
+function urlModelu(typ,uklad){
   const o=oknoModelu(); if(!o)return '';
   const pk=typ==='nmpt', r=pk?0.5:1;
   return (pk?NMPT_URL:NMT_URL)+'?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&COVERAGE='+(pk?'DSM':'DTM')
-    +'_PL-EVRF2007-NH&CRS=EPSG:2180&BBOX='+[o.E0,o.N0,o.E1,o.N1].join(',')+'&RESX='+r+'&RESY='+r+'&FORMAT=image/x-aaigrid';
+    +(uklad==='kron'?'_PL-KRON86-NH':'_PL-EVRF2007-NH')+'&CRS=EPSG:2180&BBOX='+[o.E0,o.N0,o.E1,o.N1].join(',')+'&RESX='+r+'&RESY='+r+'&FORMAT=image/x-aaigrid';
+}
+/* plik bez danych: same zera albo same braki, bez żadnej różnicy wysokości */
+function pustyModel(v){
+  let mn=Infinity, mx=-Infinity;
+  for(let i=0;i<v.length;i++){const x=v[i]; if(isNaN(x))continue; if(x<mn)mn=x; if(x>mx)mx=x;}
+  return !(mx>mn+0.05)||mx<=0;
+}
+function linkiZapasowe(){
+  return `<div class="row" style="margin-top:6px">
+    <a class="btn" href="${urlModelu('nmpt','kron')}" target="_blank" rel="noopener">Pobierz NMPT w starszej wersji</a>
+    <a class="btn sec" href="${urlModelu('nmt','kron')}" target="_blank" rel="noopener">NMT w starszej wersji, opcjonalnie</a></div>`;
 }
 
 /* ---------- plik ASCII grid (Arc/Info) ----------
@@ -4391,7 +4406,7 @@ function nmptPamiec(){
       teren[r*m.nc+c]=(cc>=0&&cc<t.nc&&rr>=0&&rr<t.nr)?tv[rr*t.nc+cc]:NaN;
     }
   }
-  NMPT_MEM={klucz,nc:m.nc,nr:m.nr,cs:m.cs,x0:m.x0,y0:m.y0,h:H,max,teren,ts:m.ts,cache:{}};
+  NMPT_MEM={klucz,nc:m.nc,nr:m.nr,cs:m.cs,x0:m.x0,y0:m.y0,h:H,max,teren,ts:m.ts,cache:{},pusty:pustyModel(H)};
   return NMPT_MEM;
 }
 function komorka(g,E,N){
@@ -4400,7 +4415,7 @@ function komorka(g,E,N){
 }
 /* model gotowy do użycia: wczytany i obejmujący środek obecnej działki */
 function modelGotowy(){
-  const g=nmptPamiec(), s=srodekDzialki(); if(!g||!s)return null;
+  const g=nmptPamiec(), s=srodekDzialki(); if(!g||!s||g.pusty)return null;
   const k=doPL92(s.lat,s.lon); return komorka(g,k.E,k.N)>=0?g:null;
 }
 function wczytajModel(e){
@@ -4415,6 +4430,12 @@ function przyjmijModel(wyn){
   const s=srodekDzialki(), k=s?doPL92(s.lat,s.lon):null;
   const zly=ok.find(w=>k&&komorka(w.g,k.E,k.N)<0);
   if(zly){SUNMSG=`<div class="msg err">Plik ${esc(zly.nazwa)} dotyczy innego miejsca niż ta działka. Pobierz wycinek linkiem z tej karty.</div>`;render();return;}
+  /* GUGiK dla części kraju zwraca w EVRF2007 same zera: taki plik dałby działkę bez żadnego cienia */
+  const puste=ok.filter(w=>pustyModel(w.g.v));
+  if(puste.length){SUNMSG=`<div class="msg err">Plik ${esc(puste.map(w=>w.nazwa).join(', '))} nie ma danych: wszystkie wysokości są równe zeru.
+    Tak odpowiada serwer GUGiK tam, gdzie nowsza wersja modelu (układ EVRF2007) nie obejmuje terenu. Nie wczytałem go,
+    bo dałby działkę bez żadnego cienia. Pobierz ten sam wycinek w starszej wersji (układ Kronsztadt 86) i wczytaj go zamiast tamtego.
+    Pamiętaj, że starsza wersja może nie mieć budynków i drzew z ostatnich lat.${linkiZapasowe()}</div>`;render();return;}
   const ts=new Date().toISOString();
   const pak=g=>({nc:g.nc,nr:g.nr,cs:g.cs,x0:g.x0,y0:g.y0,h:doB64(g.v),ts});
   let jest={nmpt:0,nmt:0};
@@ -4731,7 +4752,7 @@ function ustawPunkt(lat,lon){
 function modelBlok(){
   const o=oknoModelu(); if(!o)return '';
   const mbP=(o.bok*o.bok*4*19/1e6).toFixed(1), mbT=(o.bok*o.bok*19/1e6).toFixed(1);
-  const inny=S.nmpt&&!modelGotowy();
+  const g0=S.nmpt?nmptPamiec():null, pusty=!!(g0&&g0.pusty), inny=S.nmpt&&!pusty&&!modelGotowy();
   /* osobna, wyraźna ramka na górze karty: w 3.5 zwykła ramka informacyjna ginęła między opisem
      a kafelkami i karta wyglądała jak przed zmianą */
   return `<div class="modelcta">
@@ -4745,11 +4766,15 @@ function modelBlok(){
         <div class="row">
           <a class="btn" href="${urlModelu('nmpt')}" target="_blank" rel="noopener">Pobierz model pokrycia terenu NMPT (ok. ${mbP.replace('.',',')} MB)</a>
           <a class="btn sec" href="${urlModelu('nmt')}" target="_blank" rel="noopener">Model terenu NMT, opcjonalnie (ok. ${mbT.replace('.',',')} MB)</a>
-        </div></div></div>
+        </div>
+        <div style="margin-top:6px;font-size:13px">Jeśli plik ma same zera, aplikacja go nie przyjmie i poda link do starszej wersji modelu.</div></div></div>
       <div class="mkrok"><span class="nr">2</span><div><b>Wczytaj pobrane pliki</b>, jeden albo oba naraz.
         <div class="row"><button class="btn" onclick="document.getElementById('nmptF').click()">Wczytaj pliki</button></div></div></div>
     </div>
     ${inny?'<p><b style="color:#fca5a5">Wczytany wcześniej model dotyczy innego miejsca niż obecna działka.</b> Pobierz nowy wycinek.</p>':''}
+    ${pusty?`<p><b style="color:#fca5a5">Wczytany wcześniej model nie ma danych: wszystkie wysokości są równe zeru,
+      więc cienie wychodziły zerowe.</b> Serwer GUGiK tak odpowiada tam, gdzie nowsza wersja modelu nie obejmuje terenu.
+      Pobierz wycinek w starszej wersji (układ Kronsztadt 86) i wczytaj go w kroku 2.</p>${linkiZapasowe()}`:''}
     <p style="margin-top:10px">Model terenu pozwala dokładniej odróżnić grunt od dachów i koron drzew. Model obejmuje jedną działkę
       z otoczeniem, więc dla każdej nieruchomości pobierasz go osobno.</p>
     <input type="file" id="nmptF" accept=".asc,.txt" multiple class="hidden" onchange="wczytajModel(event)">
