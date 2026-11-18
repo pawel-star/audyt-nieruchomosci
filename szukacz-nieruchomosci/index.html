@@ -166,12 +166,100 @@ kbd{font:12px ui-monospace,monospace;background:var(--chip);padding:1px 5px;bord
 .tryb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 details.card>summary .tryb+.n{margin-left:0}
 .footer-actions{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:14px 0 0}
+
+/* ---------- Oferty (baza ogłoszeń) i Znalezione ---------- */
+:root{--st-nowe:#2f7fd1;--st-analiza:#0f8f84;--st-kontakt:#d9741a;--st-wizja:#7c5cd6;--st-zainteresowany:#1f9d6b;--st-niezainteresowany:var(--muted);--n-waham:#c47f12;--n-sprawdzic:#2f7fd1;--n-raport:#0f8f84}
+.bz,.zn{max-width:960px;margin:0 auto;padding:20px 16px 80px}
+.bz-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.bz-hd .t{font-weight:700;font-size:17px;margin-right:auto}
+.bz-hd .t small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--accent-ink)}
+.bz-pipe{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.bz-pipe button{border:1px solid var(--line);background:var(--card);color:var(--chip-ink);border-radius:999px;padding:5px 11px;cursor:pointer;font:inherit;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.bz-pipe button b{font-weight:700}
+.bz-pipe button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.bz-pipe i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.bz-przeglad{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:14px}
+.bz-przeglad .pg{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bz-przeglad .pg b{flex:1;min-width:180px}
+.bz-przeglad ul{margin:8px 0 0;padding-left:18px;color:var(--muted)}
+.bz-przeglad li{margin:2px 0;overflow-wrap:anywhere}
+.bz-przeglad .bz2{color:var(--muted);font-size:13px;margin-top:4px}
+.bz-tools{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.bz-tools input[type=search]{flex:1 1 220px;min-width:0}
+.bz-tools .prio{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);white-space:nowrap}
+.bz-tools .prio input{width:58px;text-align:center}
+.bz-tools select{width:auto;flex:0 1 auto}
+.bzk{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c,var(--muted));border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.bzk .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bzk .nr{font-weight:700;color:var(--muted)}
+.bzk .chip{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--c,var(--chip-ink))}
+.bzk .chip.pr{background:#d9741a;color:#fff}
+.bzk .cena{margin-left:auto;font-weight:700;font-size:16px;white-space:nowrap}
+.bzk .zm{font-size:12px;font-weight:700;margin-left:6px;padding:1px 6px;border-radius:6px}
+.bzk .zm.dol{color:#1f9d6b;background:color-mix(in srgb,#1f9d6b 14%,transparent)}
+.bzk .zm.gora{color:var(--danger);background:color-mix(in srgb,var(--danger) 14%,transparent)}
+.bzk .zmien{font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.bzk .zmien:hover{color:var(--ink);border-color:var(--accent)}
+.bzk .loc{margin-top:4px}
+.bzk .par,.bzk .meta{color:var(--muted);font-size:13px}
+.bzk .lk{margin:4px 0;display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+.bzk .powod{font-size:13px;margin-top:4px;color:var(--warn)}
+.bzk .notes{margin-top:8px;display:grid;gap:6px}
+.bzk .nb{--k:var(--muted);border-radius:8px;padding:7px 10px 7px 11px;font-size:14px;background:color-mix(in srgb,var(--k) 10%,var(--card));border-left:3px solid var(--k)}
+.bzk .nb .nt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--k);margin-bottom:3px}
+.bzk .nb ul{margin:0;padding-left:18px}
+.bzk .nb li{margin:2px 0;overflow-wrap:anywhere}
+.bzk .nb.waham{--k:var(--n-waham)}.bzk .nb.sprawdzic{--k:var(--n-sprawdzic)}.bzk .nb.raport{--k:var(--n-raport)}
+.bzk .nb.sprawdzic ul{list-style:none;padding-left:0}.bzk .nb.sprawdzic li::before{content:"☐ ";color:var(--k)}.bzk .nb.sprawdzic li.zamk::before{content:"✓ ";color:#1f9d6b}
+.bzk .nb.raport a{font-weight:600;color:var(--k)}
+.bzk .nb li.zamk .tr{text-decoration:line-through;color:var(--muted)}
+.bzk .nb .nd{color:var(--muted);font-size:11.5px}
+.bzk .nb .wynik{display:block;color:#1f9d6b;font-size:13px}
+.bzk .ozn{font-size:12px;font-weight:700;padding:1px 7px;border-radius:6px}
+.bzk .ozn.w{color:var(--n-waham);background:color-mix(in srgb,var(--n-waham) 14%,transparent)}
+.bzk .ozn.s{color:var(--n-sprawdzic);background:color-mix(in srgb,var(--n-sprawdzic) 14%,transparent)}
+.bzk .ozn.r{color:var(--n-raport);background:color-mix(in srgb,var(--n-raport) 14%,transparent)}
+.bzk details{margin-top:6px;font-size:13px;color:var(--muted)}
+.bzk summary{cursor:pointer}
+.bzk details ul{margin:6px 0 0;padding-left:18px}
+.bzk details li{overflow-wrap:anywhere}
+.bz-pusto{background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);padding:20px;color:var(--muted)}
+.bz-hint{color:var(--muted);font-size:13px;margin-top:14px;line-height:1.45}
+.bz details.card{margin-top:16px}
+.bz details.card textarea{min-height:80px}
+.zn-filtry{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.zn-filtry input{flex:1 1 220px;min-width:0}
+.zn-filtry select{flex:1 1 220px;width:auto;max-width:100%}
+.zn-ile{color:var(--muted);font-size:13px;margin:0 0 10px}
+.zn table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.zn th,.zn td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.zn th{font-size:12px;font-weight:600;color:var(--muted);background:var(--bg)}
+.zn tr:last-child td{border-bottom:0}
+.zn td.nr{font:600 14px ui-monospace,monospace;white-space:nowrap}
+.zn td.data{white-space:nowrap;font-variant-numeric:tabular-nums}
+.zn .prof{display:inline-block;background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:2px 9px;font-size:12px;margin:0 4px 4px 0}
+.zn .opis{font-weight:500}
+.zn .uw{color:var(--muted);font-size:13px;margin-top:3px}
+.zn .lk a{display:block;word-break:break-all;font-size:14px}
+.zn td.baza{white-space:nowrap;font-size:13px}
+.zn tr.traf td{background:var(--accent-soft)}
+@media (max-width:760px){
+  .zn table,.zn tbody,.zn tr,.zn td{display:block}
+  .zn thead{display:none}
+  .zn tr{border-bottom:1px solid var(--line);padding:8px 0}
+  .zn td{border:0;padding:3px 12px}
+  .zn td.nr::after{content:attr(data-data);font:400 13px -apple-system,sans-serif;color:var(--muted);margin-left:10px}
+  .zn td.data{display:none}
+  .bzk .cena{margin-left:0;width:100%}
+}
 </style>
 </head>
 <body>
 <header class="top">
   <div class="brand">Szukacz nieruchomości <span class="ver" id="ver" title="Wersja aplikacji"></span><small>profil + wyszukiwania poza Otodom i OLX</small></div>
-  <div class="views"><button type="button" class="on" data-view="profil">Profil wyszukiwania</button><button type="button" data-view="oferty">Oferty <span id="ofCount">0</span></button></div>
+  <div class="views"><button type="button" class="on" data-view="profil">Profil wyszukiwania</button><button type="button" data-view="oferty">Oferty <span id="ofCount">0</span></button><button type="button" data-view="znalezione">Znalezione <span id="znCount">0</span></button></div>
   <div class="profiles">
     <select id="profileSel" title="Zapisane profile"><option value="">Zapisane profile…</option></select>
     <input type="text" id="profileName" placeholder="Nazwa profilu, np. Kraków 3 pok." style="width:220px">
@@ -582,7 +670,7 @@ szybko.pl</textarea><span class="help">Google ignoruje bardzo długie zapytania,
         <button type="button" class="btn primary" id="szukajClaude">Szukaj nowych ogłoszeń z Claude</button>
         <p id="szukajInfo" class="szinfo"></p>
         <p>Otwiera rozmowę w Claude (zakładka Code). Claude przeszukuje Google, strony biur, zaznaczone źródła i Twoje grupy na Facebooku, zapisuje wszystko na liście znalezionych i pokazuje tylko to, czego jeszcze nie widziałeś. Szuka według tego, co widzisz teraz w formularzu.</p>
-        <p><a href="znalezione.html" target="_blank">Lista znalezionych ogłoszeń</a>: numer, data znalezienia, profil i link do każdego ogłoszenia z dotychczasowych szukań.</p>
+        <p>Wyniki trafiają do zakładki <a href="#znalezione">Znalezione</a> u góry strony: numer, data znalezienia, profil i link do każdego ogłoszenia.</p>
       </div>
       <div class="act">
         <button type="button" class="btn" id="copyProfile">1. Kopiuj profil do wtyczki Chrome (Facebook)</button>
@@ -593,7 +681,7 @@ szybko.pl</textarea><span class="help">Google ignoruje bardzo długie zapytania,
         <p>Wklej do Claude (także Claude w Chrome) lub ChatGPT z włączonym wyszukiwaniem. Prompt zawiera wszystkie kryteria, zakaz portali z listy, gotowe adresy startowe, Twoje źródła i format odpowiedzi. Nie wklejaj tam profilu JSON z przycisku 1, bo asystent nie dostanie listy portali do pominięcia. Podgląd w zakładce „Prompt”.</p>
       </div>
       <div class="act">
-        <button type="button" class="btn ghost" id="dlProfile">3. Zapisz kopię .json (profil, zapisane profile, oferty)</button>
+        <button type="button" class="btn ghost" id="dlProfile">3. Zapisz kopię .json (profil i zapisane profile)</button>
         <p>Plik do odtworzenia wszystkiego na innym komputerze albo po wyczyszczeniu przeglądarki.</p>
         <button type="button" class="btn ghost" id="loadFileBtn">Wczytaj kopię z pliku .json</button>
         <input type="file" id="loadFile" accept="application/json,.json" class="hidden">
@@ -615,69 +703,59 @@ szybko.pl</textarea><span class="help">Google ignoruje bardzo długie zapytania,
   <div class="note">Ta strona nie ma dostępu do Facebooka ani cudzych serwisów, więc sama nie pobiera ogłoszeń. Robi to wtyczka na Twojej zalogowanej sesji: „Skaner grup” znajduje grupy, przegląda posty z ostatnich X dni i ocenia je według profilu zbudowanego tutaj.</div>
 </aside>
 </main>
-<main class="layout hidden" id="view-oferty">
-<div>
-  <div class="card">
-    <div class="pad">
-      <div class="inline" style="justify-content:space-between">
-        <div class="pipeline" id="pipeline"></div>
-      </div>
-      <div class="inline" style="margin-top:10px">
-        <input type="text" id="ofQ" placeholder="Szukaj w nazwie, miejscowości, notatkach…" style="flex:1;min-width:200px">
-        <select id="ofSort"><option value="ocena">sortuj: ocena</option><option value="dodano">sortuj: najnowsze</option><option value="cena">sortuj: cena rosnąco</option><option value="status">sortuj: status</option></select>
-        <select id="ofZrodlo"><option value="">każde źródło</option></select>
-      </div>
-    </div>
+<main class="bz hidden" id="view-oferty">
+  <div class="bz-hd">
+    <div class="t">Baza ogłoszeń<small id="bzStan">wczytuję…</small></div>
+    <a class="btn primary sm" id="bzDodaj" href="#">+ Dodaj ogłoszenie</a>
+    <button class="btn sm" type="button" onclick="location.reload()">Odśwież</button>
   </div>
-  <div id="ofList" class="of-list"></div>
-</div>
-<aside class="panel">
-  <div class="card">
-    <div class="pad">
-      <div class="ptitle" id="ofFormTitle">Dodaj ofertę</div>
-      <form id="ofForm" autocomplete="off" onsubmit="return false">
-        <input type="hidden" name="id">
-        <div class="field"><label>Link do ogłoszenia</label><input type="text" name="link" placeholder="https://…"></div>
-        <div class="row">
-          <div class="field"><label>Typ</label><select name="typ"><option value="">jak w profilu</option><option value="mieszkanie">mieszkanie</option><option value="dom">dom</option><option value="dzialka">działka</option><option value="lokal">lokal</option><option value="garaz">garaż</option><option value="pokoj">pokój</option><option value="hala">hala</option></select></div>
-          <div class="field"><label>Źródło</label><select name="zrodlo"></select></div>
-          <div class="field"><label>Miejscowość / dzielnica</label><input type="text" name="miejscowosc"></div>
-        </div>
-        <div class="row">
-          <div class="field"><label>Cena</label><div class="unit"><input type="number" name="cena" min="0" step="1000"><em>zł</em></div></div>
-          <div class="field"><label>Metraż</label><div class="unit"><input type="number" name="pow" min="0"><em>m²</em></div></div>
-          <div class="field"><label>Pokoje</label><input type="number" name="pokoje" min="0"></div>
-          <div class="field"><label>Piętro</label><input type="text" name="pietro" placeholder="np. 2/4"></div>
-        </div>
-        <div class="field"><label>Nazwa rekordu (zostaw puste, nadam automatycznie)</label><input type="text" name="nazwa" placeholder="np. DOM-Kornik-590k-85m2"></div>
-        <div class="row">
-          <div class="field"><label>Status</label><select name="status"></select></div>
-          <div class="field"><label>Ocena</label><select name="ocena"><option value="0">bez oceny</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
-        </div>
-        <div class="field"><label>Opis lub treść ogłoszenia</label><textarea name="opis" style="min-height:70px"></textarea></div>
-        <div class="field"><label>Notatki (kontakt, termin, wrażenia)</label><textarea name="notatki" style="min-height:60px"></textarea></div>
-        <div class="btns"><button type="button" class="btn primary" id="ofSave">Zapisz ofertę</button><button type="button" class="btn ghost hidden" id="ofCancel">Anuluj</button></div>
-      </form>
-    </div>
+  <div id="bzPrzenies"></div>
+  <div class="bz-pipe" id="bzPipe"></div>
+  <div class="bz-przeglad" id="bzPrzeglad"></div>
+  <div class="bz-tools">
+    <input id="bzQ" type="search" placeholder="Szukaj: miejscowość, ulica, notatka, portal, #numer">
+    <label class="prio">Priorytet od <input id="bzPod" type="number" min="1" step="1" inputmode="numeric" aria-label="Priorytet od"> do <input id="bzPdo" type="number" min="1" step="1" inputmode="numeric" aria-label="Priorytet do"></label>
+    <select id="bzSort" aria-label="Sortowanie">
+      <option value="priorytet">Priorytet (1 = oglądać najpierw)</option>
+      <option value="ruch">Ostatnia aktywność</option>
+      <option value="dodano">Ostatnio dodane</option>
+      <option value="cena">Cena rosnąco</option>
+      <option value="miejscowosc">Miejscowość</option>
+    </select>
   </div>
-  <div class="card">
-    <div class="pad">
-      <div class="ptitle">Wklej oferty z wtyczki lub asystenta</div>
-      <textarea id="ofPaste" placeholder="Wklej to, co skopiowałeś przyciskiem „Kopiuj oferty do aplikacji” we wtyczce, albo listę linków (jeden w linii)." style="min-height:80px"></textarea>
-      <div class="btns" style="margin-top:8px"><button type="button" class="btn" id="ofImport">Dodaj do katalogu</button></div>
-      <p class="help" style="margin:8px 0 0">Duplikaty po linku pomijam. Oferty bez nazwy dostają nazwę z typu, miejscowości, ceny i metrażu.</p>
+  <div id="bzLista"></div>
+  <details class="card">
+    <summary>Wklej oferty z wtyczki albo listę linków <span class="hint">trafią do bazy przez Claude</span><span class="chev" style="margin-left:auto"></span></summary>
+    <div class="body">
+      <textarea id="ofPaste" placeholder="Wklej to, co skopiowałeś przyciskiem „Kopiuj oferty do aplikacji” we wtyczce, albo linki do ogłoszeń (jeden w linii)."></textarea>
+      <div class="btns"><button type="button" class="btn" id="ofDoBazy">Dodaj do bazy przez Claude</button></div>
+      <p class="help" style="margin:0;font-size:12px;color:var(--muted)">Linki trafiają prosto do rozmowy. Oferty z wtyczki zapisuję do pliku w folderze Pobrane, a Claude importuje go do bazy i pyta o możliwe duplikaty.</p>
     </div>
+  </details>
+  <p class="bz-hint">Notatki przy ogłoszeniu dzielą się na wątpliwości (żółte), rzeczy do sprawdzenia (niebieskie, po sprawdzeniu przekreślone z wynikiem), raporty i pliki (klikalne) oraz inne. Wystarczy napisać zwykłym zdaniem, np. „waham się, bo blisko torów”, „sprawdzić księgę wieczystą”, „raport: ścieżka do pliku”.</p>
+  <p class="bz-hint" id="bzStatusyOpis"></p>
+  <p class="bz-hint">„+ Dodaj ogłoszenie”, „Zmień status” i „Dodaj notatkę” otwierają nową rozmowę w aplikacji Claude, w zakładce Code, z gotowym początkiem polecenia. Wklejasz link albo dopisujesz status (np. „wizja lokalna”, „odpada, za mała działka”) i naciskasz Enter. Do bazy trafiają też ogłoszenia spoza szukacza: wystarczy podać Claude link albo opis. Po zmianie kliknij tu „Odśwież”.</p>
+</main>
+<main class="zn hidden" id="view-znalezione">
+  <div class="bz-hd"><div class="t">Znalezione ogłoszenia<small>wszystko, co przyniosło szukanie z Claude, także słabe i odrzucone</small></div><button class="btn sm" type="button" onclick="location.reload()">Odśwież</button></div>
+  <div class="zn-filtry">
+    <input type="search" id="znQ" placeholder="Numer (np. Z10), miejscowość albo fragment linku">
+    <select id="znProfil"><option value="">Wszystkie profile</option></select>
   </div>
-  <div class="note">Statusy prowadzą ofertę od znalezienia do decyzji: nowe → do umówienia → przygotować raport → czekam na spotkanie → po wizycie → do decyzji. „Odpada” zostaje w katalogu, żebyś nie oceniał tej samej oferty drugi raz. Raport przed wizytą zrobisz w aplikacji Audyt Nieruchomości w katalogu wyżej.</div>
-</aside>
+  <p class="zn-ile" id="znIle"></p>
+  <div id="znLista"></div>
+  <p class="bz-hint">Numer Z przy ogłoszeniu to ten, który Claude podaje w rozmowie po szukaniu. „Dodaj do bazy” otwiera rozmowę z linkiem i numerem; ogłoszenie, które już jest w bazie, ma przy sobie jej numer.</p>
 </main>
 <div class="toast" id="toast"></div>
 
+<!-- dane generują baza-ogloszen/baza.js i znalezione.js; brak pliku = pusta lista -->
+<script src="../baza-ogloszen/dane/baza-widok.js"></script>
+<script src="dane/znalezione-widok.js"></script>
 <script>
 (function(){
 const f=document.getElementById('f');
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
-const APP={nazwa:'Szukacz nieruchomości',ver:'1.7'};
+const APP={nazwa:'Szukacz nieruchomości',ver:'1.8'};
 $('#ver').textContent='v'+APP.ver;
 const LS_CUR='szukacz.current', LS_PROF='szukacz.profiles', LS_THEME='szukacz.theme';
 const DEFAULT_POMIJANE=$('#pomijane').defaultValue.split('\n').map(x=>x.trim()).filter(Boolean);
@@ -789,7 +867,7 @@ function renderSummary(s){
   const el=(pelny.elastyczne||[]).filter(k=>{const d=$(`details[data-sekcja="${k}"]`,f);return d&&!d.classList.contains('hidden');});
   push(el.length?'może się zmienić: '+el.map(k=>SEKCJE[k]).join(', '):'wszystkie sekcje: musi być spełnione',el.length?'x':'k');
   $('#cnt').textContent=n;
-  $$('details.card').forEach(d=>{
+  $$('details.card',f).forEach(d=>{
     let c=0;$$('input,select,textarea',d).forEach(el=>{if(!el.name||SKIP.has(el.name))return;if(el.closest('.hidden'))return;
       if(el.type==='checkbox'){if(el.checked)c++;}else if(el.type==='radio'){if(el.checked&&el.value&&el.value!=='kupno'&&el.name!=='typ')c++;}else if(el.value!==''&&!(el.name==='promien'&&el.value==='0'))c++;});
     $$('[data-chips]',d).forEach(b=>{if(!SKIP.has(b.dataset.chips))c+=chips[b.dataset.chips].length;});
@@ -957,110 +1035,213 @@ $$('.tryb').forEach(l=>{const inp=$('input',l);l.tabIndex=0;
   const flip=e=>{e.preventDefault();e.stopPropagation();inp.checked=!inp.checked;update();};
   l.addEventListener('click',flip);l.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter')flip(e);});});
 
-/* ---------- oferty: katalog ze statusami ---------- */
-const LS_OF='szukacz.oferty';
-const STATUSY=[['nowe','Nowe'],['umowic','Do umówienia'],['raport','Przygotować raport'],['czekam','Czekam na spotkanie'],['po_wizycie','Po wizycie'],['decyzja','Do decyzji'],['odpada','Odpada']];
-const ZRODLA=[['fb','Facebook'],['biuro','Biuro nieruchomości'],['bezposrednio','Bezpośrednio od właściciela'],['portal','Portal'],['ai','Asystent AI'],['inne','Inne']];
-const stLbl=k=>(STATUSY.find(x=>x[0]===k)||[k,k])[1], zrLbl=k=>(ZRODLA.find(x=>x[0]===k)||[k,k||'nieznane'])[1];
-let oferty=[], ofFilter={status:'',q:'',sort:'ocena',zrodlo:''};
-function loadOferty(){try{oferty=JSON.parse(localStorage.getItem(LS_OF)||'[]');}catch(e){oferty=[];}if(!Array.isArray(oferty))oferty=[];}
-function saveOferty(){localStorage.setItem(LS_OF,JSON.stringify(oferty));updateOfCount();}
-function updateOfCount(){$('#ofCount').textContent=oferty.filter(o=>o.status!=='odpada').length;}
-function nextId(){const d=new Date().toISOString().slice(0,10).replace(/-/g,'');const used=new Set(oferty.map(o=>o.id));let n=1,id;do{id='OF-'+d+'-'+String(n++).padStart(3,'0');}while(used.has(id));return id;}
-function slug(x){return (x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/Ł/g,'L').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'');}
-function zgadnijTyp(txt){const t=(txt||'').toLowerCase();if(/dzia[łl]k/.test(t))return 'dzialka';if(/\bdom(u|ek|em|y)?\b|bli[źz]niak|szeregow|segment/.test(t))return 'dom';if(/mieszkani|kawalerk|apartament/.test(t))return 'mieszkanie';if(/lokal/.test(t))return 'lokal';if(/gara[żz]/.test(t))return 'garaz';if(/hal[aę]|magazyn/.test(t))return 'hala';return '';}
-function nazwaOferty(o){const t=o.typ||zgadnijTyp((o.opis||'')+' '+(o.nazwa||''))||readState().typ||'mieszkanie';
-  if(!o.miejscowosc&&!o.cena&&!o.pow){let h='';try{h=new URL(o.link).hostname.replace(/^www\./,'');}catch(e){}return 'OFERTA-'+(slug(h)||'bez-linku');}const parts=[({mieszkanie:'MIESZK',dom:'DOM',dzialka:'DZIALKA',lokal:'LOKAL',garaz:'GARAZ',pokoj:'POKOJ',hala:'HALA'})[t]||t.toUpperCase()];if(o.miejscowosc)parts.push(slug(o.miejscowosc).split('-').slice(0,2).join('-'));if(o.cena)parts.push(Math.round(o.cena/1000)+'k');if(o.pow)parts.push(Math.round(o.pow)+'m2');return parts.join('-');}
-function normLink(u){return (u||'').trim().replace(/[?#].*$/,'').replace(/\/$/,'');}
-function addOferta(data){
-  const link=normLink(data.link);
-  if(link&&oferty.some(o=>normLink(o.link)===link))return null;
-  const now=new Date().toISOString();
-  const o=Object.assign({status:'nowe',ocena:0,zrodlo:'inne',dodano:now,historia:[]},data,{id:nextId(),link:data.link||''});
-  if(!o.typ)o.typ=zgadnijTyp(o.opis)||readState().typ||'mieszkanie';
-  if(!o.nazwa)o.nazwa=nazwaOferty(o);
-  o.historia.push({status:o.status,ts:now});
-  oferty.unshift(o);return o;
+/* ---------- wspólne: rozmowa z Claude, pamięć widoku ---------- */
+// Dane bazy i listy znalezionych pochodzą z plików generowanych przez skrypty (baza.js, znalezione.js).
+// Strona tylko je pokazuje; każda zmiana idzie przez rozmowę z Claude, który uruchamia skrypt.
+const FOLDER=window.BAZA_FOLDER||(location.protocol==='file:'?decodeURIComponent(new URL('..',location.href).pathname).replace(/\/$/,''):'');
+const doClaude=q=>'claude://code/new?'+(FOLDER?'folder='+encodeURIComponent(FOLDER)+'&':'')+'q='+encodeURIComponent(q);
+const escH=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const zlH=n=>n==null?'cena nieznana':new Intl.NumberFormat('pl-PL').format(n)+' zł';
+const m2H=n=>String(n).replace('.',',')+' m²';
+const dzien=()=>new Date().toISOString().slice(0,10);
+const dataPL=d=>d?String(d).slice(0,10).split('-').reverse().join('.'):'';
+const normUrl=u=>String(u||'').trim().toLowerCase().replace(/^https?:\/\/(www\.)?/,'').replace(/[?#].*$/,'').replace(/\/+$/,'');
+const pamiec={get(k,d){try{return localStorage.getItem(k)||d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+
+/* ---------- oferty = baza ogłoszeń (../baza-ogloszen/dane/baza-widok.js) ---------- */
+const BZ=window.BAZA||null, BZL=BZ&&Array.isArray(BZ.ogloszenia)?BZ.ogloszenia:[];
+const BZ_ST=window.BAZA_STATUSY||[['nowe','Nowe'],['analiza','Analiza wstępna'],['kontakt','Do kontaktu'],['wizja','Wizja lokalna'],['zainteresowany','Zainteresowany'],['niezainteresowany','Niezainteresowany']];
+const BZ_RODZ=window.BAZA_RODZAJE||[['waham','Wątpliwości'],['sprawdzic','Do sprawdzenia'],['raport','Raporty i pliki'],['notatka','Notatki']];
+const bzKolor=k=>'var(--st-'+(BZ_ST.some(s=>s[0]===k)?k:'niezainteresowany')+')';
+const bzEtyk=k=>(BZ_ST.find(s=>s[0]===k)||[k,k])[1];
+const ostatni=a=>a&&a.length?a[a.length-1]:null;
+const bzRuch=o=>[ostatni(o.widziane),(ostatni(o.historiaStatusow)||{}).data,(ostatni(o.historiaCen)||{}).data,(ostatni(o.notatki)||{}).data].filter(Boolean).sort().pop()||o.dodano||'';
+// priorytet oglądania: notatka zaczynająca się od „PRIORYTET N”; liczy się ostatnia niezamknięta
+const bzPrio=o=>{const m=(o.notatki||[]).filter(n=>!n.zamkniete&&/^\s*PRIORYTET\s+(\d+)/i.test(n.tekst||'')).pop();return m?+/^\s*PRIORYTET\s+(\d+)/i.exec(m.tekst)[1]:null;};
+let bzFiltr=pamiec.get('baza.filtr','aktywne');
+
+function bzPasek(){
+  const p=$('#bzPipe');p.innerHTML='';
+  const mk=(k,l,n,kolor)=>{const b=document.createElement('button');b.type='button';b.className=bzFiltr===k?'on':'';
+    b.innerHTML=(kolor?'<i style="background:'+kolor+'"></i>':'')+escH(l)+' <b>'+n+'</b>';
+    b.onclick=()=>{bzFiltr=k;pamiec.set('baza.filtr',k);bzPasek();bzRysuj();};p.appendChild(b);};
+  mk('aktywne','Aktywne',BZL.filter(o=>o.status!=='niezainteresowany').length);
+  mk('wszystkie','Wszystkie',BZL.length);
+  BZ_ST.forEach(([k,l])=>mk(k,l,BZL.filter(o=>o.status===k).length,bzKolor(k)));
 }
-function setStatus(o,st){if(o.status===st)return;o.status=st;(o.historia=o.historia||[]).push({status:st,ts:new Date().toISOString()});}
-function parseOfertyText(txt){
-  txt=txt.trim();if(!txt)return [];
-  try{const j=JSON.parse(txt);const arr=Array.isArray(j)?j:(j.oferty||j.results||[j]);return arr.map(x=>({
-    link:x.link||x.url||'',nazwa:x.nazwa||'',zrodlo:x.zrodlo||(/facebook\.com/.test(x.link||'')?'fb':'inne'),miejscowosc:x.miejscowosc||x.lokalizacja||'',
-    cena:x.cena||(x.data&&x.data.price)||undefined,pow:x.pow||(x.data&&x.data.area)||undefined,pokoje:x.pokoje||(x.data&&x.data.rooms)||undefined,pietro:x.pietro||(x.data&&x.data.floor!==undefined?String(x.data.floor):''),
-    opis:x.opis||x.text||x.snippet||'',pasuje:x.pasuje||(x.why||[]).join(', '),brakuje:x.brakuje||[...(x.miss||[]).map(m=>'odchylenie: '+m),...(x.bad||[])].join(', '),pct:x.pct,grupa:x.group||x.grupa||'',dataOgl:x.date||x.dataOgl||'',notatki:x.notatki||'',status:x.status||'nowe',ocena:x.ocena||0}));}catch(e){}
-  return txt.split('\n').map(l=>l.trim()).filter(l=>/^https?:\/\//.test(l)).map(l=>({link:l,zrodlo:/facebook\.com/.test(l)?'fb':'ai'}));
+function bzKarta(o){
+  const h=o.historiaCen||[];let zm='';
+  if(h.length>1&&h[0].cena&&o.cena){const pr=100*(o.cena-h[0].cena)/h[0].cena;
+    zm='<span class="zm '+(pr<0?'dol':'gora')+'" title="od pierwszej ceny '+escH(zlH(h[0].cena))+'">'+(pr>0?'+':pr<0?'−':'')+Math.abs(pr).toFixed(1).replace('.',',')+'%</span>';}
+  const gm=o.gmina&&o.gmina!==o.miejscowosc?' <span class="par">gm. '+escH(o.gmina)+'</span>':'';
+  const par=[[o.typ,o.rodzaj].filter(Boolean).join(' '),o.metraz&&m2H(o.metraz),o.dzialka&&'działka '+m2H(o.dzialka),o.pokoje&&o.pokoje+' pok.',o.rok&&'rok '+o.rok,o.cena&&o.metraz&&zlH(Math.round(o.cena/o.metraz))+'/m²'].filter(Boolean).map(escH).join(' · ');
+  const linki=(o.linki||[]).map(l=>/^https?:\/\//.test(l.url)?'<a href="'+escH(l.url)+'" target="_blank" rel="noopener">'+escH(l.zrodlo||'link')+'</a>':escH(l.url)).join('');
+  const st=(o.historiaStatusow||[]).filter(x=>x.status===o.status).pop();
+  // notatki na wierzchu karty: wątpliwości, do sprawdzenia, raporty, inne; zamknięte na końcu grupy, przekreślone
+  const N=(o.notatki||[]).map((n,i)=>Object.assign({nr:i+1,rodzaj:'notatka'},n));
+  const otwarte=k=>N.filter(n=>n.rodzaj===k&&!n.zamkniete).length;
+  const hrefPliku=l=>/^https?:\/\//i.test(l)?l:/^\//.test(l)?'file://'+l.split('/').map(encodeURIComponent).join('/'):'';
+  const pozycja=n=>{const href=n.rodzaj==='raport'?hrefPliku(n.link||''):'';
+    const tresc=href?'<a href="'+escH(href)+'" target="_blank" rel="noopener">'+escH(n.tekst)+'</a>':escH(n.tekst);
+    const wynik=n.zamkniete?'<span class="wynik">'+({sprawdzic:'sprawdzone',waham:'rozwiane'}[n.rodzaj]||'zamknięte')+' '+escH(n.zamkniete.data)+(n.zamkniete.wynik?': '+escH(n.zamkniete.wynik):'')+'</span>':'';
+    return '<li class="'+(n.zamkniete?'zamk':'')+'"><span class="tr">'+tresc+'</span> <span class="nd">'+escH(n.data)+'</span>'+wynik+'</li>';};
+  const notatki=BZ_RODZ.map(([k,tytul])=>{const g=N.filter(n=>n.rodzaj===k).sort((a,b)=>(!!a.zamkniete-!!b.zamkniete)||a.nr-b.nr);
+    return g.length?'<div class="nb '+escH(k)+'"><div class="nt">'+escH(tytul)+'</div><ul>'+g.map(pozycja).join('')+'</ul></div>':'';}).join('');
+  const ozn=(otwarte('waham')?'<span class="ozn w" title="otwarte wątpliwości">⚠ '+otwarte('waham')+'</span>':'')+
+    (otwarte('sprawdzic')?'<span class="ozn s" title="do sprawdzenia">☐ '+otwarte('sprawdzic')+'</span>':'')+
+    (N.some(n=>n.rodzaj==='raport')?'<span class="ozn r" title="jest raport">📄</span>':'');
+  const kto='Baza ogłoszeń, #'+o.nr+' ('+(o.miejscowosc||'bez miejscowości')+', '+zlH(o.cena)+'): ';
+  const hist='<details><summary>Historia i szczegóły</summary><ul>'+
+    (o.tytul?'<li>Tytuł: '+escH(o.tytul)+'</li>':'')+
+    (o.ogloszeniodawca?'<li>Ogłoszeniodawca: '+escH(o.ogloszeniodawca)+'</li>':'')+
+    '<li>Ceny: '+(h.length?h.map(x=>escH(x.data+' '+zlH(x.cena))).join(' → '):'brak')+'</li>'+
+    '<li>Statusy: '+(o.historiaStatusow||[]).map(x=>escH(x.data+' '+bzEtyk(x.status)+(x.powod?' ('+x.powod+')':''))).join(' → ')+'</li>'+
+    (o.linki||[]).map(l=>'<li>'+escH(l.zrodlo)+', dodany '+escH(l.dodano)+': '+escH(l.url)+'</li>').join('')+'</ul></details>';
+  const pr=bzPrio(o);
+  return '<article class="bzk" style="--c:'+bzKolor(o.status)+'">'+
+    '<div class="top"><span class="nr">#'+o.nr+'</span>'+(pr?'<span class="chip pr" title="priorytet oglądania">P'+pr+'</span>':'')+'<span class="chip">'+escH(bzEtyk(o.status))+'</span>'+ozn+
+    '<a class="zmien" href="'+escH(doClaude(kto+'zmień status na '))+'">Zmień status</a>'+
+    '<a class="zmien" href="'+escH(doClaude(kto+'dodaj notatkę: '))+'">Dodaj notatkę</a>'+
+    '<span class="cena">'+escH(zlH(o.cena))+zm+'</span></div>'+
+    '<div class="loc"><b>'+escH(o.miejscowosc||'miejscowość nieznana')+'</b>'+gm+(o.ulica?' · '+(/^(os|al|pl)\.?\s/i.test(o.ulica)?'':'ul. ')+escH(o.ulica.replace(/^ul\.?\s*/i,'')):'')+'</div>'+
+    (par?'<div class="par">'+par+'</div>':'')+
+    (st&&st.powod?'<div class="powod">'+(o.status==='niezainteresowany'?'Powód: ':'Uwaga: ')+escH(st.powod)+'</div>':'')+
+    (notatki?'<div class="notes">'+notatki+'</div>':'')+
+    '<div class="lk">'+linki+'</div>'+
+    '<div class="meta">dodane '+escH(o.dodano)+' · zgłaszane '+(o.widziane||[]).length+'× · ostatnio '+escH(ostatni(o.widziane)||o.dodano)+'</div>'+
+    hist+'</article>';
 }
-function fmtZl(n){return n?new Intl.NumberFormat('pl-PL').format(n)+' zł':'';}
-function renderOferty(){
-  const pipe=$('#pipeline');pipe.innerHTML='';
-  const mk=(k,l)=>{const b=document.createElement('button');b.type='button';b.className=ofFilter.status===k?'on':'';const n=k===''?oferty.length:oferty.filter(o=>o.status===k).length;b.innerHTML='<span></span><b></b>';$('span',b).textContent=l;$('b',b).textContent=n;b.onclick=()=>{ofFilter.status=k;renderOferty();};pipe.appendChild(b);};
-  mk('','Wszystkie');STATUSY.forEach(([k,l])=>mk(k,l));
-  const q=ofFilter.q.toLowerCase();
-  let list=oferty.filter(o=>(!ofFilter.status||o.status===ofFilter.status)&&(!ofFilter.zrodlo||o.zrodlo===ofFilter.zrodlo)&&(!q||[o.nazwa,o.miejscowosc,o.notatki,o.opis,o.grupa,o.id].join(' ').toLowerCase().includes(q)));
-  const stIdx=k=>STATUSY.findIndex(x=>x[0]===k);
-  list.sort((a,b)=>ofFilter.sort==='cena'?((a.cena||1e12)-(b.cena||1e12)):ofFilter.sort==='dodano'?(b.dodano||'').localeCompare(a.dodano||''):ofFilter.sort==='status'?stIdx(a.status)-stIdx(b.status):((b.ocena||0)-(a.ocena||0)||(b.pct||0)-(a.pct||0)||(b.dodano||'').localeCompare(a.dodano||'')));
-  const box=$('#ofList');box.innerHTML='';
-  if(!list.length){box.innerHTML='<div class="card"><div class="pad empty">'+(oferty.length?'Nic nie pasuje do filtra.':'Katalog jest pusty. Dodaj ofertę formularzem obok, wklej oferty z wtyczki albo listę linków.')+'</div></div>';return;}
-  list.forEach(o=>{
-    const d=document.createElement('div');d.className='of';d.dataset.status=o.status;
-    d.innerHTML=`<div class="of-head"><span class="nm"></span><span class="id"></span><span class="stars"></span><select></select></div>
-      <div class="of-meta"></div><div class="of-why"></div><div class="of-txt short"></div><div class="of-notes hidden"></div>
-      <div class="of-foot"><a target="_blank" rel="noopener">otwórz ogłoszenie</a><button type="button" class="lnk more">pokaż całość</button><button type="button" class="lnk edit">edytuj</button><button type="button" class="lnk del danger">usuń</button><span class="muted" style="margin-left:auto;font-size:12px"></span></div>`;
-    $('.nm',d).textContent=o.nazwa;$('.id',d).textContent=o.id;
-    const st=$('.stars',d);for(let i=1;i<=5;i++){const b=document.createElement('button');b.type='button';b.textContent='★';b.className=i<=(o.ocena||0)?'on':'';b.title=i+'/5';b.onclick=()=>{o.ocena=(o.ocena===i?0:i);saveOferty();renderOferty();};st.appendChild(b);}
-    const sel=$('select',d);STATUSY.forEach(([k,l])=>{const op=document.createElement('option');op.value=k;op.textContent=l;sel.appendChild(op);});sel.value=o.status;sel.onchange=()=>{setStatus(o,sel.value);saveOferty();renderOferty();};
-    const meta=[];if(o.cena)meta.push('<b>'+fmtZl(o.cena)+'</b>');if(o.cena&&o.pow)meta.push(fmtZl(Math.round(o.cena/o.pow))+'/m²');if(o.pow)meta.push('<b>'+o.pow+' m²</b>');if(o.pokoje)meta.push(o.pokoje+' pok.');if(o.pietro)meta.push('piętro '+o.pietro);if(o.miejscowosc)meta.push(o.miejscowosc);meta.push(zrLbl(o.zrodlo)+(o.grupa?': '+o.grupa:''));if(o.dataOgl)meta.push('ogłoszenie z '+String(o.dataOgl).slice(0,10));
-    $('.of-meta',d).innerHTML=meta.map(m=>'<span>'+m+'</span>').join('');
-    const why=[];if(o.pct!==undefined&&o.pct!=='')why.push('dopasowanie '+o.pct+'%');if(o.pasuje)why.push('pasuje: '+o.pasuje);if(o.brakuje)why.push('brakuje: '+o.brakuje);$('.of-why',d).textContent=why.join(' · ');if(!why.length)$('.of-why',d).remove();
-    if(o.opis)$('.of-txt',d).textContent=o.opis;else{$('.of-txt',d).remove();$('.more',d).remove();}
-    if(o.notatki){const n=$('.of-notes',d);n.classList.remove('hidden');n.textContent='Notatki: '+o.notatki;}
-    const a=$('.of-foot a',d);if(o.link)a.href=o.link;else a.remove();
-    const m=$('.more',d);if(m)m.onclick=()=>{const t=$('.of-txt',d);t.classList.toggle('short');m.textContent=t.classList.contains('short')?'pokaż całość':'zwiń';};
-    $('.edit',d).onclick=()=>editOferta(o);
-    $('.del',d).onclick=()=>{if(confirm('Usunąć „'+o.nazwa+'” z katalogu? Jeśli chcesz tylko odłożyć, ustaw status „Odpada”.')){oferty=oferty.filter(x=>x!==o);saveOferty();renderOferty();}};
-    $('.of-foot span',d).textContent='dodano '+(o.dodano||'').slice(0,10)+(o.historia&&o.historia.length>1?' · status zmieniony '+o.historia[o.historia.length-1].ts.slice(0,10):'');
-    box.appendChild(d);
-  });
+function bzRysuj(){
+  const q=$('#bzQ').value.trim().toLowerCase(), s=$('#bzSort').value;
+  const pod=parseInt($('#bzPod').value,10), pdo=parseInt($('#bzPdo').value,10);
+  let w=BZL.filter(o=>bzFiltr==='wszystkie'||(bzFiltr==='aktywne'?o.status!=='niezainteresowany':o.status===bzFiltr));
+  if(pod||pdo)w=w.filter(o=>{const p=bzPrio(o);return p!=null&&(!pod||p>=pod)&&(!pdo||p<=pdo);});
+  if(q)w=w.filter(o=>[o.miejscowosc,o.gmina,o.ulica,o.tytul,o.ogloszeniodawca,'#'+o.nr,(o.notatki||[]).map(n=>n.tekst).join(' '),(o.linki||[]).map(l=>l.zrodlo+' '+l.url).join(' ')].join(' ').toLowerCase().includes(q));
+  const por={
+    priorytet:(a,b)=>(bzPrio(a)||Infinity)-(bzPrio(b)||Infinity)||a.nr-b.nr,
+    ruch:(a,b)=>bzRuch(b).localeCompare(bzRuch(a))||b.nr-a.nr,
+    dodano:(a,b)=>String(b.dodano).localeCompare(String(a.dodano))||b.nr-a.nr,
+    cena:(a,b)=>(a.cena||Infinity)-(b.cena||Infinity),
+    miejscowosc:(a,b)=>(a.miejscowosc||'').localeCompare(b.miejscowosc||'','pl')||a.nr-b.nr}[s]||((a,b)=>a.nr-b.nr);
+  w.sort(por);
+  $('#bzLista').innerHTML=w.length?w.map(bzKarta).join(''):'<div class="bz-pusto">'+(BZL.length?'Nic nie pasuje do filtra.':'Baza jest pusta. Kliknij „+ Dodaj ogłoszenie” albo wklej Claude link do ogłoszenia.')+'</div>';
 }
-function ofFormEl(n){return $('#ofForm [name="'+n+'"]');}
-function editOferta(o){
-  ['id','link','typ','zrodlo','miejscowosc','cena','pow','pokoje','pietro','nazwa','status','ocena','opis','notatki'].forEach(k=>{const el=ofFormEl(k);if(el)el.value=o[k]===undefined||o[k]===null?'':o[k];});
-  $('#ofFormTitle').textContent='Edytuj: '+o.nazwa;$('#ofSave').textContent='Zapisz zmiany';$('#ofCancel').classList.remove('hidden');
-  $('#ofForm').scrollIntoView({behavior:'smooth',block:'start'});
-}
-function resetOfForm(){$('#ofForm').reset();ofFormEl('id').value='';$('#ofFormTitle').textContent='Dodaj ofertę';$('#ofSave').textContent='Zapisz ofertę';$('#ofCancel').classList.add('hidden');}
-function initOferty(){
-  const zs=ofFormEl('zrodlo');ZRODLA.forEach(([k,l])=>{const op=document.createElement('option');op.value=k;op.textContent=l;zs.appendChild(op);const o2=op.cloneNode(true);$('#ofZrodlo').appendChild(o2);});
-  const ss=ofFormEl('status');STATUSY.forEach(([k,l])=>{const op=document.createElement('option');op.value=k;op.textContent=l;ss.appendChild(op);});
-  $('#ofSave').onclick=()=>{
-    const g=k=>{const el=ofFormEl(k);return el?el.value.trim():'';};
-    const data={link:g('link'),typ:g('typ'),zrodlo:g('zrodlo'),miejscowosc:g('miejscowosc'),cena:g('cena')?+g('cena'):undefined,pow:g('pow')?+g('pow'):undefined,pokoje:g('pokoje')?+g('pokoje'):undefined,pietro:g('pietro'),nazwa:g('nazwa'),status:g('status'),ocena:+g('ocena')||0,opis:g('opis'),notatki:g('notatki')};
-    if(!data.link&&!data.nazwa&&!data.miejscowosc&&!data.opis){toast('Podaj przynajmniej link, nazwę albo miejscowość.');return;}
-    const id=g('id');
-    if(id){const o=oferty.find(x=>x.id===id);if(o){const st=data.status;delete data.status;if(!data.typ)delete data.typ;Object.assign(o,data);if(!o.nazwa)o.nazwa=nazwaOferty(o);setStatus(o,st);toast('Zapisano zmiany.');}}
-    else{const o=addOferta(data);if(!o){toast('Ta oferta już jest w katalogu (ten sam link).');return;}toast('Dodano „'+o.nazwa+'”.');}
-    saveOferty();resetOfForm();renderOferty();
-  };
-  $('#ofCancel').onclick=resetOfForm;
-  $('#ofImport').onclick=()=>{const arr=parseOfertyText($('#ofPaste').value);if(!arr.length){toast('Nie rozpoznałem ofert. Wklej JSON z wtyczki albo linki, jeden w linii.');return;}let n=0,dup=0;arr.forEach(x=>{if(addOferta(x))n++;else dup++;});saveOferty();renderOferty();$('#ofPaste').value='';toast('Dodano '+n+(dup?', pominięto '+dup+' duplikatów':'')+'.');};
-  $('#ofQ').oninput=e=>{ofFilter.q=e.target.value;renderOferty();};
-  $('#ofSort').onchange=e=>{ofFilter.sort=e.target.value;renderOferty();};
-  $('#ofZrodlo').onchange=e=>{ofFilter.zrodlo=e.target.value;renderOferty();};
+// ostatni przegląd zmian w ogłoszeniach i przycisk, który otwiera rozmowę z poleceniem przeglądu
+function bzPrzeglad(){
+  const p=(BZ.przeglady||[]).slice(-1)[0];
+  const dl=d=>new Date(d+'T12:00:00').toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});
+  const btn='<a class="btn primary sm" href="'+escH(doClaude('Baza ogłoszeń: sprawdź zmiany w ogłoszeniach (przegląd).'))+'">Sprawdź zmiany w ogłoszeniach</a>';
+  let t;
+  if(!p)t='<div class="pg"><b>Zmian w ogłoszeniach jeszcze nie sprawdzano.</b>'+btn+'</div>';
+  else{const n=p.zmiany.length;
+    t='<div class="pg"><b>Ostatnie sprawdzenie: '+escH(dl(p.data))+' · '+(n?n+(n===1?' zmiana':n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?' zmiany':' zmian'):'bez zmian')+'</b>'+btn+'</div>'+
+      (n?'<ul>'+p.zmiany.map(z=>'<li>'+escH(z)+'</li>').join('')+'</ul>':'')+(p.uwagi?'<div class="bz2">'+escH(p.uwagi)+'</div>':'');}
+  if(BZ.przegladTrwa)t+='<div class="bz2">Przegląd z '+escH(dl(BZ.przegladTrwa.data))+' nie został zakończony.</div>';
+  $('#bzPrzeglad').innerHTML=t;
 }
 
-/* ---------- przełączanie widoków ---------- */
-$$('.views button').forEach(b=>b.onclick=()=>{$$('.views button').forEach(x=>x.classList.toggle('on',x===b));$('#view-profil').classList.toggle('hidden',b.dataset.view!=='profil');$('#view-oferty').classList.toggle('hidden',b.dataset.view!=='oferty');if(b.dataset.view==='oferty')renderOferty();localStorage.setItem('szukacz.view',b.dataset.view);});
+/* oferty z dawnej zakładki „Oferty” (pamięć przeglądarki) i oferty z wtyczki → plik → import w bazie przez Claude */
+const LS_OF='szukacz.oferty';
+function stareOferty(){try{const a=JSON.parse(localStorage.getItem(LS_OF)||'[]');return Array.isArray(a)?a:[];}catch(e){return [];}}
+function doBazyPlikiem(oferty,nazwa,co){
+  const blob=new Blob([JSON.stringify({_app:'szukacz-nieruchomosci',_typ:'kopia',_data:dzien(),oferty},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nazwa;document.body.appendChild(a);a.click();a.remove();
+  toast('Zapisałem plik „'+nazwa+'” w Pobranych. Otwieram rozmowę z Claude.');
+  setTimeout(()=>{location.href=doClaude('Baza ogłoszeń: zaimportuj '+co+' z pliku „'+nazwa+'” w folderze Pobrane (node baza-ogloszen/baza.js import <plik>). Przy możliwych duplikatach zapytaj mnie.');},600);
+}
+function bzPrzenies(){
+  const s=stareOferty(), el=$('#bzPrzenies');
+  if(!s.length){el.innerHTML='';return;}
+  el.innerHTML='<div class="note warn" style="margin-bottom:12px">W tej przeglądarce '+(s.length===1?'została <b>1</b> oferta':(s.length%10>=2&&s.length%10<=4&&(s.length%100<10||s.length%100>=20)?'zostały <b>'+s.length+'</b> oferty':'zostało <b>'+s.length+'</b> ofert'))+' z dawnej zakładki „Oferty”. Przenieś je do bazy, żeby wszystko było w jednym miejscu. Statusy przejdą na statusy bazy (np. „Do umówienia” → „Do kontaktu”, „Odpada” → „Niezainteresowany”).'+
+    '<div class="btns" style="margin-top:8px"><button type="button" class="btn sm primary" id="bzPrzBtn">Przenieś do bazy przez Claude</button><button type="button" class="btn sm ghost danger" id="bzPrzUsun">Usuń z przeglądarki</button></div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:6px">Po imporcie kliknij „Odśwież”. Gdy oferty są już w bazie, usuń je z przeglądarki.</div></div>';
+  $('#bzPrzBtn').onclick=()=>doBazyPlikiem(s,'oferty-z-przegladarki-'+dzien()+'.json','oferty z dawnej zakładki Oferty');
+  $('#bzPrzUsun').onclick=()=>{if(confirm('Usunąć '+s.length+' ofert z pamięci przeglądarki? Zrób to dopiero, gdy są już w bazie.')){try{localStorage.removeItem(LS_OF);}catch(e){}bzPrzenies();toast('Usunięto z przeglądarki.');}};
+}
+function initBaza(){
+  $('#bzDodaj').href=doClaude('Dodaj do bazy ogłoszeń: ');
+  $('#bzStatusyOpis').innerHTML='<b>Statusy:</b> '+BZ_ST.map(s=>'<b>'+escH(s[1])+'</b>'+(s[2]?' ('+escH(s[2])+')':'')).join(' · ')+'. Przy „Zmień status” wystarczy napisać nazwę zwykłymi słowami.';
+  $('#bzSort').value=pamiec.get('baza.sort','priorytet');
+  $('#bzQ').oninput=bzRysuj;$('#bzPod').oninput=$('#bzPdo').oninput=bzRysuj;
+  $('#bzSort').onchange=()=>{pamiec.set('baza.sort',$('#bzSort').value);bzRysuj();};
+  $('#ofDoBazy').onclick=()=>{
+    const t=$('#ofPaste').value.trim();if(!t){toast('Wklej oferty z wtyczki albo linki.');return;}
+    let arr=null;try{const j=JSON.parse(t);arr=Array.isArray(j)?j:(j.oferty||j.results||[j]);}catch(e){}
+    if(arr&&arr.length){doBazyPlikiem(arr,'oferty-z-wtyczki-'+dzien()+'.json','oferty z wtyczki');$('#ofPaste').value='';return;}
+    const linki=t.split(/\s+/).filter(l=>/^https?:\/\//.test(l));
+    if(!linki.length){toast('Nie rozpoznałem ofert. Wklej JSON z wtyczki albo linki, jeden w linii.');return;}
+    $('#ofPaste').value='';location.href=doClaude('Dodaj do bazy ogłoszeń:\n'+linki.join('\n'));
+  };
+  bzPrzenies();
+  $('#ofCount').textContent=BZL.filter(o=>o.status!=='niezainteresowany').length;
+  if(!BZ){$('#bzStan').textContent='brak danych';$('#bzPrzeglad').remove();$('#bzLista').innerHTML='<div class="bz-pusto">Nie widzę pliku <code>baza-ogloszen/dane/baza-widok.js</code>. Baza jest pusta albo strona leży poza folderem projektu. Wklej Claude link do ogłoszenia, a wpis pojawi się tutaj po odświeżeniu.</div>';return;}
+  $('#bzStan').textContent=BZL.length+' ogłoszeń · zmiana '+(BZ._zmiana?new Date(BZ._zmiana).toLocaleString('pl-PL',{dateStyle:'medium',timeStyle:'short'}):'–');
+  bzPrzeglad();bzPasek();bzRysuj();
+}
+
+/* ---------- znalezione (dane/znalezione-widok.js) ---------- */
+const ZN=window.ZNALEZIONE||{ogloszenia:[],szukania:[]};
+const znNr=r=>parseInt(String(r.nr).slice(1),10)||0;
+const ZNL=(ZN.ogloszenia||[]).slice().sort((a,b)=>String(b.pierwszy||'').localeCompare(String(a.pierwszy||''))||znNr(b)-znNr(a));
+const bazaPoLinku=new Map();BZL.forEach(o=>(o.linki||[]).forEach(l=>bazaPoLinku.set(normUrl(l.url),o.nr)));
+const znWBazie=r=>{for(const l of r.linki||[]){const n=bazaPoLinku.get(normUrl(l.url));if(n)return n;}return null;};
+function znOpis(r){return [(r.miejscowosc||'?')+(r.ulica?', '+r.ulica:''),zlH(r.cena),r.metraz?m2H(r.metraz):null,r.dzialka?'działka '+m2H(r.dzialka):null,r.pokoje?r.pokoje+' pok.':null].filter(Boolean).join(' · ');}
+function znRysuj(){
+  const q=$('#znQ').value.trim().toLowerCase(), p=$('#znProfil').value;
+  pamiec.set('znalezione.profil',p);
+  const nrQ=/^z?\d+$/.test(q)?'z'+q.replace(/^z/,''):null;
+  const wyn=ZNL.filter(r=>{
+    if(p&&!(r.profile||[]).includes(p))return false;
+    if(!q)return true;
+    if(nrQ)return String(r.nr).toLowerCase()===nrQ;
+    return [r.miejscowosc,r.gmina,r.ulica,r.tytul,...(r.linki||[]).map(l=>l.url)].join(' ').toLowerCase().includes(q);
+  });
+  $('#znIle').textContent=ZNL.length?'Pokazuję '+wyn.length+' z '+ZNL.length+'. Najnowsze na górze.':'';
+  if(!ZNL.length){$('#znLista').innerHTML='<div class="bz-pusto">Lista jest jeszcze pusta albo brakuje pliku <code>dane/znalezione-widok.js</code>. Pojawi się po pierwszym szukaniu przyciskiem „Szukaj nowych ogłoszeń z Claude”.</div>';return;}
+  if(!wyn.length){$('#znLista').innerHTML='<div class="bz-pusto">Nic nie pasuje do tego filtra.</div>';return;}
+  $('#znLista').innerHTML='<table><thead><tr><th>Nr</th><th>Znalezione</th><th>Profil</th><th>Ogłoszenie</th><th>Link</th><th>Baza</th></tr></thead><tbody>'+
+    wyn.map(r=>{const url=((r.linki||[])[0]||{}).url||'', wb=znWBazie(r);
+      const doBazy=doClaude('Dodaj do bazy ogłoszeń: '+url+'\n(znalezione '+r.nr+(r.profile&&r.profile.length?', profil „'+r.profile[0]+'”':'')+')');
+      return '<tr'+(nrQ?' class="traf"':'')+'>'+
+      '<td class="nr" data-data="'+escH(dataPL(r.pierwszy))+'">'+escH(r.nr)+'</td>'+
+      '<td class="data">'+escH(dataPL(r.pierwszy))+(r.ostatnio&&r.ostatnio!==r.pierwszy?'<div class="uw">ostatnio '+escH(dataPL(r.ostatnio))+'</div>':'')+'</td>'+
+      '<td>'+((r.profile||[]).map(x=>'<span class="prof">'+escH(x)+'</span>').join('')||'<span class="uw">bez profilu</span>')+'</td>'+
+      '<td><div class="opis">'+escH(znOpis(r))+(r.ocena!=null?' <span class="uw">· ocena '+escH(r.ocena)+'</span>':'')+'</div>'+(r.uwagi?'<div class="uw">'+escH(r.uwagi)+'</div>':'')+'</td>'+
+      '<td class="lk">'+(r.linki||[]).map(l=>'<a href="'+escH(l.url)+'" target="_blank" rel="noopener">'+escH(l.zrodlo||l.url)+'</a>').join('')+'</td>'+
+      '<td class="baza">'+(wb?'w bazie #'+escH(wb):url?'<a href="'+escH(doBazy)+'">Dodaj do bazy</a>':'')+'</td></tr>';}).join('')+
+    '</tbody></table>';
+}
+function initZnalezione(){
+  $('#znCount').textContent=ZNL.length;
+  const profile=[...new Set(ZNL.flatMap(r=>r.profile||[]))].sort();
+  profile.forEach(n=>{const o=document.createElement('option');o.textContent=n;$('#znProfil').appendChild(o);});
+  const pz=pamiec.get('znalezione.profil','');if(pz&&profile.includes(pz))$('#znProfil').value=pz;
+  $('#znQ').oninput=znRysuj;$('#znProfil').onchange=znRysuj;
+  znRysuj();
+}
+
+/* ---------- przełączanie widoków (także z adresu: index.html#oferty, #znalezione) ---------- */
+const WIDOKI=['profil','oferty','znalezione'];
+function pokazWidok(v){
+  if(!WIDOKI.includes(v))v='profil';
+  $$('.views button').forEach(x=>x.classList.toggle('on',x.dataset.view===v));
+  WIDOKI.forEach(k=>$('#view-'+k).classList.toggle('hidden',k!==v));
+  pamiec.set('szukacz.view',v);
+  try{if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);}catch(e){}
+}
+$$('.views button').forEach(b=>b.onclick=()=>pokazWidok(b.dataset.view));
+window.addEventListener('hashchange',()=>pokazWidok(location.hash.slice(1)));
 
 /* ---------- kopia zapasowa ---------- */
-function kopia(){return {_app:'szukacz-nieruchomosci',_typ:'kopia',_v:1,_wersja:APP.ver,_data:new Date().toISOString().slice(0,10),current:readState(),profiles:loadProfiles(),oferty};}
+function kopia(){return {_app:'szukacz-nieruchomosci',_typ:'kopia',_v:1,_wersja:APP.ver,_data:new Date().toISOString().slice(0,10),current:readState(),profiles:loadProfiles(),oferty:stareOferty()};}
 function wczytajKopie(obj){
   if(!obj||obj._app!=='szukacz-nieruchomosci')throw new Error('to nie jest plik z tej aplikacji');
   if(obj._typ==='kopia'){
     const p=loadProfiles();Object.assign(p,obj.profiles||{});saveProfiles(p);fillProfileSel();
-    let n=0;(obj.oferty||[]).forEach(o=>{if(!oferty.some(x=>x.id===o.id||(o.link&&normLink(x.link)===normLink(o.link)))){oferty.push(o);n++;}});saveOferty();
+    // oferty ze starej kopii odkładam do pamięci przeglądarki; zakładka Oferty proponuje przeniesienie ich do bazy
+    const st=stareOferty();let n=0;(obj.oferty||[]).forEach(o=>{if(!st.some(x=>x.id===o.id||(o.link&&normUrl(x.link)===normUrl(o.link)))){st.push(o);n++;}});if(n){try{localStorage.setItem(LS_OF,JSON.stringify(st));}catch(e){}}
     if(obj.current)writeState(obj.current);
-    return 'Wczytano kopię: '+Object.keys(obj.profiles||{}).length+' profili, '+n+' nowych ofert.';
+    return 'Wczytano kopię: '+Object.keys(obj.profiles||{}).length+' profili'+(n?', '+n+' ofert do przeniesienia do bazy (zakładka Oferty)':'')+'.';
   }
   const st=Object.assign({},obj);['_app','_v','_data'].forEach(k=>delete st[k]);writeState(st);return 'Wczytano profil z pliku.';
 }
@@ -1083,9 +1264,9 @@ $('#szukajClaude').onclick=()=>{
   pokazStanProfilu();
 };
 $('#copyPrompt').onclick=async()=>{const txt=buildPrompt(readState());try{await navigator.clipboard.writeText(txt);toast('Prompt skopiowany. Wklej go do asystenta AI z wyszukiwaniem w internecie.');}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Prompt skopiowany.');}};
-$('#dlProfile').onclick=()=>{const blob=new Blob([JSON.stringify(kopia(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='szukacz-kopia-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Zapisano kopię: profil, zapisane profile i oferty.');};
+$('#dlProfile').onclick=()=>{const blob=new Blob([JSON.stringify(kopia(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='szukacz-kopia-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Zapisano kopię: profil i zapisane profile.');};
 $('#loadFileBtn').onclick=()=>$('#loadFile').click();
-$('#loadFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{toast(wczytajKopie(JSON.parse(r.result)));renderOferty();}catch(err){toast('Nie udało się wczytać: '+err.message);}};r.readAsText(f);e.target.value='';};
+$('#loadFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{toast(wczytajKopie(JSON.parse(r.result)));bzPrzenies();}catch(err){toast('Nie udało się wczytać: '+err.message);}};r.readAsText(f);e.target.value='';};
 $('#resetAll').onclick=()=>{if(confirm('Wyczyścić wszystkie pola?')){writeState({});toast('Wyczyszczone.');}};
 $$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.tab').forEach(x=>x.classList.toggle('on',x.id==='tab-'+b.dataset.tab));});
 
@@ -1112,8 +1293,8 @@ pokazPrzeglad();
 fillProfileSel();
 let cur=null;try{cur=JSON.parse(localStorage.getItem(LS_CUR)||'null');}catch(e){}
 writeState(cur||{});
-loadOferty();initOferty();updateOfCount();
-if(localStorage.getItem('szukacz.view')==='oferty')$('.views button[data-view=oferty]').click();
+initBaza();initZnalezione();
+pokazWidok((location.hash||'').slice(1)||pamiec.get('szukacz.view','profil'));
 })();
 </script>
 </body>

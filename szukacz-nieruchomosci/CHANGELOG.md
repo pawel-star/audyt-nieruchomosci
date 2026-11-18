@@ -2,6 +2,16 @@
 
 Dwa numery wersji: aplikacja (`APP.ver` w `index.html`, widoczny w nagłówku) i wtyczka (`version` w `wtyczka/manifest.json`, widoczny w okienku i w skanerze). Podbijaj przy każdej zmianie funkcjonalnej.
 
+## Aplikacja 1.8 · 2026-11-18: wszystko na jednej stronie
+- Zakładka „Oferty” pokazuje teraz bazę ogłoszeń (`baza-ogloszen/`): statusy bazy, notatki w ramkach, historię cen, priorytet, przegląd zmian i przyciski otwierające rozmowę z Claude. Dawny katalog w pamięci przeglądarki, z formularzem, gwiazdkami i własnymi statusami, znika, bo dublował bazę.
+- Oferty, które zostały w przeglądarce, zakładka proponuje przenieść do bazy: zapisuje je do pliku w Pobranych i otwiera rozmowę z poleceniem importu (`baza.js import` mapuje stare statusy na statusy bazy). Potem można je usunąć z przeglądarki.
+- Pole „Wklej oferty z wtyczki” zostaje: linki idą prosto do rozmowy „Dodaj do bazy ogłoszeń”, oferty z wtyczki przez plik i import.
+- Nowa zakładka „Znalezione”: lista z `znalezione.js` (numer Z, data znalezienia, profil, link), z szukaniem po numerze i filtrem profilu. Przy ogłoszeniu „Dodaj do bazy” albo numer w bazie, jeśli link już tam jest. Osobna strona `znalezione.html` z wersji 1.7 została usunięta.
+- `baza-ogloszen/index.html` przekierowuje do `szukacz-nieruchomosci/index.html#oferty`. Zakładkę można otworzyć z adresu: `#oferty`, `#znalezione`.
+- Kopia .json obejmuje już tylko profile (baza i lista znalezionych mają własne kopie w plikach).
+- Poprawka: licznik wypełnionych pól w sekcjach liczy tylko sekcje formularza profilu.
+- Sprawdzone w przeglądarce na prawdziwych danych (20 ogłoszeń w bazie, 59 znalezionych), także na szerokości telefonu. Niesprawdzone: otwarcie z dysku (`file://`) w Twoim Chrome i to, czy w jego pamięci zostały oferty z dawnej zakładki.
+
 ## Aplikacja 1.7 · lista znalezionych 1.1 · 2026-11-18
 - Strona `znalezione.html`: wszystkie znalezione ogłoszenia z numerem (Z1, Z2…), datą znalezienia, profilem, którym je znaleziono, i linkami. Pole szukania przyjmuje numer („Z10” albo „10”), miejscowość lub fragment linku; lista profili zawęża widok. Odnośnik pod przyciskiem „Szukaj nowych ogłoszeń z Claude”.
 - `znalezione.js` po każdym zapisie odświeża `dane/znalezione-widok.js` (strona otwierana z dysku nie czyta JSON-a). Polecenie `widok` odświeża plik ręcznie.

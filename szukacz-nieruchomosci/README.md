@@ -60,16 +60,18 @@ Facebook nie lubi automatów. Skaner przewija jak człowiek i robi przerwy, ale 
 5. Zapisz profil pod nazwą (góra strony). Możesz mieć kilka, np. osobno kupno i wynajem.
 6. Codziennie: zakładka „Twoje źródła”, „Otwórz wszystkie”. Na każdej karcie kliknij wtyczkę i „Skanuj tę stronę”. Na Facebooku możesz włączyć „skanuj sam”, wtedy ocenia posty w trakcie przewijania.
 
-## Katalog ofert (widok „Oferty”)
+## Oferty i Znalezione (zakładki u góry)
 
-Przełącznik u góry aplikacji: „Profil wyszukiwania” i „Oferty”. Katalog zbiera ogłoszenia z obu dróg:
+Przełącznik u góry aplikacji ma trzy zakładki: „Profil wyszukiwania”, „Oferty” i „Znalezione”.
 
-- **Z wtyczki.** Przy wyniku w Skanerze grup albo w okienku „Skanuj tę stronę” kliknij „+ do katalogu”. Potem w Skanerze „Kopiuj oferty do aplikacji”, a w aplikacji w widoku Oferty wklej w pole „Wklej oferty z wtyczki” i „Dodaj do katalogu”.
-- **Z internetu.** Formularz „Dodaj ofertę” (link, źródło, miejscowość, cena, metraż, pokoje, piętro, opis, notatki) albo wklejenie listy linków, jeden w linii. Duplikaty po linku są pomijane.
+**Oferty** to baza ogłoszeń (`../baza-ogloszen/`): domy, które przeglądasz świadomie, ze statusem, historią cen i notatkami. Opis statusów i notatek jest w `baza-ogloszen/README.md`. Strona tylko pokazuje bazę; każda zmiana idzie przez rozmowę z Claude, który uruchamia `baza.js`. „+ Dodaj ogłoszenie”, „Zmień status”, „Dodaj notatkę” i „Sprawdź zmiany w ogłoszeniach” otwierają taką rozmowę z gotowym początkiem polecenia. Do bazy trafiają też ogłoszenia spoza szukacza: wystarczy podać Claude link albo opis. Po zmianie kliknij „Odśwież”.
 
-Każda oferta dostaje numer `OF-RRRRMMDD-NNN` i nazwę rekordu w stałym formacie `TYP-Miejscowosc-cenaK-metrazM2`, np. `DOM-Kornik-590k-85m2`. Nazwę możesz nadpisać. Do tego ocena 1–5 gwiazdek, status i notatki.
+- **Z wtyczki.** W Skanerze „Kopiuj oferty do aplikacji”, potem w zakładce Oferty pole „Wklej oferty z wtyczki albo listę linków” i „Dodaj do bazy przez Claude”. Linki idą prosto do rozmowy, a oferty z wtyczki strona zapisuje do pliku w Pobranych, który Claude importuje (`baza.js import`).
+- **Dawne oferty z przeglądarki.** Do wersji 1.7 zakładka Oferty trzymała katalog w pamięci przeglądarki, z formularzem i własnymi statusami. Jeśli coś tam zostało, zakładka pokazuje ramkę „Przenieś do bazy przez Claude”. Statusy przechodzą tak: nowe → Nowe, do umówienia → Do kontaktu, przygotować raport → Analiza wstępna, czekam na spotkanie i po wizycie → Wizja lokalna, do decyzji → Zainteresowany, odpada → Niezainteresowany. Po imporcie usuń je z przeglądarki przyciskiem w tej samej ramce.
 
-Statusy: **nowe → do umówienia → przygotować raport → czekam na spotkanie → po wizycie → do decyzji**, plus **odpada**. „Odpada” zostaje w katalogu, żebyś nie oceniał tej samej oferty drugi raz. Każda zmiana statusu zapisuje datę. Pasek nad listą pokazuje liczby w każdym statusie i działa jako filtr. Raport przed wizytą robisz w aplikacji Audyt Nieruchomości w katalogu wyżej.
+**Znalezione** to wszystko, co przyniosło szukanie przyciskiem „Szukaj nowych ogłoszeń z Claude”, także słabe i odrzucone (`znalezione.js`, dane w `dane/znalezione.json`). Każde ma numer `Z…`, datę znalezienia, profil, którym je znaleziono, i link. W polu szukania wpisz „Z10” albo „10”, żeby od razu znaleźć ogłoszenie, o którym Claude pisał w rozmowie. Przy ogłoszeniu jest „Dodaj do bazy” albo numer w bazie, jeśli już tam jest.
+
+Zakładkę można otworzyć wprost z adresu: `index.html#oferty`, `index.html#znalezione`.
 
 ## Testy
 
@@ -79,7 +81,7 @@ Statusy: **nowe → do umówienia → przygotować raport → czekam na spotkani
 
 ## Kopia zapasowa
 
-Przycisk „3. Zapisz kopię .json” zapisuje w jednym pliku bieżący profil, wszystkie zapisane profile i cały katalog ofert. „Wczytaj kopię z pliku .json” odtwarza to na innym komputerze lub po wyczyszczeniu przeglądarki; profile i oferty dopisuje, nie kasuje istniejących. Ten sam przycisk wczyta też stary plik z samym profilem.
+Przycisk „3. Zapisz kopię .json” zapisuje w jednym pliku bieżący profil i wszystkie zapisane profile. „Wczytaj kopię z pliku .json” odtwarza to na innym komputerze lub po wyczyszczeniu przeglądarki; profile dopisuje, nie kasuje istniejących. Ten sam przycisk wczyta też stary plik z samym profilem. Oferty ze starej kopii (sprzed 1.8) trafiają do ramki „Przenieś do bazy” w zakładce Oferty. Bazy ogłoszeń i listy znalezionych ta kopia nie obejmuje: one leżą w plikach (`baza-ogloszen/dane/`, `szukacz-nieruchomosci/dane/`), a skrypty same robią ich kopie przy każdym zapisie.
 
 ## Kryteria: „musi być spełnione” albo „może się zmienić”
 

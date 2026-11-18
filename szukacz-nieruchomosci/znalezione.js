@@ -8,7 +8,7 @@
  *        plik: tablica ogłoszeń {url, zrodlo, tytul, typ, miejscowosc, gmina, ulica, cena, metraz,
  *        dzialka, pokoje, rok, dataOgl, ocena, uwagi}; wypisuje nowe, znane i zmiany cen
  *   node znalezione.js lista [ile]                  ostatnio znalezione
- *   node znalezione.js widok                        odświeża dane/znalezione-widok.js dla strony znalezione.html
+ *   node znalezione.js widok                        odświeża dane/znalezione-widok.js (zakładka „Znalezione” w index.html)
  *
  * Rozpoznawanie znanych: ten sam link albo numer ogłoszenia, a gdy link jest inny, te same parametry
  * (miejscowość, metraż, działka, ulica) według tych samych reguł co baza ogłoszeń. Dodatkowo sprawdza,
@@ -56,7 +56,7 @@ function zapisz(z) {
   fs.renameSync(tmp, PLIK);
   zapiszWidok(z);
 }
-/* plik dla znalezione.html: strona otwierana z dysku nie może czytać JSON-a, więc dostaje skrypt */
+/* plik dla zakładki „Znalezione” w index.html: strona otwierana z dysku nie może czytać JSON-a, więc dostaje skrypt */
 function zapiszWidok(z) {
   fs.mkdirSync(KATALOG, { recursive: true });
   fs.writeFileSync(WIDOK, '/* Generuje znalezione.js po każdej zmianie. Nie edytuj ręcznie. */\n' +
