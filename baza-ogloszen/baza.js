@@ -34,8 +34,15 @@ const STATUSY = [
   ['kontakt', 'Do kontaktu', 'zadzwonić do sprzedającego, dopytać, umówić oględziny'],
   ['wizja', 'Wizja lokalna', 'oględziny umówione albo odbyte'],
   ['zainteresowany', 'Zainteresowany', 'krótka lista'],
+  ['nieaktualne', 'Nieaktualne', 'ogłoszenie zniknęło: sprzedane albo zdjęte'],
   ['niezainteresowany', 'Niezainteresowany', 'odpada; zapisz powód, żeby nie wracać'],
 ];
+/* statusy poza bieżącą pracą: przegląd ich nie sprawdza, lista i strona domyślnie ich nie pokazują */
+const NIEAKTYWNE = ['nieaktualne', 'niezainteresowany'];
+const aktywny = o => !NIEAKTYWNE.includes(o.status);
+/* notatka z przeglądu o zniknięciu ogłoszenia: czeka na decyzję (status Nieaktualne albo „nadal jest”) */
+const ZNIKLO = 'Przegląd: ogłoszenie na Otodom zniknęło';
+const otwarteZnikniecie = o => (o.notatki || []).filter(n => !n.zamkniete && String(n.tekst).startsWith(ZNIKLO));
 /* rodzaje notatek: strona pokazuje je na wierzchu karty, w tej kolejności */
 const RODZAJE = [
   ['waham', 'Wątpliwości', 'dlaczego się waham'],
@@ -52,6 +59,8 @@ const ALIASY = {
   'zainteresowany': 'zainteresowany', 'krotka lista': 'zainteresowany',
   'niezainteresowany': 'niezainteresowany', 'nie zainteresowany': 'niezainteresowany',
   'odpada': 'niezainteresowany', 'odrzucone': 'niezainteresowany', 'odrzucam': 'niezainteresowany',
+  'nieaktualne': 'nieaktualne', 'nieaktualna': 'nieaktualne', 'nieaktualny': 'nieaktualne', 'nieaktualne ogloszenie': 'nieaktualne',
+  'zniknelo': 'nieaktualne', 'sprzedane': 'nieaktualne', 'sprzedany': 'nieaktualne', 'zdjete': 'nieaktualne',
 };
 /* statusy Szukacza (widok Oferty) → statusy bazy */
 const ZE_SZUKACZA = { nowe: 'nowe', umowic: 'kontakt', raport: 'analiza', czekam: 'wizja', po_wizycie: 'wizja', decyzja: 'zainteresowany', odpada: 'niezainteresowany' };
@@ -444,6 +453,9 @@ function scal(cel, rek, d, w, opcje) {
   if (uzupelnione.length) L.push('  uzupełnione pola: ' + uzupelnione.join(', '));
   if (ileNotatek) L.push('  dopisane notatki: ' + ileNotatek);
   uwagiNotatek.forEach(u => L.push('  uwaga: ' + u));
+  if (cel.status === 'nieaktualne' && (nowyLink || zmianaRealna)) {
+    L.push('  UWAGA: to ogłoszenie było oznaczone jako nieaktualne, a dom znowu jest w sprzedaży. Jeśli nadal cię interesuje, zmień status.');
+  }
   if (zmianaRealna && cel.status === 'niezainteresowany' && zmiana.nowa < zmiana.stara) {
     L.push('  UWAGA: to ogłoszenie wcześniej odrzuciłeś' + (ostatniPowod(cel) && ostatniPowod(cel).powod ? ' (powód: ' + ostatniPowod(cel).powod + ')' : '') + '. Cena spadła, więc warto sprawdzić, czy powód nadal obowiązuje.');
   }
@@ -519,7 +531,7 @@ async function przegladStart(b, sprawdz) {
   const L = [];
   if (b.przegladTrwa) L.push('Poprzedni przegląd (' + b.przegladTrwa.data + ') nie został zakończony; zaczynam od nowa.');
   b.przegladTrwa = { start: new Date().toISOString(), data: d, migawka: migawka(b) };
-  const aktywne = b.ogloszenia.filter(o => o.status !== 'niezainteresowany');
+  const aktywne = b.ogloszenia.filter(aktywny);
   L.push('PRZEGLĄD rozpoczęty ' + d + ': ' + aktywne.length + ' aktywnych ogłoszeń.', '', 'OTODOM (sprawdzone automatycznie):');
   const reczne = [];
   let ileOtodom = 0;
@@ -530,8 +542,8 @@ async function przegladStart(b, sprawdz) {
       const w = await sprawdz(l.url);
       if (w.stan !== 'blad') l.sprawdzone = d;
       if (w.stan === 'zniklo') {
-        if (!o.notatki.some(n => n.tekst.startsWith('Przegląd: ogłoszenie na Otodom zniknęło') && n.rodzaj === 'notatka')) dodajNotatke(o, 'notatka', 'Przegląd: ogłoszenie na Otodom zniknęło (' + d + ').');
-        L.push('  #' + o.nr + ': ogłoszenie zniknęło');
+        if (!otwarteZnikniecie(o).length) dodajNotatke(o, 'sprawdzic', ZNIKLO + ' (' + d + '). Sprawdź, czy dom jest sprzedany; jeśli tak, zmień status na Nieaktualne, a jeśli ogłoszenie nadal jest, zamknij tę notatkę.');
+        L.push('  #' + o.nr + ': ogłoszenie zniknęło (DO DECYZJI: Nieaktualne albo nadal jest)');
       } else if (w.stan === 'blad') {
         L.push('  #' + o.nr + ': nie udało się sprawdzić (' + w.komunikat + '), sprawdź ręcznie: ' + l.url);
       } else {
@@ -567,14 +579,17 @@ function przegladKoniec(b, uwagi) {
     if (o.cena !== s.cena) zm.push(kto + ': cena ' + zl(s.cena) + ' → ' + zl(o.cena) + (s.cena && o.cena ? ' (' + proc(100 * (o.cena - s.cena) / s.cena) + ')' : ''));
     if (o.status !== s.status) zm.push(kto + ': status ' + etykieta(s.status) + ' → ' + etykieta(o.status));
     o.linki.slice(s.linki).forEach(l => zm.push(kto + ': ten sam dom w nowym ogłoszeniu (' + l.zrodlo + ')'));
-    o.notatki.filter(n => n.nr > s.notatki).forEach(n => zm.push(kto + ': ' + n.tekst.replace(/^Przegląd:\s*/, '')));
+    o.notatki.filter(n => n.nr > s.notatki).forEach(n => zm.push(kto + ': ' + n.tekst.replace(/^Przegląd:\s*/, '').replace(/\. Sprawdź, czy dom jest sprzedany.*$/, '.')));
   });
+  const doDecyzji = b.ogloszenia.filter(o => aktywny(o) && otwarteZnikniecie(o).length);
   const wpis = { data: p.data, start: p.start, koniec: new Date().toISOString(), zmiany: zm };
   if (uwagi) wpis.uwagi = uwagi;
   b.przeglady = (b.przeglady || []).concat([wpis]).slice(-20);
   delete b.przegladTrwa;
   return 'PRZEGLĄD zakończony ' + p.data + ': ' + (zm.length ? ileZmian(zm.length) : 'bez zmian') +
-    (zm.length ? '\n  ' + zm.join('\n  ') : '') + (uwagi ? '\n  uwagi: ' + uwagi : '');
+    (zm.length ? '\n  ' + zm.join('\n  ') : '') + (uwagi ? '\n  uwagi: ' + uwagi : '') +
+    (doDecyzji.length ? '\nZNIKNĘŁY, DO DECYZJI (zapytaj Pawła: Nieaktualne czy nadal jest):\n  ' +
+      doDecyzji.map(o => '#' + o.nr + ' ' + (o.miejscowosc || 'bez miejscowości') + ', ' + zl(o.cena) + ' · notatka nr ' + otwarteZnikniecie(o)[0].nr).join('\n  ') : '');
 }
 
 /* ---------- import ze Szukacza ---------- */
@@ -630,7 +645,7 @@ function pokaz(r) {
   return L.join('\n');
 }
 function lista(b, filtr) {
-  let kody = STATUSY.map(s => s[0]).filter(k => k !== 'niezainteresowany');
+  let kody = STATUSY.map(s => s[0]).filter(k => !NIEAKTYWNE.includes(k));
   if (filtr) kody = klucz(filtr) === 'wszystkie' ? STATUSY.map(s => s[0]) : [kodStatusu(filtr)];
   const L = ['W bazie: ' + b.ogloszenia.length + ' (' + STATUSY.map(s => s[1].toLowerCase() + ' ' + b.ogloszenia.filter(o => o.status === s[0]).length).join(', ') + ')'];
   kody.forEach(k => {
@@ -728,8 +743,12 @@ async function main(argv) {
       if (r.status === kod && !powod) return { kod: 0, tekst: opis(r) + '\n  status bez zmian: ' + etykieta(kod) };
       r.status = kod;
       r.historiaStatusow.push({ data: dzis(), status: kod, powod: powod || undefined });
+      // status Nieaktualne albo Niezainteresowany rozstrzyga notatkę o zniknięciu ogłoszenia
+      const znik = NIEAKTYWNE.includes(kod) ? otwarteZnikniecie(r) : [];
+      znik.forEach(n => { n.zamkniete = { data: dzis(), wynik: 'status zmieniony na ' + etykieta(kod) }; });
       zapisz(b);
       let t = opis(r) + '\n  ' + linijkaStatusu(r);
+      if (znik.length) t += '\n  zamknięta notatka o zniknięciu ogłoszenia (nr ' + znik.map(n => n.nr).join(', ') + ')';
       if (kod === 'niezainteresowany' && !powod) t += '\n  Bez powodu. Dopisz go (status N niezainteresowany <powód>), wtedy przy kolejnym trafieniu od razu zobaczysz, dlaczego odpadło.';
       return { kod: 0, tekst: t };
     }

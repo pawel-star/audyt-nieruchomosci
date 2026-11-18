@@ -26,9 +26,10 @@ Przegląd całej bazy: otwórz `szukacz-nieruchomosci/index.html` dwuklikiem (dz
 | Do kontaktu | zadzwonić do sprzedającego, dopytać, umówić oględziny |
 | Wizja lokalna | oględziny umówione albo odbyte |
 | Zainteresowany | krótka lista |
+| Nieaktualne | ogłoszenie zniknęło: dom sprzedany albo zdjęty z rynku |
 | Niezainteresowany | odpada, z powodem |
 
-Działają też słowa potoczne: „zainteresowanie” to „Nowe”, „skontaktować się” to „Do kontaktu”, „odpada” to „Niezainteresowany”, „wizja” to „Wizja lokalna”.
+Działają też słowa potoczne: „zainteresowanie” to „Nowe”, „skontaktować się” to „Do kontaktu”, „odpada” to „Niezainteresowany”, „wizja” to „Wizja lokalna”, „nieaktualna”, „sprzedane” i „zniknęło” to „Nieaktualne”. Nieaktualne i Niezainteresowany nie liczą się do „Aktywnych” i przegląd ich nie sprawdza. Jeśli nieaktualny dom wróci w nowym ogłoszeniu, Claude powie to przy dodawaniu.
 
 ## Notatki
 
@@ -46,10 +47,13 @@ Notatkę dodajesz zwykłym zdaniem w rozmowie albo przyciskiem „Dodaj notatkę
 ## Sprawdzanie zmian w ogłoszeniach
 
 Przycisk „Sprawdź zmiany w ogłoszeniach” na górze strony otwiera rozmowę z Claude z gotowym poleceniem. Po naciśnięciu Enter Claude:
-- sprawdza każde ogłoszenie oprócz odrzuconych: cenę, rezerwację, czy ogłoszenie nadal wisi (Otodom automatycznie, inne portale w przeglądarce),
+- sprawdza każde ogłoszenie oprócz odrzuconych i nieaktualnych: cenę, rezerwację, czy ogłoszenie nadal wisi (Otodom automatycznie, inne portale w przeglądarce),
 - szuka tego samego domu w innych ogłoszeniach: na Otodom, OLX, Adresowo, okolica.pl i innych portalach, także jako nowego ogłoszenia na tym samym portalu,
-- zapisuje zmiany cen w historii, a zniknięcia i rezerwacje jako notatki,
+- zapisuje zmiany cen w historii, a rezerwacje jako notatki,
+- zniknięcie ogłoszenia zapisuje jako punkt „Do sprawdzenia”, a nie zmienia statusu sam,
 - na koniec podaje listę zmian w rozmowie, a ta sama lista pojawia się na górze strony po „Odśwież”.
+
+Ogłoszenia, które zniknęły, stoją na górze zakładki Oferty w pomarańczowej ramce „Zniknęły z Otodom, do decyzji”, z linkiem do sprawdzenia i dwoma przyciskami: „Nieaktualne” zmienia status, „Nadal jest” zamyka punkt i zostawia status bez zmian. Ramka znika, gdy rozstrzygniesz wszystkie.
 
 Nic nie działa w tle: sprawdzanie dzieje się tylko po kliknięciu, np. raz w tygodniu.
 

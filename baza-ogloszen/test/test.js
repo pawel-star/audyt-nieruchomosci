@@ -207,6 +207,18 @@ sprawdz(oM.rodzaj === 'blok, 2. piętro' && oP.rodzaj === 'blok, parter', 'zOtod
   sprawdz(w.wynik === 'juz' && w.nr === 1, '54. rok różny o jeden: nadal ten sam dom', w.tekst);
 }
 
+/* --- status Nieaktualne i notatka o zniknięciu ogłoszenia --- */
+sprawdz(B.kodStatusu('Nieaktualna') === 'nieaktualne' && B.kodStatusu('sprzedane') === 'nieaktualne', '55. aliasy statusu Nieaktualne');
+cli(['sprawdzic', '2', 'Przegląd: ogłoszenie na Otodom zniknęło (2026-11-09). Sprawdź, czy dom jest sprzedany.'], '2026-11-09');
+r = cli(['status', '2', 'kontakt'], '2026-11-09');
+let zn = baza().ogloszenia[1].notatki.find(n => /zniknęło/.test(n.tekst));
+sprawdz(zn && !zn.zamkniete && !/zamknięta notatka/.test(r.out), '56. zwykła zmiana statusu nie zamyka notatki o zniknięciu', r.out);
+r = cli(['status', '2', 'Nieaktualna.'], '2026-11-10');
+zn = baza().ogloszenia[1].notatki.find(n => /zniknęło/.test(n.tekst));
+sprawdz(baza().ogloszenia[1].status === 'nieaktualne' && zn.zamkniete && /Nieaktualne/.test(zn.zamkniete.wynik) && /zamknięta notatka o zniknięciu/.test(r.out), '57. status Nieaktualne zamyka notatkę o zniknięciu', r.out);
+r = cli(['lista'], '2026-11-10');
+sprawdz(!/#2 /.test(r.out.split('\n').slice(1).join('\n')) && /nieaktualne 1/.test(r.out), '58. lista domyślnie bez nieaktualnych', r.out);
+
 /* --- przegląd zmian (w pamięci, sprawdzanie Otodom podstawione, bez sieci) --- */
 (async () => {
   process.env.BAZA_DZIS = '2026-11-20';
@@ -226,18 +238,26 @@ sprawdz(oM.rodzaj === 'blok, 2. piętro' && oP.rodzaj === 'blok, parter', 'zOtod
   sprawdz(/#1: cena 600 000 zł → 570 000 zł \(−5,0%\)/.test(t1) && /#2: ogłoszenie zniknęło/.test(t1) && /#3: bez zmian/.test(t1) && /#3: w tytule „REZERWACJA/.test(t1), '42. przegląd: Otodom cena, zniknięcie, rezerwacja', t1);
   sprawdz(/INNE PORTALE[\s\S]*#4 olx/.test(t1) && /#4 szukaj: dom sprzedaż Olx Lipowa 120 m2 działka 800 m2/.test(t1), '43. przegląd: inne portale i fraza do szukania', t1);
   sprawdz(!sprawdzane.some(u => u.includes('ID4Pa05')) && !/#5/.test(t1), '44. przegląd pomija odrzucone', t1);
+  const znN = pb.ogloszenia[1].notatki.filter(n => /zniknęło/.test(n.tekst));
+  sprawdz(znN.length === 1 && znN[0].rodzaj === 'sprawdzic' && /DO DECYZJI/.test(t1), '59. zniknięcie: notatka do sprawdzenia i komunikat do decyzji', t1);
   // w trakcie przeglądu: ten sam dom w nowym ogłoszeniu z niższą ceną i nowe ogłoszenie
   B.dodajDoBazy(pb, { url: 'https://adresowo.pl/o/dom-olx-lipowa', cena: 650000, miejscowosc: 'Olx', ulica: 'Lipowa', metraz: 120, dzialka: 800, typ: 'dom' });
   B.dodajDoBazy(pb, { url: 'https://example.com/nowy', cena: 300000, miejscowosc: 'Nowe', metraz: 30, typ: 'mieszkanie' });
   const t2 = B.przegladKoniec(pb, 'OLX nie dało się otworzyć');
   sprawdz(/PRZEGLĄD zakończony 2026-11-20: 5 zmian/.test(t2) && /#1 Tanie: cena 600 000 zł → 570 000 zł/.test(t2) && /#2 Znika: ogłoszenie na Otodom zniknęło/.test(t2) &&
     /#4 Olx: cena 700 000 zł → 650 000 zł/.test(t2) && /#4 Olx: ten sam dom w nowym ogłoszeniu \(adresowo\)/.test(t2) && /#6 Nowe: nowe ogłoszenie w bazie/.test(t2), '45. przegląd: lista zmian na koniec', t2);
+  sprawdz(/ZNIKNĘŁY, DO DECYZJI[\s\S]*#2 Znika, 500 000 zł · notatka nr 1/.test(t2) && !/#2 Znika: [^\n]*Sprawdź/.test(t2), '60. koniec przeglądu: lista zniknętych do decyzji', t2);
   sprawdz(pb.przeglady.length === 1 && !pb.przegladTrwa && pb.przeglady[0].uwagi === 'OLX nie dało się otworzyć', '46. przegląd zapisany do pokazania na stronie');
   let bl = '';
   try { B.przegladKoniec(pb); } catch (e) { bl = e.message; }
   sprawdz(/Nie ma rozpoczętego przeglądu/.test(bl), '47. koniec bez startu: błąd');
-  await B.przegladStart(pb, async () => ({ stan: 'ok', dane: { cena: null } }));
+  await B.przegladStart(pb, async u => /ID4Pa02/.test(u) ? { stan: 'zniklo' } : { stan: 'ok', dane: { cena: null } });
+  sprawdz(pb.ogloszenia[1].notatki.filter(n => /zniknęło/.test(n.tekst)).length === 1, '61. drugi przegląd nie dubluje notatki o zniknięciu');
   sprawdz(/1 zmiana|bez zmian/.test(B.przegladKoniec(pb)), '48. drugi przegląd bez zmian');
+  pb.ogloszenia[1].status = 'nieaktualne';
+  const sp2 = [];
+  const t3 = await B.przegladStart(pb, async u => { sp2.push(u); return { stan: 'ok', dane: { cena: null } }; });
+  sprawdz(!sp2.some(u => u.includes('ID4Pa02')) && !/ZNIKNĘŁY/.test(B.przegladKoniec(pb)), '62. przegląd pomija nieaktualne', t3);
 
   fs.rmSync(DANE, { recursive: true, force: true });
   console.log((zle ? '✗ ' : '✓ ') + ok + ' sprawdzeń zaliczonych, ' + zle + ' niezaliczonych');

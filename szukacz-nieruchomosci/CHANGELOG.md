@@ -2,6 +2,11 @@
 
 Dwa numery wersji: aplikacja (`APP.ver` w `index.html`, widoczny w nagłówku) i wtyczka (`version` w `wtyczka/manifest.json`, widoczny w okienku i w skanerze). Podbijaj przy każdej zmianie funkcjonalnej.
 
+## Aplikacja 1.9 · 2026-11-18: status Nieaktualne i ogłoszenia do decyzji
+- Nowy status bazy „Nieaktualne” (ogłoszenie zniknęło: sprzedane albo zdjęte), z własnym kolorem. Razem z „Niezainteresowany” nie liczy się do „Aktywnych”, a przegląd zmian go nie sprawdza.
+- Ogłoszenie, które zniknęło w przeglądzie, trafia do pomarańczowej ramki „Zniknęły z Otodom, do decyzji” na górze zakładki Oferty: link do sprawdzenia i dwa przyciski, „Nieaktualne” (zmienia status) i „Nadal jest” (zamyka punkt). Przegląd zapisuje zniknięcie jako punkt „Do sprawdzenia” i sam statusu nie zmienia.
+- `baza.js`: status Nieaktualne albo Niezainteresowany zamyka notatkę o zniknięciu; `przeglad koniec` wypisuje osobno ogłoszenia do decyzji; gdy nieaktualny dom wraca w nowym ogłoszeniu, dodawanie to mówi.
+
 ## Aplikacja 1.8 · 2026-11-18: wszystko na jednej stronie
 - Zakładka „Oferty” pokazuje teraz bazę ogłoszeń (`baza-ogloszen/`): statusy bazy, notatki w ramkach, historię cen, priorytet, przegląd zmian i przyciski otwierające rozmowę z Claude. Dawny katalog w pamięci przeglądarki, z formularzem, gwiazdkami i własnymi statusami, znika, bo dublował bazę.
 - Oferty, które zostały w przeglądarce, zakładka proponuje przenieść do bazy: zapisuje je do pliku w Pobranych i otwiera rozmowę z poleceniem importu (`baza.js import` mapuje stare statusy na statusy bazy). Potem można je usunąć z przeglądarki.
