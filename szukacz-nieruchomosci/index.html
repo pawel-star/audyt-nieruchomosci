@@ -582,6 +582,7 @@ szybko.pl</textarea><span class="help">Google ignoruje bardzo długie zapytania,
         <button type="button" class="btn primary" id="szukajClaude">Szukaj nowych ogłoszeń z Claude</button>
         <p id="szukajInfo" class="szinfo"></p>
         <p>Otwiera rozmowę w Claude (zakładka Code). Claude przeszukuje Google, strony biur, zaznaczone źródła i Twoje grupy na Facebooku, zapisuje wszystko na liście znalezionych i pokazuje tylko to, czego jeszcze nie widziałeś. Szuka według tego, co widzisz teraz w formularzu.</p>
+        <p><a href="znalezione.html" target="_blank">Lista znalezionych ogłoszeń</a>: numer, data znalezienia, profil i link do każdego ogłoszenia z dotychczasowych szukań.</p>
       </div>
       <div class="act">
         <button type="button" class="btn" id="copyProfile">1. Kopiuj profil do wtyczki Chrome (Facebook)</button>
@@ -676,7 +677,7 @@ szybko.pl</textarea><span class="help">Google ignoruje bardzo długie zapytania,
 (function(){
 const f=document.getElementById('f');
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
-const APP={nazwa:'Szukacz nieruchomości',ver:'1.6'};
+const APP={nazwa:'Szukacz nieruchomości',ver:'1.7'};
 $('#ver').textContent='v'+APP.ver;
 const LS_CUR='szukacz.current', LS_PROF='szukacz.profiles', LS_THEME='szukacz.theme';
 const DEFAULT_POMIJANE=$('#pomijane').defaultValue.split('\n').map(x=>x.trim()).filter(Boolean);

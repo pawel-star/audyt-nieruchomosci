@@ -8,6 +8,7 @@
  *        plik: tablica ogłoszeń {url, zrodlo, tytul, typ, miejscowosc, gmina, ulica, cena, metraz,
  *        dzialka, pokoje, rok, dataOgl, ocena, uwagi}; wypisuje nowe, znane i zmiany cen
  *   node znalezione.js lista [ile]                  ostatnio znalezione
+ *   node znalezione.js widok                        odświeża dane/znalezione-widok.js dla strony znalezione.html
  *
  * Rozpoznawanie znanych: ten sam link albo numer ogłoszenia, a gdy link jest inny, te same parametry
  * (miejscowość, metraż, działka, ulica) według tych samych reguł co baza ogłoszeń. Dodatkowo sprawdza,
@@ -19,9 +20,10 @@ const path = require('path');
 const baza = require('../baza-ogloszen/baza.js');
 const { parseKwota, parseLiczba, normUrl, idOgloszenia, zrodloZUrl, porownaj } = baza;
 
-const WERSJA = '1.0';
+const WERSJA = '1.1';
 const KATALOG = process.env.ZNALEZIONE_DANE || path.join(__dirname, 'dane');
 const PLIK = path.join(KATALOG, 'znalezione.json');
+const WIDOK = path.join(KATALOG, 'znalezione-widok.js');
 const KOPIE = path.join(KATALOG, 'kopie');
 const ILE_KOPII = 20;
 const PLIK_BAZY = process.env.BAZA_DANE ? path.join(process.env.BAZA_DANE, 'baza.json') : path.join(__dirname, '..', 'baza-ogloszen', 'dane', 'baza.json');
@@ -52,6 +54,13 @@ function zapisz(z) {
   const tmp = PLIK + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(z, null, 2) + '\n');
   fs.renameSync(tmp, PLIK);
+  zapiszWidok(z);
+}
+/* plik dla znalezione.html: strona otwierana z dysku nie może czytać JSON-a, więc dostaje skrypt */
+function zapiszWidok(z) {
+  fs.mkdirSync(KATALOG, { recursive: true });
+  fs.writeFileSync(WIDOK, '/* Generuje znalezione.js po każdej zmianie. Nie edytuj ręcznie. */\n' +
+    'window.ZNALEZIONE=' + JSON.stringify({ ogloszenia: z.ogloszenia, szukania: z.szukania }) + ';\n');
 }
 function wczytajBaze() {
   try { const b = JSON.parse(fs.readFileSync(PLIK_BAZY, 'utf8')); return Array.isArray(b.ogloszenia) ? b.ogloszenia : []; } catch (e) { return []; }
@@ -156,7 +165,7 @@ function raport(w) {
   return L.join('\n');
 }
 
-const POMOC = 'Polecenia: start ["profil"] · dodaj <plik.json> [--profil "nazwa"] [--zrodla "…"] · lista [ile]';
+const POMOC = 'Polecenia: start ["profil"] · dodaj <plik.json> [--profil "nazwa"] [--zrodla "…"] · lista [ile] · widok';
 function opcja(args, nazwa) {
   const i = args.indexOf('--' + nazwa);
   if (i < 0) return '';
@@ -197,6 +206,7 @@ function main(argv) {
       const t = z.ogloszenia.slice(-ile).reverse().map(r => r.nr + ' · ' + r.pierwszy + (r.ileRazy > 1 ? ' (widziane ' + r.ileRazy + '×)' : '') + ' · ' + opis(r) + ' · ' + r.linki[r.linki.length - 1].url);
       return { kod: 0, tekst: t.length ? t.join('\n') : 'Lista jest pusta.' };
     }
+    case 'widok': zapiszWidok(wczytaj()); return { kod: 0, tekst: 'Odświeżono ' + WIDOK };
     default: return { kod: kom ? 1 : 0, tekst: (kom ? 'Nie znam polecenia „' + kom + '”.\n' : '') + POMOC };
   }
 }

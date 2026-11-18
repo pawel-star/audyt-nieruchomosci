@@ -2,6 +2,10 @@
 
 Dwa numery wersji: aplikacja (`APP.ver` w `index.html`, widoczny w nagłówku) i wtyczka (`version` w `wtyczka/manifest.json`, widoczny w okienku i w skanerze). Podbijaj przy każdej zmianie funkcjonalnej.
 
+## Aplikacja 1.7 · lista znalezionych 1.1 · 2026-11-18
+- Strona `znalezione.html`: wszystkie znalezione ogłoszenia z numerem (Z1, Z2…), datą znalezienia, profilem, którym je znaleziono, i linkami. Pole szukania przyjmuje numer („Z10” albo „10”), miejscowość lub fragment linku; lista profili zawęża widok. Odnośnik pod przyciskiem „Szukaj nowych ogłoszeń z Claude”.
+- `znalezione.js` po każdym zapisie odświeża `dane/znalezione-widok.js` (strona otwierana z dysku nie czyta JSON-a). Polecenie `widok` odświeża plik ręcznie.
+
 ## Aplikacja 1.6 · lista znalezionych 1.0 · 2026-11-18
 - Przycisk „Szukaj nowych ogłoszeń z Claude”: otwiera rozmowę w zakładce Code z kryteriami z formularza. Claude szuka podagentami (Google bez portali, biura, zaznaczone źródła) i sam przegląda grupy na Facebooku w Chrome. Nic nie trzeba kopiować.
 - `znalezione.js`: lista wszystkich znalezionych ogłoszeń w `dane/znalezione.json`. Każde szukanie pokazuje tylko nowe, a znane rozpoznaje po linku, numerze ogłoszenia i parametrach (miejscowość, metraż, działka, ulica), więc łapie też dom wystawiony ponownie pod nowym linkiem. Zapisuje zmiany cen i zaznacza domy, które są już w bazie ogłoszeń.

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Znalezione ogłoszenia</title>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --ink:#15181d; --muted:#5d6572; --line:#e1e4ea;
+  --accent:#1f6f5f; --accent-soft:#e3f1ed; --chip:#eef0f4; --chip-ink:#2b313a;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08); --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111418; --card:#1a1f26; --ink:#e8ebf0; --muted:#9aa3b0; --line:#2a313b;
+    --accent:#4fb39a; --accent-soft:#163129; --chip:#242b34; --chip-ink:#dde2e9; --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111418; --card:#1a1f26; --ink:#e8ebf0; --muted:#9aa3b0; --line:#2a313b;
+  --accent:#4fb39a; --accent-soft:#163129; --chip:#242b34; --chip-ink:#dde2e9; --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+a{color:var(--accent)}
+input,select{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+header h1{font-size:17px;margin:0 auto 0 0}
+header a{font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px 16px 60px}
+.filtry{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.filtry input,.filtry select{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:8px 11px;min-width:0}
+.filtry input{flex:1 1 220px}
+.filtry select{flex:1 1 220px;max-width:100%}
+.ile{color:var(--muted);font-size:13px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;font-weight:600;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.nr{font:600 14px ui-monospace,monospace;white-space:nowrap}
+td.data{white-space:nowrap;font-variant-numeric:tabular-nums}
+.prof{display:inline-block;background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:2px 9px;font-size:12px;margin:0 4px 4px 0}
+.opis{font-weight:500}
+.uwagi{color:var(--muted);font-size:13px;margin-top:3px}
+.linki a{display:block;word-break:break-all;font-size:14px}
+.ocena{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pusto{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;color:var(--muted)}
+tr.traf td{background:var(--accent-soft)}
+@media (max-width:760px){
+  table,tbody,tr,td{display:block}
+  thead{display:none}
+  tr{border-bottom:1px solid var(--line);padding:8px 0}
+  td{border:0;padding:3px 12px}
+  td.nr::after{content:attr(data-data);font:400 13px -apple-system,sans-serif;color:var(--muted);margin-left:10px}
+  td.data{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Znalezione ogłoszenia</h1>
+  <a href="index.html">← Szukacz</a>
+</header>
+<main>
+  <div class="filtry">
+    <input type="search" id="szukaj" placeholder="Numer (np. Z10), miejscowość albo fragment linku" autofocus>
+    <select id="profil"><option value="">Wszystkie profile</option></select>
+  </div>
+  <p class="ile" id="ile"></p>
+  <div id="lista"></div>
+</main>
+<script src="dane/znalezione-widok.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const zl=n=>n==null?'cena ?':new Intl.NumberFormat('pl-PL').format(n)+' zł';
+const m2=n=>String(n).replace('.',',')+' m²';
+const dataPL=d=>d?d.split('-').reverse().join('.'):'';
+const nrLiczba=r=>parseInt(String(r.nr).slice(1),10)||0;
+
+const D=window.ZNALEZIONE||{ogloszenia:[],szukania:[]};
+const lista=D.ogloszenia.slice().sort((a,b)=>(b.pierwszy||'').localeCompare(a.pierwszy||'')||nrLiczba(b)-nrLiczba(a));
+
+const profile=[...new Set(lista.flatMap(r=>r.profile||[]))].sort();
+$('#profil').insertAdjacentHTML('beforeend',profile.map(p=>'<option>'+esc(p)+'</option>').join(''));
+try{const p=localStorage.getItem('znalezione-profil');if(p&&profile.includes(p))$('#profil').value=p;}catch(e){}
+
+function opis(r){
+  return [(r.miejscowosc||'?')+(r.ulica?', '+r.ulica:''),zl(r.cena),r.metraz?m2(r.metraz):null,r.dzialka?'działka '+m2(r.dzialka):null,r.pokoje?r.pokoje+' pok.':null].filter(Boolean).join(' · ');
+}
+function rysuj(){
+  const q=$('#szukaj').value.trim().toLowerCase(), p=$('#profil').value;
+  try{localStorage.setItem('znalezione-profil',p);}catch(e){}
+  const nrQ=/^z?\d+$/.test(q)?'z'+q.replace(/^z/,''):null;
+  const wyn=lista.filter(r=>{
+    if(p&&!(r.profile||[]).includes(p))return false;
+    if(!q)return true;
+    if(nrQ)return String(r.nr).toLowerCase()===nrQ;
+    return [r.miejscowosc,r.gmina,r.ulica,r.tytul,...(r.linki||[]).map(l=>l.url)].join(' ').toLowerCase().includes(q);
+  });
+  $('#ile').textContent=lista.length?('Pokazuję '+wyn.length+' z '+lista.length+'. Najnowsze na górze.'):'';
+  if(!lista.length){$('#lista').innerHTML='<div class="pusto">Lista jest jeszcze pusta albo brakuje pliku <code>dane/znalezione-widok.js</code>. Pojawi się po pierwszym szukaniu z Claude.</div>';return;}
+  if(!wyn.length){$('#lista').innerHTML='<div class="pusto">Nic nie pasuje do tego filtra.</div>';return;}
+  $('#lista').innerHTML='<table><thead><tr><th>Nr</th><th>Znalezione</th><th>Profil</th><th>Ogłoszenie</th><th>Link</th><th>Ocena</th></tr></thead><tbody>'+
+    wyn.map(r=>'<tr'+(nrQ?' class="traf"':'')+'>'+
+      '<td class="nr" data-data="'+esc(dataPL(r.pierwszy))+'">'+esc(r.nr)+'</td>'+
+      '<td class="data">'+esc(dataPL(r.pierwszy))+(r.ostatnio&&r.ostatnio!==r.pierwszy?'<div class="uwagi">ostatnio '+esc(dataPL(r.ostatnio))+'</div>':'')+'</td>'+
+      '<td>'+((r.profile||[]).map(x=>'<span class="prof">'+esc(x)+'</span>').join('')||'<span class="uwagi">bez profilu</span>')+'</td>'+
+      '<td><div class="opis">'+esc(opis(r))+'</div>'+(r.uwagi?'<div class="uwagi">'+esc(r.uwagi)+'</div>':'')+'</td>'+
+      '<td class="linki">'+(r.linki||[]).map(l=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener">'+esc(l.zrodlo||l.url)+'</a>').join('')+'</td>'+
+      '<td class="ocena">'+(r.ocena!=null?esc(r.ocena):'')+'</td></tr>').join('')+
+    '</tbody></table>';
+}
+$('#szukaj').addEventListener('input',rysuj);
+$('#profil').addEventListener('change',rysuj);
+rysuj();
+</script>
+</body>
+</html>
