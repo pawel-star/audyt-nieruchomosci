@@ -2,6 +2,12 @@
 
 Dwa numery wersji: aplikacja (`APP.ver` w `index.html`, widoczny w nagłówku) i wtyczka (`version` w `wtyczka/manifest.json`, widoczny w okienku i w skanerze). Podbijaj przy każdej zmianie funkcjonalnej.
 
+## Aplikacja 1.6 · lista znalezionych 1.0 · 2026-11-18
+- Przycisk „Szukaj nowych ogłoszeń z Claude”: otwiera rozmowę w zakładce Code z kryteriami z formularza. Claude szuka podagentami (Google bez portali, biura, zaznaczone źródła) i sam przegląda grupy na Facebooku w Chrome. Nic nie trzeba kopiować.
+- `znalezione.js`: lista wszystkich znalezionych ogłoszeń w `dane/znalezione.json`. Każde szukanie pokazuje tylko nowe, a znane rozpoznaje po linku, numerze ogłoszenia i parametrach (miejscowość, metraż, działka, ulica), więc łapie też dom wystawiony ponownie pod nowym linkiem. Zapisuje zmiany cen i zaznacza domy, które są już w bazie ogłoszeń.
+- Pod przyciskiem stan profilu: zapisany, bez nazwy albo ze zmianami niezapisanymi. Przy niezapisanych zmianach przycisk proponuje zapis.
+- Niesprawdzone: jak długi adres `claude://` przyjmuje aplikacja. Prompt z prostym profilem daje ok. 6 tys. znaków, pełny profil może dać 2–3 razy więcej.
+
 ## Aplikacja 1.5 · 2026-11-17
 - „Wiek ogłoszenia” to teraz dowolna liczba dni (wcześniej tylko 24 h, tydzień, miesiąc). Wartość trafia do filtra czasu Google (`tbs=qdr:dN`) i do promptu dla asystenta, który ma pomijać starsze ogłoszenia.
 - Przycisk „Od ostatniego przeglądu: N dni” pod polem: wpisuje liczbę dni od ostatniego kliknięcia „Otwórz wszystkie” (zapis w `localStorage`, tylko w tej przeglądarce). Dzięki temu kolejny przegląd nie wraca do ogłoszeń już widzianych.

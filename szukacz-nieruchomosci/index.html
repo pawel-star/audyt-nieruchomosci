@@ -127,6 +127,8 @@ kbd{font:12px ui-monospace,monospace;background:var(--chip);padding:1px 5px;bord
 .act{display:grid;gap:4px;margin-bottom:12px}
 .act .btn{justify-content:flex-start;text-align:left}
 .act p{margin:0;font-size:13px;color:var(--muted);line-height:1.4}
+.act p.szinfo{color:var(--text,inherit);font-weight:500}
+.act p.szinfo.uwaga{color:#b45309}
 .views{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
 .views button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:6px 14px;cursor:pointer;font:inherit;font-weight:500}
 .views button.on{background:var(--accent);color:var(--accent-ink)}
@@ -577,7 +579,12 @@ szybko.pl</textarea><span class="help">Google ignoruje bardzo długie zapytania,
     <div class="pad">
       <div class="ptitle">Co skopiować i gdzie wkleić</div>
       <div class="act">
-        <button type="button" class="btn primary" id="copyProfile">1. Kopiuj profil do wtyczki Chrome (Facebook)</button>
+        <button type="button" class="btn primary" id="szukajClaude">Szukaj nowych ogłoszeń z Claude</button>
+        <p id="szukajInfo" class="szinfo"></p>
+        <p>Otwiera rozmowę w Claude (zakładka Code). Claude przeszukuje Google, strony biur, zaznaczone źródła i Twoje grupy na Facebooku, zapisuje wszystko na liście znalezionych i pokazuje tylko to, czego jeszcze nie widziałeś. Szuka według tego, co widzisz teraz w formularzu.</p>
+      </div>
+      <div class="act">
+        <button type="button" class="btn" id="copyProfile">1. Kopiuj profil do wtyczki Chrome (Facebook)</button>
         <p>Wklej w okienku wtyczki: „Wklej / zmień profil”, potem „Zapisz”. Wtyczka na tej podstawie znajduje grupy na Facebooku, przegląda posty z X dni i ocenia je. Potrzebne Twoje logowanie na Facebooku w Chrome.</p>
       </div>
       <div class="act">
@@ -669,7 +676,7 @@ szybko.pl</textarea><span class="help">Google ignoruje bardzo długie zapytania,
 (function(){
 const f=document.getElementById('f');
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
-const APP={nazwa:'Szukacz nieruchomości',ver:'1.5'};
+const APP={nazwa:'Szukacz nieruchomości',ver:'1.6'};
 $('#ver').textContent='v'+APP.ver;
 const LS_CUR='szukacz.current', LS_PROF='szukacz.profiles', LS_THEME='szukacz.theme';
 const DEFAULT_POMIJANE=$('#pomijane').defaultValue.split('\n').map(x=>x.trim()).filter(Boolean);
@@ -933,6 +940,7 @@ function update(){
   $('#prompt').textContent=buildPrompt(s);
   clearTimeout(t);t=setTimeout(()=>{renderSearches(s);renderSources(s);},120);
   try{localStorage.setItem(LS_CUR,JSON.stringify(s));}catch(e){}
+  pokazStanProfilu();
 }
 // Pola ukryte dla wybranego typu (np. piętro przy domu) zostają w stanie formularza, ale nie trafiają do oceny ani promptu.
 // Wcześniej piętro z profilu mieszkania odrzucało domy parterowe.
@@ -1059,6 +1067,20 @@ function wczytajKopie(obj){
 /* ---------- przyciski ---------- */
 function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800);}
 $('#copyProfile').onclick=async()=>{const txt=JSON.stringify(profile(readState()));try{await navigator.clipboard.writeText(txt);toast('Profil skopiowany. Otwórz okienko wtyczki w Chrome, kliknij „Wklej / zmień profil” i wklej.');}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Profil skopiowany.');}};
+/* ---------- szukanie przez Claude: rozmowa w zakładce Code z kryteriami z formularza ---------- */
+function nazwaProfilu(){return $('#profileSel').value||$('#profileName').value.trim();}
+function stanProfilu(){const n=nazwaProfilu();if(!n)return {n:'',st:'bez'};const p=loadProfiles()[n];if(!p)return {n,st:'bez'};return {n,st:JSON.stringify(p)===JSON.stringify(readState())?'ok':'zmiany'};}
+function pokazStanProfilu(){const el=$('#szukajInfo');if(!el)return;const {n,st}=stanProfilu();el.classList.toggle('uwaga',st!=='ok');
+  el.textContent=st==='ok'?'Profil „'+n+'”, zapisany.':st==='zmiany'?'Zmieniłeś kryteria profilu „'+n+'” i ich nie zapisałeś. Zapisz profil u góry strony, żeby zmiany nie przepadły.':'Profil bez nazwy albo niezapisany. Zapisz go u góry strony, wtedy Claude zapamięta, kiedy ostatnio szukał tymi kryteriami.';}
+$('#szukajClaude').onclick=()=>{
+  let {n,st}=stanProfilu();
+  if(st==='zmiany'&&confirm('Zmieniłeś kryteria profilu „'+n+'” i ich nie zapisałeś. Zapisać je teraz? (Claude i tak szuka według formularza.)')){$('#profileName').value=n;$('#saveProfile').click();}
+  if(st==='bez'&&!n&&confirm('Ten profil nie ma nazwy. Zapisać go teraz? Bez nazwy Claude nie odróżni go od innych profili.')){$('#saveProfile').click();n=nazwaProfilu();}
+  const q='Szukacz: szukaj nowych ogłoszeń. Profil: „'+(n||'bez nazwy')+'”.\n\nKryteria z formularza szukacza:\n\n'+buildPrompt(readState());
+  const folder=location.protocol==='file:'?decodeURIComponent(new URL('..',location.href).pathname).replace(/\/$/,''):'';
+  location.href='claude://code/new?'+(folder?'folder='+encodeURIComponent(folder)+'&':'')+'q='+encodeURIComponent(q);
+  pokazStanProfilu();
+};
 $('#copyPrompt').onclick=async()=>{const txt=buildPrompt(readState());try{await navigator.clipboard.writeText(txt);toast('Prompt skopiowany. Wklej go do asystenta AI z wyszukiwaniem w internecie.');}catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Prompt skopiowany.');}};
 $('#dlProfile').onclick=()=>{const blob=new Blob([JSON.stringify(kopia(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='szukacz-kopia-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Zapisano kopię: profil, zapisane profile i oferty.');};
 $('#loadFileBtn').onclick=()=>$('#loadFile').click();
@@ -1069,7 +1091,7 @@ $$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.cla
 /* ---------- profile ---------- */
 function loadProfiles(){try{return JSON.parse(localStorage.getItem(LS_PROF)||'{}');}catch(e){return {};}}
 function saveProfiles(p){localStorage.setItem(LS_PROF,JSON.stringify(p));}
-function fillProfileSel(sel){const el=$('#profileSel');const p=loadProfiles();el.innerHTML='<option value="">Zapisane profile…</option>';Object.keys(p).sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;el.appendChild(o);});if(sel)el.value=sel;}
+function fillProfileSel(sel){const el=$('#profileSel');const p=loadProfiles();el.innerHTML='<option value="">Zapisane profile…</option>';Object.keys(p).sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;el.appendChild(o);});if(sel)el.value=sel;pokazStanProfilu();}
 $('#saveProfile').onclick=()=>{let n=$('#profileName').value.trim()||$('#profileSel').value;if(!n){const s=readState();n=(LBL.typ(s.typ||'mieszkanie'))+' '+(s.miasto||'')+' '+(s.transakcja||'kupno');n=n.trim();}const p=loadProfiles();p[n]=readState();saveProfiles(p);fillProfileSel(n);$('#profileName').value='';toast('Zapisano profil „'+n+'”.');};
 $('#delProfile').onclick=()=>{const n=$('#profileSel').value;if(!n)return;if(!confirm('Usunąć profil „'+n+'”?'))return;const p=loadProfiles();delete p[n];saveProfiles(p);fillProfileSel('');toast('Usunięto.');};
 $('#profileSel').onchange=e=>{const n=e.target.value;if(!n)return;const p=loadProfiles();if(p[n]){writeState(p[n]);$('#profileName').value=n;toast('Wczytano „'+n+'”.');}};

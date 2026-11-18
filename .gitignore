@@ -8,3 +8,6 @@ szukacz-nieruchomosci/czat/
 *.bak-*
 .DS_Store
 .claude/
+
+# Szukacz: lista znalezionych ogłoszeń i profile (prywatne).
+szukacz-nieruchomosci/dane/
